@@ -143,45 +143,6 @@ select option{background:#1b2926}
 </style>
 </head>
 <body>
-<div id="login-overlay" style="position:fixed;inset:0;background:#0d1a10;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Sans',sans-serif;">
-  <div style="background:#1e1e1e;border:1px solid #333;border-radius:14px;padding:36px 32px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.6);">
-    <div style="text-align:center;margin-bottom:28px">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:.1em;color:#74c69d">FÜCHSE BERLIN</div>
-      <div style="font-size:.7rem;color:#666;letter-spacing:.1em;text-transform:uppercase;margin-top:2px">Club Manager · Admin</div>
-    </div>
-    <div style="margin-bottom:12px">
-      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#666;display:block;margin-bottom:5px">Benutzer</label>
-      <input id="login-user" type="text" autocomplete="username" style="width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none" placeholder="admin" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
-    </div>
-    <div style="margin-bottom:20px">
-      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#666;display:block;margin-bottom:5px">Passwort</label>
-      <input id="login-pass" type="password" autocomplete="current-password" style="width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
-    <button onclick="doLogin()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer">Einloggen</button>
-    <div id="login-error" style="margin-top:12px;font-size:.8rem;color:#e63946;text-align:center;min-height:18px;font-weight:500"></div>
-  </div>
-</div>
-<script>
-(function(){
-  const CREDS={admin:'argentina'};const KEY='fcb_admin_auth';
-  if(sessionStorage.getItem(KEY)==='ok'){document.getElementById('login-overlay').style.display='none';}
-  window.doLogin=function(){
-    const user=document.getElementById('login-user').value.trim();
-    const pass=document.getElementById('login-pass').value;
-    const err=document.getElementById('login-error');
-    if(CREDS[user]&&CREDS[user]===pass){
-      sessionStorage.setItem(KEY,'ok');
-      const o=document.getElementById('login-overlay');
-      o.style.opacity='0';o.style.transition='opacity .3s';
-      setTimeout(()=>o.style.display='none',300);
-    }else{
-      err.textContent='Falscher Benutzer oder Passwort';
-      document.getElementById('login-pass').value='';
-      setTimeout(()=>err.textContent='',2000);
-    }
-  };
-})();
-</script>
 
 <header>
   <div class="logo">
