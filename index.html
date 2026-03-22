@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Füchse Berlin – Verfügbarkeit</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#c0392b;--red-light:#e74c3c;
+  --green:#2d6a4f;--green-light:#40916c;--green-pale:#e8f5ee;
+  --white:#f0f7f2;--dark:#1e2d24;--mid:#263b2e;--muted:#7a9e88;
+  --line:#2e4a38;--warn:#f4a261;--court:#52b788;
+  --card:#243330;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);min-height:100vh}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--dark)}
+::-webkit-scrollbar-thumb{background:var(--green);border-radius:3px}
+
+header{
+  background:linear-gradient(160deg,#1b2d23 0%,#2d4a38 60%,#1e2d24 100%);
+  padding:20px 24px 18px;border-bottom:3px solid var(--red);
+  display:flex;align-items:center;gap:16px;
+}
+.logo-img{width:54px;height:54px;object-fit:contain;flex-shrink:0}
+.header-text h1{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--white)}
+.header-text p{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+
+.lang-bar{display:flex;gap:5px;margin-left:auto}
+.lang-btn{padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s}
+.lang-btn.active{background:var(--green-light);color:#fff;border-color:var(--green-light)}
+
+main{padding:20px;max-width:480px;margin:0 auto}
+
+.step{display:none}.step.active{display:block}
+
+.step-label{font-size:11px;font-weight:600;color:var(--court);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.step-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;color:var(--white);margin-bottom:4px}
+.step-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px}
+
+input,select{background:#1b2d24;border:1px solid var(--line);border-radius:8px;color:var(--white);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;width:100%;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--court)}
+input::placeholder{color:var(--muted)}
+
+.ac-wrap{position:relative}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:#243330;border:1px solid #3a5a48;border-radius:10px;z-index:50;max-height:240px;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,.35);margin-top:4px}
+.ac-item{padding:11px 14px;font-size:14px;cursor:pointer;color:var(--white);display:flex;align-items:center;gap:10px;border-bottom:1px solid #2e4a3855}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover{background:#2e4a38}
+.ac-meta{font-size:11px;color:var(--muted);margin-left:auto}
+.avatar{width:34px;height:34px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--court);flex-shrink:0}
+
+.btn{display:block;width:100%;padding:13px 20px;border-radius:10px;border:none;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;text-align:center;margin-bottom:10px}
+.btn-primary{background:var(--green-light);color:#fff}
+.btn-primary:hover{background:var(--court);color:var(--dark)}
+.btn-outline{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.btn-outline:hover{border-color:var(--court);color:var(--court)}
+.btn-sm{width:auto;display:inline-block;padding:7px 16px;font-size:13px;margin:0}
+
+.match-item{background:#1b2d24;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:9px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:12px}
+.match-item:hover{border-color:var(--court)99;background:#243330;transform:translateY(-1px)}
+.match-date{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--court);line-height:1;min-width:40px;text-align:center}
+.match-month{font-size:10px;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:.5px}
+.match-info{flex:1}
+.match-teams{font-weight:600;font-size:14px;color:var(--white)}
+.match-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.match-avail{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.av-yes{background:#1a3d2a;color:var(--court);border:1px solid var(--court)55}
+.av-no{background:#3d1a1a;color:#e74c3c;border:1px solid #e74c3c44}
+.av-maybe{background:#2d2215;color:var(--warn);border:1px solid var(--warn)44}
+.av-open{background:#2e4a3844;color:var(--muted);border:1px solid var(--line)}
+
+.avail-btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.avail-btn{flex:1;min-width:80px;padding:14px 8px;border-radius:10px;border:1.5px solid transparent;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center}
+.avail-btn.yes{background:#1a3d2a55;color:var(--court);border-color:var(--court)44}
+.avail-btn.yes.on{background:#1a3d2a;color:var(--court);border-color:var(--court);transform:scale(1.04)}
+.avail-btn.maybe{background:#2d221555;color:var(--warn);border-color:var(--warn)44}
+.avail-btn.maybe.on{background:#2d2215;color:var(--warn);border-color:var(--warn);transform:scale(1.04)}
+.avail-btn.no{background:#3d1a1a55;color:#e74c3c;border-color:#e74c3c44}
+.avail-btn.no.on{background:#3d1a1a;color:#e74c3c;border-color:#e74c3c;transform:scale(1.04)}
+
+.saved-msg{font-size:13px;color:var(--court);min-height:20px;margin-top:12px;text-align:center;font-weight:500}
+
+.player-card{display:flex;align-items:center;gap:12px;background:#1b2d24;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:14px}
+.player-card .avatar{width:44px;height:44px;font-size:15px}
+.lk-badge{background:#1b2d24;border:1px solid var(--court)55;color:var(--court);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--court);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.empty{text-align:center;padding:3rem 20px;color:var(--muted);font-size:14px}
+.blocked-warn{background:#3d1a1a;border:1px solid #e74c3c44;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:#e74c3c}
+
+.back-row{display:flex;align-items:center;gap:8px;margin-bottom:18px}
+.back-btn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
+.back-btn:hover{border-color:var(--court);color:var(--court)}
+
+@media(max-width:400px){.avail-btn{font-size:13px;padding:10px 6px}}
+</style>
+</head>
+<body>
+
+<header>
+  <img class="logo-img" src="data:image/svg+xml;base64,PHN2ZyB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBpZD0iYjYwNWMxN2ItYmMxNS00NjY4LTkzZDItOGQ0MzBlZjNjNjZhIiBkYXRhLW5hbWU9IkViZW5lIDEiIHZpZXdCb3g9IjAgMCAyMjIuNTQgMjQyLjUxIiB3aWR0aD0iMjIyLjU0IiAgaGVpZ2h0PSIyNDIuNTEiID48cGF0aCBkPSJNNTAuNzcsMjQuODdDNjEuODUsMTkuNjQsOTgsNywxNDksN2wuMS4zNC4xLS4zNGM1MSwwLDg3LjE2LDEyLjY0LDk4LjI0LDE3Ljg3LDE3LjcyLDQwLjcxLDkuMjgsOTUuODktNi4yOCwxMjUuMThDMjI1LjgzLDE3OC45MywxNzkuNTUsMjI0LDE0OSwyMjUuMjRjMCwwLDAsMCwwLDAtMzAuNTMtMS4yNi03Ni42Mi00Ni4zMS05Mi03NS4xOUM0MS40OSwxMjAuNzYsMzMsNjUuNTgsNTAuNzcsMjQuODdaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMmY0ODFiIi8+PHBhdGggZD0iTTYzLjk0LDI4Ljc3YzkuNi01LDQwLjk0LTE3LjIsODUuMDgtMTcuMmwuMDkuMzIuMDktLjMyYzQ0LjEzLDAsNzUuNDgsMTIuMTYsODUuMDcsMTcuMiwxNS4zNiwzOS4xNyw4LDkyLjI3LTUuNDMsMTIwLjQ2QzIxNS41NSwxNzcsMTc1LjQ2LDIyMC4zOCwxNDksMjIxLjU5Yy0yNi40NC0xLjIxLTY2LjM0LTQ0LjU3LTc5LjYzLTcyLjM2QzU1LjksMTIxLDQ4LjU5LDY3Ljk0LDYzLjk0LDI4Ljc3Wm0tNi4xLDQ2LjExYy0uNjYsMjcuNjQsNSw1NS4yMSwxMy40LDcyLjg2LDEzLDI3LjMyLDUxLjk0LDY5Ljk1LDc3Ljc3LDcxLjE1LDI1LjgzLTEuMiw2NS00My44Myw3OC03MS4xNSw4LjM4LTE3LjY1LDE0LjA3LTQ1LjIyLDEzLjQxLTcyLjg2LTE0LjM1LTUuNzUtNDctMTUuNDgtOTEuMjctMTUuNDhTNzIuMTksNjkuMTMsNTcuODQsNzQuODhaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojZmZmIi8+PHBhdGggZD0iTTkwLjY2LDMyLjk0VjI5LjIxYzAtLjUyLS4yNC0uNjctLjc5LS42NGE0NS44LDQ1LjgsMCwwLDAtNy41NywxLjA3Yy01LjA2LDEuMDYtOS41OCwzLjI5LTkuNTgsMTAuNThWNjFhLjYzLjYzLDAsMCwwLC43OS42NGw1LjEtMS4wN2ExLDEsMCwwLDAsLjc5LTFWNDcuODVsMTAuMTYtMi4xM2ExLDEsMCwwLDAsLjc4LTFWNDAuOTRhLjYyLjYyLDAsMCwwLS43OC0uNjNMNzkuNCw0Mi40M3YtMy42YzAtMi4wOS42Ni0yLjg3LDIuNTEtMy4yNmw4LTEuNjZhMSwxLDAsMCwwLC43OS0xWm0yOS44Myw5Ljg3VjI1YS43LjcsMCwwLDAtLjg0LS42NmwtNS4xOC41OWEuODguODgsMCwwLDAtLjc5Ljg1VjQzLjU5YzAsNC4wOS0xLjEyLDUuOTQtNC43LDYuMzZzLTQuNjYtMS4xOS00LjY2LTUuMjhWMjYuODNhLjY3LjY3LDAsMCwwLS44LS42N2wtNS4yMi41OWEuODguODgsMCwwLDAtLjc5Ljg2VjQ1LjQ1YzAsOS4xNCw1LjEzLDEwLjk1LDExLjQ3LDEwLjIzUzEyMC40OSw1MiwxMjAuNDksNDIuODFaTTExNiwyMS41OVYxNy44N2EuNzYuNzYsMCwwLDAtLjg4LS43bC0zLjc0LjQyYTEsMSwwLDAsMC0uODQuOXYzLjczYS43NC43NCwwLDAsMCwuODQuNzFsMy43NC0uNDNhMSwxLDAsMCwwLC44OC0uOTFabS04LjY1LDFWMTguODZhLjczLjczLDAsMCwwLS44My0uNzFsLTMuNzUuNDNhMSwxLDAsMCwwLS44Ny45djMuNzNhLjc2Ljc2LDAsMCwwLC44Ny43bDMuNzUtLjQzYTEsMSwwLDAsMCwuODMtLjg5Wm0zOC42NSwyOVY0Ny43YS42OC42OCwwLDAsMC0uNzYtLjc3aC0uMTJjLTEuNTIuMTctMy43My40NC01LjkzLjUyLTIuNzcuMDktNS0xLjI4LTUtNi42MnYtNWMwLTUuMzMsMi4yLTYuODUsNS02Ljk0LDIuMi0uMDcsNC40MS4wNiw1LjkzLjEzaC4xMmEuNzQuNzQsMCwwLDAsLjc2LS44M1YyNC4yNWMwLS41Ni0uMzItLjcxLS44OC0uODVhMjIuMjMsMjIuMjMsMCwwLDAtNi0uNDljLTYuMDkuMi0xMS44NiwzLjU2LTExLjg2LDEzLjF2NS4wNWMwLDkuNTQsNS43NywxMi41NiwxMS44NiwxMi4zNmEyMi44NiwyMi44NiwwLDAsMCw2LS44OGMuNTYtLjE4Ljg4LS4zOS44OC0uOTVaTTE3Ni4xMSw1M1YyNC43OWEuODIuODIsMCwwLDAtLjgtLjhsLTUuMjQtLjI1YS43NC43NCwwLDAsMC0uODEuNzNWMzUuMTNsLTkuODktLjQ3VjI0YS44Mi44MiwwLDAsMC0uOC0uOEwxNTMuMzMsMjNhLjczLjczLDAsMCwwLS44LjcyVjUxLjlhLjg2Ljg2LDAsMCwwLC44Ljg0bDUuMjQuMjRhLjc1Ljc1LDAsMCwwLC44LS43NlY0MC42M2w5Ljg5LjQ3VjUyLjY5YS44NS44NSwwLDAsMCwuODEuODRsNS4yNC4yNWEuNzYuNzYsMCwwLDAsLjgtLjc2Wm0yNi41LTQuMzFjMC0zLjI1LTEuMjMtNi4wNy01LjM2LTguODhsLTUuMDgtMy40N2MtMi4xNS0xLjQ1LTIuNjYtMi0yLjY2LTMuMTcsMC0xLjQ0LjgzLTIsMy4xLTEuNywyLjcuMzgsNy4zLDEuMzcsOC40MSwxLjZoLjA4Yy41Mi4wOC42OC0uMjIuNjgtLjU4VjI4LjQ3YS44NS44NSwwLDAsMC0uNi0uODEsNDYuNTksNDYuNTksMCwwLDAtOC40Mi0yYy03LjctMS4wNi0xMC4xNiwyLTEwLjE2LDYuNDIsMCwyLjkzLDEsNS41OSw0LjY4LDguM2w1LjQ4LDRjMi4wNywxLjUzLDIuNjMsMi4yNSwyLjYzLDMuNDEsMCwxLjkzLS44LDIuNy0zLjU0LDIuMzItMS41NS0uMjEtNS45Mi0xLjEzLTcuNTUtMS41MmgtLjExYy0uNC0uMDYtLjcyLjEtLjcyLjY2djMuOTNjMCwuNDQuNC43My43OS45MUEzMS41LDMxLjUsMCwwLDAsMTkxLjc3LDU2YzguMDYsMS4xMSwxMC44NC0zLDEwLjg0LTcuMjhabTI0LjIzLDEyLjQxVjU3LjM5YTEsMSwwLDAsMC0uNzgtMWwtOC0xLjczYy0xLjg0LS40LTIuNS0xLjE5LTIuNS0zLjI4VjQ3LjE2bDEwLjE0LDIuMjFhLjYyLjYyLDAsMCwwLC43OS0uNjNWNDQuOTNhMS4wNSwxLjA1LDAsMCwwLS43OS0xTDIxNS42LDQxLjc1VjM4LjFjMC0yLjA4LjY2LTIuNTgsMi41LTIuMThsOCwxLjc0YS42Mi42MiwwLDAsMCwuNzgtLjY0VjMzLjNjMC0uNTMtLjIzLS43OC0uNzgtMWE1MCw1MCwwLDAsMC03LjU2LTIuMTZjLTUuMDYtMS4xLTkuNTYtLjgtOS41Niw2LjQ5VjUwYzAsNy4zLDQuNDYsOS42LDkuNTIsMTAuN2E0Ni4zMSw0Ni4zMSwwLDAsMCw3LjYsMS4xM2MuNTUsMCwuNzgtLjE1Ljc4LS42N1oiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0zNy44NCAtNC4wMykiIHN0eWxlPSJmaWxsOiMyMjIyMjEiLz48cGF0aCBkPSJNMjAyLjI0LDIzN2EyNzMuMjIsMjczLjIyLDAsMCwxLTUzLjc4LDUuNjFBMjc0LjU3LDI3NC41NywwLDAsMSw5NiwyMzcuMjV2LTMwYzE1LjY2LDMuMDYsMzMuNTEsNS41OSw1Mi40OSw1LjU5QTI3Mi40NSwyNzIuNDUsMCwwLDAsMjAyLjI0LDIwN3YzMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0zNy44NCAtNC4wMykiIHN0eWxlPSJmaWxsOiNmZmYiLz48cGF0aCBkPSJNMjAyLjQzLDIzOGMtOCwxLjYyLTE2LjYyLDMtMjUuNjUsNGEyNTUuOTIsMjU1LjkyLDAsMCwxLTI4LjMyLDEuNkEyNTUuNjEsMjU1LjYxLDAsMCwxLDEyMC44NywyNDJjLTguODMtMS0xNy4yNC0yLjMtMjUuMDgtMy44NGwtLjc5LS4xNXYtMzJsMS4xNi4yMmM3LjgxLDEuNTMsMTYuMTYsMi45MiwyNC45MiwzLjkzYTIzOC44MiwyMzguODIsMCwwLDAsMjcuMzgsMS42NCwyNDIuMTgsMjQyLjE4LDAsMCwwLDI4LjExLTEuN2M5LTEuMDYsMTcuNTQtMi41MSwyNS40OC00LjEybDEuMTYtLjIzdjMybC0uNzguMTZabS0yNS44NiwyLjFjOC43MS0xLDE3LTIuMywyNC43LTMuODR2LTI4Yy03LjY5LDEuNTItMTUuOSwyLjktMjQuNDgsMy45MWEyNDMuODcsMjQzLjg3LDAsMCwxLTI4LjMzLDEuNzIsMjQwLjY4LDI0MC42OCwwLDAsMS0yNy42LTEuNjVjLTguMzktMS0xNi40LTIuMjktMjMuOTItMy43M3YyOGM3LjU5LDEuNDcsMTUuNjcsMi43NSwyNC4xMywzLjY3YTI1My44OCwyNTMuODgsMCwwLDAsMjcuMzksMS41MiwyNTYuNDUsMjU2LjQ1LDAsMCwwLDI4LjExLTEuNTlaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMjIyMjIxIi8+PHBhdGggZD0iTTExNy4wNSwyMjkuODV2LS4zN2E0LjY0LDQuNjQsMCwwLDAtMi4xNi0zLjkzLDMuMywzLjMsMCwwLDAsMi0zLjMxdi0uNDVjMC0zLjg5LTMuMDgtNS41NS03LjY2LTYuMmE0MC44MSw0MC44MSwwLDAsMC00LjM0LS4zNGMtMSwwLTEuMjkuMzEtMS4yOSwxLjQxdjE0LjlhMS41NSwxLjU1LDAsMCwwLDEuMzMsMS43OCwzMi4zLDMyLjMsMCwwLDAsNC40NC45MmM0LjIuNTksNy42NS0uMSw3LjY1LTQuNDFabS00LjEzLThjMCwxLS41NiwxLjg2LTIuNDcsMS41OWwtMi43Mi0uMzl2LTQuMjRjLjM0LDAsMS40Ni4xOCwxLjg0LjI0LDIuNS4zNSwzLjM1LDEuMDgsMy4zNSwyLjQzdi4zN1ptLjEsNy4zMWMwLDEuMzctLjgsMi0zLjMsMS42OS0uMzQsMC0xLjYtLjI1LTItLjNWMjI2bDIuNzIuMzhjMS45NC4yNywyLjU3LDEuMzcsMi41NywyLjU0di4yN1ptMTkuMzQsNi41OHYtMi4yOGEuNTQuNTQsMCwwLDAtLjQ5LS41M2wtNS0uMzdjLTEuMTQtLjA4LTEuNTYtLjUtMS41Ni0xLjc4di0yLjZsNi4zMy40N2EuNDUuNDUsMCwwLDAsLjQ5LS40NXYtMi4zM2EuNTMuNTMsMCwwLDAtLjQ5LS41MmwtNi4zMy0uNDd2LTIuMjNjMC0xLjI4LjQyLTEuNjQsMS41Ni0xLjU1bDUsLjM2YS40NS40NSwwLDAsMCwuNDktLjQ1di0yLjI4YzAtLjMyLS4xNC0uNDUtLjQ5LS41MmEyNy42NSwyNy42NSwwLDAsMC00LjcxLS42N2MtMy4xNS0uMjQtNiwuMzQtNiw0Ljh2OC4xM2MwLDQuNDYsMi43OCw1LjQ4LDUuOTMsNS43MWEyNy43NSwyNy43NSwwLDAsMCw0Ljc0LDBjLjM1LDAsLjQ5LS4xNi40OS0uNDdabTE4LjU1LjgxYS42Ny42NywwLDAsMC0uMDgtLjI3bC0zLjctN2E0Ljg0LDQuODQsMCwwLDAsMy4xNi00Ljg1di0uMzFjMC00LjM0LTMuMjEtNS43OS03LjM3LTUuODVhMzcuMTEsMzcuMTEsMCwwLDAtNSwuMjRjLS43Ni4xMS0xLjExLjMyLTEuMTEsMS4xNnYxNi40NGEuNDkuNDksMCwwLDAsLjQ5LjQ5bDMuMTksMGEuNDguNDgsMCwwLDAsLjQ5LS40OFYyMzBjLjQ2LDAsMS4yMi4wNywxLjc0LjA4bC4yNywwLDMuMjgsNi4yNWMuMTIuMjUuMjIuNS40OS41bDMuNzUuMDZjLjI3LDAsLjM3LS4xMi4zNy0uMjlabS00Ljc4LTEyLjE1YzAsMS42Ni0uODEsMi4zMS0zLjM4LDIuMjctLjI3LDAtMS40NywwLTEuNzQtLjA3di00LjcxYy4yOSwwLDEuNTcsMCwxLjkxLDAsMi4wNiwwLDMuMjEuNzQsMy4yMSwyLjIzdi4zMlptMTkuMjMsMTEuMzd2LTIuMjdhLjQ4LjQ4LDAsMCwwLS40OS0uNDhsLTQuMjEuMTZjLTEuMTUuMDUtMS41Ny0uMzMtMS41Ny0xLjZWMjE4LjkzYS40Ny40NywwLDAsMC0uNDktLjQ3bC0zLjIxLjEyYS41Mi41MiwwLDAsMC0uNDkuNTF2MTIuNjdjMCw0LjQ1LDIuODIsNS4xNiw2LDVhMjUuOTIsMjUuOTIsMCwwLDAsNC0uNDdjLjM0LS4wOS40OS0uMjIuNDktLjU0Wm03LjgyLS40NVYyMTguMDlhLjQxLjQxLDAsMCwwLS40Ni0uNDNsLTMuMjguMjZhLjQ4LjQ4LDAsMCwwLS40NC41djE3LjI1YS40MS40MSwwLDAsMCwuNDQuNDVsMy4yOC0uMjVhLjUyLjUyLDAsMCwwLC40Ni0uNTNabTE5LjEzLTIuNjRWMjE1Ljg5YS40LjQsMCwwLDAtLjQ4LS40bC0yLjg3LjM3YS41Ni41NiwwLDAsMC0uNDkuNTN2MTAuMzdjMCwuMTctLjA3LjIzLS4xMi4yM3MtLjA5LDAtLjE5LS4xN2wtNS43Ni05LjM0Yy0uMjktLjQ3LS41My0uNjktMS0uNjJsLTIuNDUuMzJhMS4wOCwxLjA4LDAsMCwwLS45MywxVjIzNWEuNDMuNDMsMCwwLDAsLjQ5LjQzbDIuODctLjM4YS41Ny41NywwLDAsMCwuNDgtLjU1di05LjkyYzAtLjE1LDAtLjIxLjEyLS4yMnMuMTMsMCwuMjIuMTdsNS41NCw4LjkzYTEuMDksMS4wOSwwLDAsMCwxLjI2LjU5bDIuMzktLjMxYTEuMSwxLjEsMCwwLDAsLjk0LTEuMDVaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMjIyMjIxIi8+PHBhdGggZD0iTTIwMC43NSw3NS40NUMxODUuNjYsODMsMTY5LjUxLDk0Ljc5LDE2MiwxMTcuM2E5NC4wOCw5NC4wOCwwLDAsMC0yNS44MiwwQzEyOC43LDk0Ljc5LDExMi41Niw4Myw5Ny40Nyw3NS40NWMtOC4zNSwyOC40OC41NSw0My4yOCw4LjUsNTIuMDh2LjIxYzAsMTYuNjEtLjA5LDM3LjU2LDE3LjY1LDQ1Ljc1LDIwLDkuMjYsMTQuNTksMjkuMTIsMjUuNDksMjkuMTJzNS40NS0xOS44NiwyNS40OS0yOS4xMmMxNy43My04LjE5LDE3LjY1LTI5LjE0LDE3LjY1LTQ1Ljc1di0uMjFjNy45NC04LjgsMTYuODQtMjMuNiw4LjUtNTIuMDhaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojYzIwZTFhIi8+PHBhdGggZD0iTTE0MywxNzAuNTVhNDkuMjcsNDkuMjcsMCwwLDAtLjU1LTgsMjAuOTQsMjAuOTQsMCwwLDAtMTguNjYtMTguMDksMjAuOTEsMjAuOTEsMCwwLDAsNiwxMi43M2MuNS41LDEsMSwxLjU1LDEuMzkuNTYtLjU5LDEuMDgtMi4xMiwxLjItNS43MywxLjEzLDEuMTQsMi4xLDQuNjYsMi4zMiw4LjA2YTIxLjM2LDIxLjM2LDAsMCwwLDQuODYsMS44MywyMi44NCwyMi44NCwwLDAsMSwzLjI0LDcuODNaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMjIyMjIxIi8+PHBhdGggZD0iTTE3NC40MiwxNDQuNDRhMjAuOTQsMjAuOTQsMCwwLDAtMTguNjcsMTguMDksNDkuMjgsNDkuMjgsMCwwLDAtLjU0LDgsMjIuODQsMjIuODQsMCwwLDEsMy4yNC03LjgzLDIxLjUsMjEuNSwwLDAsMCw0LjQtMS42Yy4xOS0zLjQ3LDEuMTgtNy4xMiwyLjMzLTguMjkuMTQsNC4wOC43OSw1LjUxLDEuNDIsNS45MWEyMS43MywyMS43MywwLDAsMCwxLjc4LTEuNTcsMjAuOTEsMjAuOTEsMCwwLDAsNi0xMi43M1oiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0zNy44NCAtNC4wMykiIHN0eWxlPSJmaWxsOiMyMjIyMjEiLz48cGF0aCBkPSJNMTQ5LjIxLDdjNTEsMCw4Ny4xNiwxMi42NCw5OC4yNCwxNy44NywxNy43Miw0MC43MSw5LjI4LDk1Ljg5LTYuMjgsMTI1LjE4LTUuMTEsOS42MS0xMy42NSwyMS0yMy44OSwzMi00LjIzLDQuNTMtOC43NCw5LTEzLjQzLDEzLjIzYTE3NC40MiwxNzQuNDIsMCwwLDEtMTYuNDUsMTMuMzZjNS44MS0uODcsMTAuNDctMS43NywxNS44LTIuODVsMCwzMmEyNjEuOTQsMjYxLjk0LDAsMCwxLTQxLjcyLDUuNDNjLTEuNDguMDgtMywuMTQtNC40Ni4xOC0uNjcsMC0xLjM1LDAtMiwuMDZxLTMuMzcuMDktNi42OS4wOWEyNTguNjUsMjU4LjY1LDAsMCwxLTM3LjQ3LTIuNzRjLTUuMzktLjc3LTEwLjctMS42OC0xNS44NS0yLjczbDAtMzJjNS4zOSwxLDEwLjEyLDEuODgsMTYsMi43OC0xLjc4LTEuMzItMy41OC0yLjY1LTUuMzMtNC0uNjctLjUyLTEuMzItMS0yLTEuNTdxLTEuNjktMS4zNy0zLjM4LTIuNzZjLTE4LjQ0LTE1LjQ1LTM1LjEzLTM1LjIyLTQzLjIzLTUwLjQ3QzQxLjQ5LDEyMC43OSwzMyw2NS42MSw1MC43NywyNC45LDYxLjg1LDE5LjY3LDk4LDcsMTQ5LDdsLjEuMzQuMS0uMzRtMi0zSDE0N2EyOTIuNzYsMjkyLjc2LDAsMCwwLTYyLjcyLDdjLTIwLjEsNC41Ni0zMS43LDkuNjYtMzQuNzgsMTEuMTFsLTEsLjQ4LS40NSwxQzM3LjQ3LDQ3Ljk0LDM3LDc0LjIzLDM4LjQ0LDkyYzEuOCwyMi4wOSw3LjYyLDQzLjc2LDE2LDU5LjQ2LDguNDYsMTUuOTMsMjUuNzEsMzYuMDksNDMuOTUsNTEuMzdsMS4zLDEuMDdjLTEuMy0uMjQtMi42NS0uNDktNC4wOC0uNzdMOTIsMjAyLjQ2djMuNjRsMCwzMnYyLjQ1bDIuNC40OWM1LDEsMTAuNDQsMiwxNiwyLjc2YTI2My43NCwyNjMuNzQsMCwwLDAsMzcuOSwyLjc3YzIuMjIsMCw0LjUsMCw2Ljc3LS4wOS42OCwwLDEuMzcsMCwyLS4wNiwxLjQ5LS4wNSwzLS4xMSw0LjUxLS4xOGEyNjYuNzUsMjY2Ljc1LDAsMCwwLDQyLjIxLTUuNWwyLjM2LS41MnYtMi40MmwwLTMxLjk1di0zLjY2bC0zLjU5LjcyLTMuNzUuNzVxMy4zNi0yLjc5LDctNi4xYzQuNjgtNC4yMyw5LjI2LTguNzQsMTMuNjEtMTMuNDEsMTAuNS0xMS4yNSwxOS4xNC0yMi44NSwyNC4zNS0zMi42NSw4LjM0LTE1LjcsMTQuMTYtMzcuMzcsMTYtNTkuNDYsMS40NS0xNy43OSwxLTQ0LjA4LTkuNTgtNjguMzFsLS40NS0xLTEtLjQ4Yy0zLjA4LTEuNDUtMTQuNjgtNi41NS0zNC43OC0xMS4xMWEyOTIuODMsMjkyLjgzLDAsMCwwLTYyLjcyLTdaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojZmZmIi8+PC9zdmc+" alt="Füchse Berlin">
+  <div class="header-text">
+    <h1>Füchse Berlin</h1>
+    <p id="header-sub">Spielerverfügbarkeit</p>
+  </div>
+  <div class="lang-bar">
+    <button class="lang-btn active" onclick="setLang('de')">DE</button>
+    <button class="lang-btn" onclick="setLang('es')">ES</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+  </div>
+</header>
+
+<main>
+
+<!-- STEP 1: Find yourself -->
+<div class="step active" id="step-find">
+  <div class="step-label" id="lbl-step1"></div>
+  <div class="step-title" id="ttl-step1"></div>
+  <div class="step-sub" id="sub-step1"></div>
+  <div class="card">
+    <div class="ac-wrap">
+      <input id="ac-input" oninput="onAcInput()" autocomplete="off" placeholder="...">
+      <div class="ac-list" id="ac-list" style="display:none"></div>
+    </div>
+    <div id="find-status" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
+  </div>
+</div>
+
+<!-- STEP 2: Match list -->
+<div class="step" id="step-matches">
+  <div class="back-row">
+    <button class="back-btn" onclick="goFind()">←</button>
+    <div>
+      <div class="step-label" id="lbl-step2"></div>
+      <div id="selected-player-name" style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--white)"></div>
+    </div>
+  </div>
+  <div id="player-info-card"></div>
+  <div class="step-sub" id="sub-step2"></div>
+  <div id="match-list"></div>
+</div>
+
+<!-- STEP 3: Confirm availability -->
+<div class="step" id="step-confirm">
+  <div class="back-row">
+    <button class="back-btn" onclick="goMatches()">←</button>
+    <div>
+      <div id="confirm-match-name" style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:var(--white)"></div>
+      <div id="confirm-match-meta" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
+    </div>
+  </div>
+  <div id="confirm-player-card"></div>
+  <div id="confirm-blocked"></div>
+  <div class="step-sub" id="sub-step3"></div>
+  <div class="avail-btns">
+    <button class="avail-btn yes" id="btn-yes" onclick="setAvail('yes')" data-i18n="yesBtn"></button>
+    <button class="avail-btn maybe" id="btn-maybe" onclick="setAvail('maybe')" data-i18n="maybeBtn"></button>
+    <button class="avail-btn no" id="btn-no" onclick="setAvail('no')" data-i18n="noBtn"></button>
+  </div>
+  <div class="saved-msg" id="saved-msg"></div>
+  <div style="margin-top:16px;text-align:center">
+    <button class="btn btn-outline btn-sm" onclick="goMatches()" id="btn-back-matches"></button>
+  </div>
+</div>
+
+</main>
+
+<script>
+const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
+const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
+const HDR={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+async function sbGet(t,p=''){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{headers:{...HDR,'Prefer':''}});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function sbUpsert(t,d){const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...HDR,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());}
+
+const T={
+  de:{
+    headerSub:'Spielerverfügbarkeit',
+    step1Label:'Schritt 1 von 2',step1Title:'Wer bist du?',step1Sub:'Suche deinen Namen in der Kaderliste.',
+    step1Ph:'Namen eingeben...',findStatus:'Lade Spieler...',
+    step2Label:'Schritt 2 von 2',step2Sub:'Tippe auf ein Spiel um deine Verfügbarkeit zu bestätigen.',
+    step3Sub:'Kannst du spielen?',
+    yesBtn:'✓ Ja',maybeBtn:'? Vielleicht',noBtn:'✗ Nein',
+    saved:'✓ Gespeichert',saving:'Speichern...',
+    backMatches:'← Zurück zu den Spielen',
+    blockedWarn:'⛔ Du bist für dieses Spiel gesperrt (Stammkader / Stammmannschaft).',
+    noMatches:'Keine Spiele für deine Mannschaft gefunden.',
+    noPlayers:'Keine Spieler gefunden.',
+  },
+  es:{
+    headerSub:'Disponibilidad de jugadores',
+    step1Label:'Paso 1 de 2',step1Title:'¿Quién sos?',step1Sub:'Buscá tu nombre en el plantel.',
+    step1Ph:'Escribí tu nombre...',findStatus:'Cargando jugadores...',
+    step2Label:'Paso 2 de 2',step2Sub:'Tocá un partido para confirmar tu disponibilidad.',
+    step3Sub:'¿Podés jugar?',
+    yesBtn:'✓ Sí',maybeBtn:'? Quizás',noBtn:'✗ No',
+    saved:'✓ Guardado',saving:'Guardando...',
+    backMatches:'← Volver a los partidos',
+    blockedWarn:'⛔ Estás bloqueado para este partido (Stammkader / Stammmannschaft).',
+    noMatches:'No hay partidos para tu equipo.',
+    noPlayers:'No se encontraron jugadores.',
+  },
+  en:{
+    headerSub:'Player availability',
+    step1Label:'Step 1 of 2',step1Title:'Who are you?',step1Sub:'Search your name in the club roster.',
+    step1Ph:'Type your name...',findStatus:'Loading players...',
+    step2Label:'Step 2 of 2',step2Sub:'Tap a match to confirm your availability.',
+    step3Sub:'Can you play?',
+    yesBtn:'✓ Yes',maybeBtn:'? Maybe',noBtn:'✗ No',
+    saved:'✓ Saved',saving:'Saving...',
+    backMatches:'← Back to matches',
+    blockedWarn:'⛔ You are blocked for this match (Stammkader / Stammmannschaft).',
+    noMatches:'No matches found for your team.',
+    noPlayers:'No players found.',
+  }
+};
+
+let lang='de';
+let state={players:[],teams:[],matches:[],availability:{},matchCounts:{},playerTeams:[]};
+let selectedPlayer=null,selectedMatch=null;
+
+function tr(k){return T[lang][k]||T.de[k]||k}
+
+function setLang(l){
+  lang=l;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));
+  applyT();
+}
+
+function applyT(){
+  document.getElementById('header-sub').textContent=tr('headerSub');
+  document.getElementById('lbl-step1').textContent=tr('step1Label');
+  document.getElementById('ttl-step1').textContent=tr('step1Title');
+  document.getElementById('sub-step1').textContent=tr('step1Sub');
+  document.getElementById('ac-input').placeholder=tr('step1Ph');
+  document.getElementById('lbl-step2').textContent=tr('step2Label');
+  document.getElementById('sub-step2').textContent=tr('step2Sub');
+  document.getElementById('sub-step3').textContent=tr('step3Sub');
+  document.getElementById('btn-yes').textContent=tr('yesBtn');
+  document.getElementById('btn-maybe').textContent=tr('maybeBtn');
+  document.getElementById('btn-no').textContent=tr('noBtn');
+  document.getElementById('btn-back-matches').textContent=tr('backMatches');
+}
+
+function initials(n){return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
+function fmtDate(d){
+  if(!d)return'';
+  const[y,m,day]=d.split('-');
+  const months=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  return{day,month:months[parseInt(m)-1],full:`${day}.${m}.${y}`};
+}
+function teamById(id){return state.teams.find(t=>t.id===id)}
+function playerById(id){return state.players.find(p=>p.id===id)}
+function getPlayerTeamIds(playerId){return state.playerTeams.filter(r=>r.player_id===playerId).map(r=>r.team_id);}
+function teamSize(t){return t&&t.season==='Winter'?4:6}
+function teamNumber(team){
+  if(team.team_number)return parseInt(team.team_number);
+  const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
+  const r=team.name.match(/\b(VIII|VII|VI|IV|V|III|II|I)\b/);if(r)return roman[r[1]]||1;
+  const n=team.name.match(/(\d+)$/);return n?parseInt(n[1]):1;
+}
+
+// ── BLOCKING LOGIC ──
+// Same dual-rule system as admin:
+// Rule 1 – Stammkader: LK position within category → locked to team, blocked in higher-numbered teams
+// Rule 2 – Stammmannschaft: 2+ matches in team → blocked in all higher-numbered teams in same category
+function isBlocked(playerId,teamId){
+  const team=teamById(teamId);if(!team)return false;
+  const cat=team.category||'Herren';
+  const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  const counts=state.matchCounts[playerId]||{};
+  const thisNum=teamNumber(team);
+  // Rule 2: Stammmannschaft
+  for(const t of catTeams){const c=counts[t.id]||0;if(c>=2&&teamNumber(t)<thisNum)return true;}
+  // Rule 1: Stammkader
+  const catPlayers=state.players.filter(p=>{const tids=getPlayerTeamIds(p.id);return tids.some(tid=>catTeams.find(t=>t.id===tid));}).sort((a,b)=>a.lk-b.lk);
+  const posInCat=catPlayers.findIndex(p=>p.id===playerId);
+  if(posInCat<0)return false;
+  const groupSize=teamSize(catTeams[0]||team);
+  const stammTeamIdx=Math.floor(posInCat/groupSize);
+  const stammTeam=catTeams[stammTeamIdx]||catTeams[catTeams.length-1];
+  if(stammTeam&&teamNumber(stammTeam)<thisNum)return true;
+  return false;
+}
+
+async function loadAll(){
+  document.getElementById('find-status').textContent=tr('findStatus');
+  try{
+    const[teams,players,matches,avRows,countRows,ptRows]=await Promise.all([
+      sbGet('teams','order=category,team_number'),
+      sbGet('players','order=lk'),
+      sbGet('matches','order=date'),
+      sbGet('availability',''),
+      sbGet('player_match_counts',''),
+      sbGet('player_teams','')
+    ]);
+    state.teams=teams;
+    state.players=players.map(p=>({...p,lkStr:p.lk_str,rawName:p.raw_name,year:p.year}));
+    state.matches=matches.map(m=>({...m,teamId:m.team_id}));
+    state.availability={};
+    for(const r of avRows){if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
+    state.matchCounts={};
+    for(const r of countRows){if(!state.matchCounts[r.player_id])state.matchCounts[r.player_id]={};state.matchCounts[r.player_id][r.team_id]=r.matches_played;}
+    state.playerTeams=ptRows;
+    document.getElementById('find-status').textContent='';
+  }catch(e){document.getElementById('find-status').textContent='Verbindungsfehler. Bitte Seite neu laden.';console.error(e);}
+}
+
+function onAcInput(){
+  const val=document.getElementById('ac-input').value.toLowerCase();
+  const list=document.getElementById('ac-list');
+  if(!val||val.length<2){list.style.display='none';return;}
+  const filtered=state.players.filter(p=>p.name.toLowerCase().includes(val)||(p.raw_name||p.rawName||'').toLowerCase().includes(val)).slice(0,10);
+  if(!filtered.length){list.style.display='none';return;}
+  list.innerHTML=filtered.map(p=>`<div class="ac-item" onclick="selectPlayer('${p.id}')">
+    <div class="avatar">${initials(p.name)}</div>
+    <div style="flex:1"><div style="font-weight:600">${p.name}</div><div style="font-size:11px;color:var(--muted)">${p.year||''}</div></div>
+    <span class="lk-badge">${p.lk_str||p.lkStr||'?'}</span>
+  </div>`).join('');
+  list.style.display='block';
+}
+
+document.addEventListener('click',e=>{if(!e.target.closest('.ac-wrap'))document.getElementById('ac-list').style.display='none';});
+
+function selectPlayer(id){
+  selectedPlayer=state.players.find(p=>p.id===id);
+  document.getElementById('ac-input').value=selectedPlayer.name;
+  document.getElementById('ac-list').style.display='none';
+  goMatches();
+}
+
+function showStep(name){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('step-'+name).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function goFind(){selectedPlayer=null;showStep('find');}
+function goMatches(){if(!selectedPlayer)return showStep('find');renderMatchList();showStep('matches');}
+
+function renderMatchList(){
+  const p=selectedPlayer;
+  const teamIds=getPlayerTeamIds(p.id);
+  document.getElementById('selected-player-name').textContent=p.name;
+  const teams=teamIds.map(tid=>teamById(tid)).filter(Boolean);
+  document.getElementById('player-info-card').innerHTML=`<div class="player-card">
+    <div class="avatar" style="width:44px;height:44px;font-size:15px">${initials(p.name)}</div>
+    <div>
+      <div style="font-size:13px;color:var(--muted)">${p.lk_str||p.lkStr||''} · Jg. ${p.year||'—'}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${teams.map(t=>`<span style="font-size:11px;background:#2a1010;border:1px solid var(--red)33;color:var(--red);padding:2px 8px;border-radius:10px">${t.name}</span>`).join('')}</div>
+    </div>
+  </div>`;
+  const myMatches=[...state.matches].filter(m=>teamIds.includes(m.team_id)).sort((a,b)=>a.date.localeCompare(b.date));
+  const el=document.getElementById('match-list');
+  if(!myMatches.length){el.innerHTML=`<div class="empty">${tr('noMatches')}</div>`;return;}
+  el.innerHTML=myMatches.map(m=>{
+    const team=teamById(m.team_id);
+    const avail=state.availability[m.id]?.[p.id]||'';
+    const d=fmtDate(m.date);
+    const blocked=isBlocked(p.id,m.team_id);
+    let avBadge='';
+    if(avail==='yes')avBadge=`<span class="match-avail av-yes">${tr('yesBtn')}</span>`;
+    else if(avail==='no')avBadge=`<span class="match-avail av-no">${tr('noBtn')}</span>`;
+    else if(avail==='maybe')avBadge=`<span class="match-avail av-maybe">${tr('maybeBtn')}</span>`;
+    else avBadge=`<span class="match-avail av-open">?</span>`;
+    return`<div class="match-item" onclick="selectMatch('${m.id}')">
+      <div style="text-align:center;min-width:40px">
+        <div class="match-date">${d.day}</div>
+        <div class="match-month">${d.month}</div>
+      </div>
+      <div class="match-info">
+        <div class="match-teams">${team?.name||'?'} vs ${m.opponent}</div>
+        <div class="match-meta">${m.time} · ${m.home}${blocked?' · ⛔':''}</div>
+      </div>
+      ${avBadge}
+    </div>`;
+  }).join('');
+}
+
+function selectMatch(id){
+  selectedMatch=state.matches.find(m=>m.id===id);
+  if(!selectedMatch)return;
+  renderConfirm();showStep('confirm');
+}
+
+function renderConfirm(){
+  const m=selectedMatch;const p=selectedPlayer;
+  const team=teamById(m.team_id);
+  const d=fmtDate(m.date);
+  const blocked=isBlocked(p.id,m.team_id);
+  const avail=state.availability[m.id]?.[p.id]||'';
+  document.getElementById('confirm-match-name').textContent=`${team?.name||'?'} vs ${m.opponent}`;
+  document.getElementById('confirm-match-meta').textContent=`${d.full} · ${m.time} · ${m.home}`;
+  document.getElementById('confirm-player-card').innerHTML=`<div class="player-card">
+    <div class="avatar">${initials(p.name)}</div>
+    <div><div style="font-weight:600">${p.name}</div><div style="font-size:12px;color:var(--muted)">${p.lk_str||p.lkStr||''} · Jg. ${p.year||'—'}</div></div>
+  </div>`;
+  document.getElementById('confirm-blocked').innerHTML=blocked?`<div class="blocked-warn">${tr('blockedWarn')}</div>`:'';
+  ['yes','maybe','no'].forEach(s=>{document.getElementById('btn-'+s).classList.toggle('on',avail===s);});
+  document.getElementById('saved-msg').textContent=avail?tr('saved'):'';
+}
+
+async function setAvail(status){
+  if(!selectedMatch||!selectedPlayer)return;
+  const matchId=selectedMatch.id,playerId=selectedPlayer.id;
+  document.getElementById('saved-msg').innerHTML=`<span class="spinner"></span>${tr('saving')}`;
+  if(!state.availability[matchId])state.availability[matchId]={};
+  state.availability[matchId][playerId]=status;
+  try{
+    await sbUpsert('availability',[{match_id:matchId,player_id:playerId,status}]);
+    ['yes','maybe','no'].forEach(s=>document.getElementById('btn-'+s).classList.toggle('on',s===status));
+    document.getElementById('saved-msg').textContent=tr('saved');
+    setTimeout(()=>{if(selectedPlayer)renderMatchList();},300);
+  }catch(e){document.getElementById('saved-msg').textContent='Fehler. Bitte erneut versuchen.';console.error(e);}
+}
+
+setLang('de');
+applyT();
+loadAll();
+</script>
+</body>
+</html>
