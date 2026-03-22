@@ -2,427 +2,1709 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Füchse Berlin – Verfügbarkeit</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Club Manager – TVBB Berlin</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root{
-  --red:#c0392b;--red-light:#e74c3c;
-  --green:#2d6a4f;--green-light:#40916c;--green-pale:#e8f5ee;
-  --white:#f0f7f2;--dark:#1e2d24;--mid:#263b2e;--muted:#7a9e88;
-  --line:#2e4a38;--warn:#f4a261;--court:#52b788;
-  --card:#243330;
+  --green:#2d6a4f;--green-light:#40916c;--court:#74c69d;
+  --white:#f0f2f1;--dark:#161616;--card:#1e1e1e;--muted:#7a8a85;
+  --warn:#f4a261;--danger:#c0392b;--info:#4ea8de;--red:#c0392b;
+  --border:#252525;--border2:#333
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);min-height:100vh}
-::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:var(--dark)}
-::-webkit-scrollbar-thumb{background:var(--green);border-radius:3px}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--green)}
 
-header{
-  background:linear-gradient(160deg,#1b2d23 0%,#2d4a38 60%,#1e2d24 100%);
-  padding:20px 24px 18px;border-bottom:3px solid var(--red);
-  display:flex;align-items:center;gap:16px;
-}
-.logo-img{width:54px;height:54px;object-fit:contain;flex-shrink:0}
-.header-text h1{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--white)}
-.header-text p{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
-
-.lang-bar{display:flex;gap:5px;margin-left:auto}
-.lang-btn{padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s}
+header{background:#111;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:8px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-img{width:36px;height:36px;object-fit:contain;flex-shrink:0}
+.logo h1{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px}
+.logo span{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block}
+.header-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tvbb-badge{background:#1a2e26;border:1px solid var(--court)44;color:var(--court);font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;letter-spacing:1px}
+.sync-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;transition:all .3s}
+.sync-ok{background:#1a2a1a;border:1px solid var(--court)55;color:var(--court)}
+.sync-err{background:#3d1a1a;border:1px solid var(--danger)55;color:var(--danger)}
+.sync-ing{background:#2e2a1a;border:1px solid var(--warn)55;color:var(--warn)}
+.lang-bar{display:flex;gap:4px}
+.lang-btn{padding:3px 8px;font-size:11px;font-weight:600;border:1px solid var(--border2);border-radius:6px;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s}
+.lang-btn:hover{color:var(--white)}
 .lang-btn.active{background:var(--green-light);color:#fff;border-color:var(--green-light)}
-
-main{padding:20px;max-width:480px;margin:0 auto}
-
-.step{display:none}.step.active{display:block}
-
-.step-label{font-size:11px;font-weight:600;color:var(--court);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
-.step-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;color:var(--white);margin-bottom:4px}
-.step-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
-
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px}
-
-input,select{background:#1b2d24;border:1px solid var(--line);border-radius:8px;color:var(--white);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;width:100%;transition:border-color .2s}
+.tabs{display:flex;padding:0 28px;background:#111;border-bottom:1px solid var(--border2);overflow-x:auto}
+.tab{padding:11px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif}
+.tab:hover{color:var(--white)}
+.tab.active{color:var(--court);border-bottom-color:var(--court)}
+main{padding:22px 28px;max-width:1080px;margin:0 auto}
+.section{display:none}.section.active{display:block}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--court);margin-bottom:3px}
+.section-sub{color:var(--muted);font-size:12px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:15px 19px;margin-bottom:11px}
+.card-title{font-weight:600;font-size:13px;color:var(--white);margin-bottom:9px}
+.form-row{display:flex;gap:9px;margin-bottom:9px;flex-wrap:wrap}
+.form-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:120px}
+label{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.5px;text-transform:uppercase}
+input,select{background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:13px;transition:border-color .2s;outline:none;width:100%}
 input:focus,select:focus{border-color:var(--court)}
-input::placeholder{color:var(--muted)}
-
-.ac-wrap{position:relative}
-.ac-list{position:absolute;top:100%;left:0;right:0;background:#243330;border:1px solid #3a5a48;border-radius:10px;z-index:50;max-height:240px;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,.35);margin-top:4px}
-.ac-item{padding:11px 14px;font-size:14px;cursor:pointer;color:var(--white);display:flex;align-items:center;gap:10px;border-bottom:1px solid #2e4a3855}
-.ac-item:last-child{border-bottom:none}
-.ac-item:hover{background:#2e4a38}
-.ac-meta{font-size:11px;color:var(--muted);margin-left:auto}
-.avatar{width:34px;height:34px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--court);flex-shrink:0}
-
-.btn{display:block;width:100%;padding:13px 20px;border-radius:10px;border:none;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;text-align:center;margin-bottom:10px}
-.btn-primary{background:var(--green-light);color:#fff}
-.btn-primary:hover{background:var(--court);color:var(--dark)}
-.btn-outline{background:transparent;border:1px solid var(--line);color:var(--muted)}
-.btn-outline:hover{border-color:var(--court);color:var(--court)}
-.btn-sm{width:auto;display:inline-block;padding:7px 16px;font-size:13px;margin:0}
-
-.match-item{background:#1b2d24;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:9px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:12px}
-.match-item:hover{border-color:var(--court)99;background:#243330;transform:translateY(-1px)}
-.match-date{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--court);line-height:1;min-width:40px;text-align:center}
-.match-month{font-size:10px;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:.5px}
-.match-info{flex:1}
-.match-teams{font-weight:600;font-size:14px;color:var(--white)}
-.match-meta{font-size:11px;color:var(--muted);margin-top:2px}
-.match-avail{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
-.av-yes{background:#1a3d2a;color:var(--court);border:1px solid var(--court)55}
-.av-no{background:#3d1a1a;color:#e74c3c;border:1px solid #e74c3c44}
-.av-maybe{background:#2d2215;color:var(--warn);border:1px solid var(--warn)44}
-.av-open{background:#2e4a3844;color:var(--muted);border:1px solid var(--line)}
-
-.avail-btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-.avail-btn{flex:1;min-width:80px;padding:14px 8px;border-radius:10px;border:1.5px solid transparent;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center}
-.avail-btn.yes{background:#1a3d2a55;color:var(--court);border-color:var(--court)44}
-.avail-btn.yes.on{background:#1a3d2a;color:var(--court);border-color:var(--court);transform:scale(1.04)}
-.avail-btn.maybe{background:#2d221555;color:var(--warn);border-color:var(--warn)44}
-.avail-btn.maybe.on{background:#2d2215;color:var(--warn);border-color:var(--warn);transform:scale(1.04)}
-.avail-btn.no{background:#3d1a1a55;color:#e74c3c;border-color:#e74c3c44}
-.avail-btn.no.on{background:#3d1a1a;color:#e74c3c;border-color:#e74c3c;transform:scale(1.04)}
-
-.saved-msg{font-size:13px;color:var(--court);min-height:20px;margin-top:12px;text-align:center;font-weight:500}
-
-.player-card{display:flex;align-items:center;gap:12px;background:#1b2d24;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:14px}
-.player-card .avatar{width:44px;height:44px;font-size:15px}
-.lk-badge{background:#1b2d24;border:1px solid var(--court)55;color:var(--court);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
-
-.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--court);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+select option{background:#1b2926}
+.btn{padding:7px 15px;border-radius:8px;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:var(--red);color:#fff}
+.btn-primary:hover{background:var(--court);color:#fff}
+.btn-danger{background:transparent;border:1px solid var(--danger);color:var(--danger);font-size:11px;padding:3px 7px}
+.btn-danger:hover{background:var(--danger);color:#fff}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-outline{background:transparent;border:1px solid var(--green-light);color:var(--court)}
+.btn-outline:hover{background:var(--green-light);color:#fff}
+.btn-warn{background:var(--warn);color:var(--dark);border:none}
+.player-row{display:flex;align-items:center;gap:9px;background:#181818;border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:6px;transition:border-color .2s;flex-wrap:wrap}
+.player-row:hover{border-color:var(--court)55}
+.player-avatar{width:30px;height:30px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--court);flex-shrink:0}
+.player-name{font-weight:600;font-size:13px;flex:1;min-width:120px}
+.player-meta{font-size:11px;color:var(--muted)}
+.lk-badge{background:#1a2e26;color:var(--court);border:1px solid var(--court)33;font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;min-width:46px;text-align:center;white-space:nowrap}
+.year-badge{background:#181818;border:1px solid var(--border);color:var(--muted);font-size:11px;padding:2px 6px;border-radius:6px;white-space:nowrap}
+.team-chip{font-size:10px;font-weight:600;padding:2px 7px;border-radius:12px;background:#2e4a42;color:var(--muted);white-space:nowrap}
+.team-chip.m{background:#1a2d3d;color:var(--info)}
+.team-chip.f{background:#2d1a2d;color:#c77dff}
+.blocked-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:12px;background:#3d1a1a;color:var(--danger);border:1px solid var(--danger)44;white-space:nowrap}
+.warn-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:12px;background:#2d2215;color:var(--warn);border:1px solid var(--warn)44;white-space:nowrap}
+.match-card{background:#181818;border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:8px;cursor:pointer;transition:all .2s}
+.match-card:hover{border-color:var(--court)77;transform:translateY(-1px)}
+.match-teams{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px}
+.match-vs{color:var(--court);margin:0 5px}
+.match-info{font-size:11px;color:var(--muted);margin-top:2px}
+.match-status{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;text-transform:uppercase}
+.status-open{background:var(--warn)33;color:var(--warn);border:1px solid var(--warn)55}
+.status-ready{background:#2d6a4f44;color:var(--court);border:1px solid var(--court)44}
+.avail-table{width:100%;border-collapse:collapse}
+.avail-table th{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:6px 10px;text-align:left;border-bottom:1px solid #2e4a42}
+.avail-table td{padding:7px 10px;border-bottom:1px solid #1b292611;font-size:12px;vertical-align:middle}
+.avail-table tr:last-child td{border-bottom:none}
+.avail-table tr:hover td{background:#22222255}
+.avail-btn{padding:3px 9px;border-radius:6px;border:1px solid transparent;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.avail-btn.yes{background:var(--green)55;color:var(--court);border-color:var(--court)44}
+.avail-btn.yes.active{background:var(--green);color:var(--court);border-color:var(--court)}
+.avail-btn.no{background:#3d1a1a55;color:#e63946;border-color:#e6394644}
+.avail-btn.no.active{background:#e63946;color:#fff;border-color:#e63946}
+.avail-btn.maybe{background:#2e2a1a55;color:var(--warn);border-color:var(--warn)44}
+.avail-btn.maybe.active{background:var(--warn);color:var(--dark);border-color:var(--warn)}
+.lineup-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
+.lineup-slot{background:#181818;border:1px solid var(--border);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:7px}
+.lineup-pos{font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--court);min-width:20px;text-align:center}
+.lineup-slot.warning{border-color:var(--warn)77;background:#2d2215}
+.lineup-slot.ok{border-color:var(--court)44}
+.lineup-slot.blocked-slot{border-color:var(--danger)55;background:#2d1515}
+.stats-row{display:flex;gap:9px;margin-bottom:18px;flex-wrap:wrap}
+.stat-card{background:#1c1c1c;border:1px solid var(--border);border-radius:10px;padding:11px 15px;flex:1;min-width:80px;text-align:center}
+.stat-num{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--court);line-height:1}
+.stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.upload-area{border:1.5px dashed var(--border2);border-radius:10px;padding:1.6rem;text-align:center;cursor:pointer;transition:border-color .2s}
+.upload-area:hover,.upload-area.drag-over{border-color:var(--court);background:rgba(116,198,157,.04)}
+.upload-area strong{font-size:14px;color:var(--white)}
+.upload-area p{font-size:12px;color:var(--muted);margin-top:5px}
+.team-section-header{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:6px 12px;background:#141414;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.autocomplete-wrap{position:relative}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:#1e1e1e;border:1px solid var(--border2);border-radius:8px;z-index:50;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4);margin-top:3px}
+.ac-item{padding:8px 12px;font-size:13px;cursor:pointer;color:var(--white);display:flex;align-items:center;gap:8px}
+.ac-item:hover{background:#2a2a2a}
+.ac-item .ac-meta{font-size:11px;color:var(--muted);margin-left:auto}
+.ac-item.blocked{opacity:.6}
+.rule-box{background:#181818;border-left:3px solid var(--court);border-radius:0 8px 8px 0;padding:8px 12px;margin:9px 0;font-size:12px;color:var(--muted);line-height:1.6}
+.rule-box.warn{border-left-color:var(--warn)}
+.rule-box.danger{border-left-color:var(--danger)}
+.rule-box strong{color:var(--white)}
+.prog-bar{height:4px;border-radius:3px;background:#2a2a2a;overflow:hidden}
+.prog-fill{height:100%;background:var(--court);border-radius:3px;transition:width .3s}
+.empty{text-align:center;padding:2.5rem 20px;color:var(--muted);font-size:13px}
+.modal-overlay{position:fixed;inset:0;background:#000000bb;z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:#1e1e1e;border:1px solid var(--border2);border-radius:16px;padding:20px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:var(--court);margin-bottom:12px}
+.modal-close{float:right;cursor:pointer;color:var(--muted);font-size:18px;background:none;border:none}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--muted);border-top-color:var(--court);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-.empty{text-align:center;padding:3rem 20px;color:var(--muted);font-size:14px}
-.blocked-warn{background:#3d1a1a;border:1px solid #e74c3c44;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:#e74c3c}
-
-.back-row{display:flex;align-items:center;gap:8px;margin-bottom:18px}
-.back-btn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
-.back-btn:hover{border-color:var(--court);color:var(--court)}
-
-@media(max-width:400px){.avail-btn{font-size:13px;padding:10px 6px}}
+.g-m{background:#1a1a2e;color:#7eb8e0;border:1px solid #4ea8de44;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+.g-f{background:#2d1a2d;color:#c77dff;border:1px solid #c77dff44;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+.player-view{display:none;position:fixed;inset:0;background:var(--dark);z-index:300;overflow-y:auto;padding:18px}
+.player-view.open{display:block}
+.pv-header{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.pv-back{background:none;border:1px solid #2e4a42;color:var(--muted);border-radius:8px;padding:6px 12px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer}
+.pv-title{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--court);letter-spacing:1px}
+.pv-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.block-panel{background:#1e1212;border:1px solid var(--danger)44;border-radius:10px;padding:12px 15px;margin-bottom:10px}
+.block-panel-title{font-size:12px;font-weight:600;color:var(--danger);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.warn-panel{background:#1e1a0e;border:1px solid var(--warn)44;border-radius:10px;padding:12px 15px;margin-bottom:10px}
+.warn-panel-title{font-size:12px;font-weight:600;color:var(--warn);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+@media(max-width:640px){main{padding:12px}header{padding:10px 12px}.tabs{padding:0 12px}.lineup-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
 <header>
-  <img class="logo-img" src="data:image/svg+xml;base64,PHN2ZyB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBpZD0iYjYwNWMxN2ItYmMxNS00NjY4LTkzZDItOGQ0MzBlZjNjNjZhIiBkYXRhLW5hbWU9IkViZW5lIDEiIHZpZXdCb3g9IjAgMCAyMjIuNTQgMjQyLjUxIiB3aWR0aD0iMjIyLjU0IiAgaGVpZ2h0PSIyNDIuNTEiID48cGF0aCBkPSJNNTAuNzcsMjQuODdDNjEuODUsMTkuNjQsOTgsNywxNDksN2wuMS4zNC4xLS4zNGM1MSwwLDg3LjE2LDEyLjY0LDk4LjI0LDE3Ljg3LDE3LjcyLDQwLjcxLDkuMjgsOTUuODktNi4yOCwxMjUuMThDMjI1LjgzLDE3OC45MywxNzkuNTUsMjI0LDE0OSwyMjUuMjRjMCwwLDAsMCwwLDAtMzAuNTMtMS4yNi03Ni42Mi00Ni4zMS05Mi03NS4xOUM0MS40OSwxMjAuNzYsMzMsNjUuNTgsNTAuNzcsMjQuODdaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMmY0ODFiIi8+PHBhdGggZD0iTTYzLjk0LDI4Ljc3YzkuNi01LDQwLjk0LTE3LjIsODUuMDgtMTcuMmwuMDkuMzIuMDktLjMyYzQ0LjEzLDAsNzUuNDgsMTIuMTYsODUuMDcsMTcuMiwxNS4zNiwzOS4xNyw4LDkyLjI3LTUuNDMsMTIwLjQ2QzIxNS41NSwxNzcsMTc1LjQ2LDIyMC4zOCwxNDksMjIxLjU5Yy0yNi40NC0xLjIxLTY2LjM0LTQ0LjU3LTc5LjYzLTcyLjM2QzU1LjksMTIxLDQ4LjU5LDY3Ljk0LDYzLjk0LDI4Ljc3Wm0tNi4xLDQ2LjExYy0uNjYsMjcuNjQsNSw1NS4yMSwxMy40LDcyLjg2LDEzLDI3LjMyLDUxLjk0LDY5Ljk1LDc3Ljc3LDcxLjE1LDI1LjgzLTEuMiw2NS00My44Myw3OC03MS4xNSw4LjM4LTE3LjY1LDE0LjA3LTQ1LjIyLDEzLjQxLTcyLjg2LTE0LjM1LTUuNzUtNDctMTUuNDgtOTEuMjctMTUuNDhTNzIuMTksNjkuMTMsNTcuODQsNzQuODhaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojZmZmIi8+PHBhdGggZD0iTTkwLjY2LDMyLjk0VjI5LjIxYzAtLjUyLS4yNC0uNjctLjc5LS42NGE0NS44LDQ1LjgsMCwwLDAtNy41NywxLjA3Yy01LjA2LDEuMDYtOS41OCwzLjI5LTkuNTgsMTAuNThWNjFhLjYzLjYzLDAsMCwwLC43OS42NGw1LjEtMS4wN2ExLDEsMCwwLDAsLjc5LTFWNDcuODVsMTAuMTYtMi4xM2ExLDEsMCwwLDAsLjc4LTFWNDAuOTRhLjYyLjYyLDAsMCwwLS43OC0uNjNMNzkuNCw0Mi40M3YtMy42YzAtMi4wOS42Ni0yLjg3LDIuNTEtMy4yNmw4LTEuNjZhMSwxLDAsMCwwLC43OS0xWm0yOS44Myw5Ljg3VjI1YS43LjcsMCwwLDAtLjg0LS42NmwtNS4xOC41OWEuODguODgsMCwwLDAtLjc5Ljg1VjQzLjU5YzAsNC4wOS0xLjEyLDUuOTQtNC43LDYuMzZzLTQuNjYtMS4xOS00LjY2LTUuMjhWMjYuODNhLjY3LjY3LDAsMCwwLS44LS42N2wtNS4yMi41OWEuODguODgsMCwwLDAtLjc5Ljg2VjQ1LjQ1YzAsOS4xNCw1LjEzLDEwLjk1LDExLjQ3LDEwLjIzUzEyMC40OSw1MiwxMjAuNDksNDIuODFaTTExNiwyMS41OVYxNy44N2EuNzYuNzYsMCwwLDAtLjg4LS43bC0zLjc0LjQyYTEsMSwwLDAsMC0uODQuOXYzLjczYS43NC43NCwwLDAsMCwuODQuNzFsMy43NC0uNDNhMSwxLDAsMCwwLC44OC0uOTFabS04LjY1LDFWMTguODZhLjczLjczLDAsMCwwLS44My0uNzFsLTMuNzUuNDNhMSwxLDAsMCwwLS44Ny45djMuNzNhLjc2Ljc2LDAsMCwwLC44Ny43bDMuNzUtLjQzYTEsMSwwLDAsMCwuODMtLjg5Wm0zOC42NSwyOVY0Ny43YS42OC42OCwwLDAsMC0uNzYtLjc3aC0uMTJjLTEuNTIuMTctMy43My40NC01LjkzLjUyLTIuNzcuMDktNS0xLjI4LTUtNi42MnYtNWMwLTUuMzMsMi4yLTYuODUsNS02Ljk0LDIuMi0uMDcsNC40MS4wNiw1LjkzLjEzaC4xMmEuNzQuNzQsMCwwLDAsLjc2LS44M1YyNC4yNWMwLS41Ni0uMzItLjcxLS44OC0uODVhMjIuMjMsMjIuMjMsMCwwLDAtNi0uNDljLTYuMDkuMi0xMS44NiwzLjU2LTExLjg2LDEzLjF2NS4wNWMwLDkuNTQsNS43NywxMi41NiwxMS44NiwxMi4zNmEyMi44NiwyMi44NiwwLDAsMCw2LS44OGMuNTYtLjE4Ljg4LS4zOS44OC0uOTVaTTE3Ni4xMSw1M1YyNC43OWEuODIuODIsMCwwLDAtLjgtLjhsLTUuMjQtLjI1YS43NC43NCwwLDAsMC0uODEuNzNWMzUuMTNsLTkuODktLjQ3VjI0YS44Mi44MiwwLDAsMC0uOC0uOEwxNTMuMzMsMjNhLjczLjczLDAsMCwwLS44LjcyVjUxLjlhLjg2Ljg2LDAsMCwwLC44Ljg0bDUuMjQuMjRhLjc1Ljc1LDAsMCwwLC44LS43NlY0MC42M2w5Ljg5LjQ3VjUyLjY5YS44NS44NSwwLDAsMCwuODEuODRsNS4yNC4yNWEuNzYuNzYsMCwwLDAsLjgtLjc2Wm0yNi41LTQuMzFjMC0zLjI1LTEuMjMtNi4wNy01LjM2LTguODhsLTUuMDgtMy40N2MtMi4xNS0xLjQ1LTIuNjYtMi0yLjY2LTMuMTcsMC0xLjQ0LjgzLTIsMy4xLTEuNywyLjcuMzgsNy4zLDEuMzcsOC40MSwxLjZoLjA4Yy41Mi4wOC42OC0uMjIuNjgtLjU4VjI4LjQ3YS44NS44NSwwLDAsMC0uNi0uODEsNDYuNTksNDYuNTksMCwwLDAtOC40Mi0yYy03LjctMS4wNi0xMC4xNiwyLTEwLjE2LDYuNDIsMCwyLjkzLDEsNS41OSw0LjY4LDguM2w1LjQ4LDRjMi4wNywxLjUzLDIuNjMsMi4yNSwyLjYzLDMuNDEsMCwxLjkzLS44LDIuNy0zLjU0LDIuMzItMS41NS0uMjEtNS45Mi0xLjEzLTcuNTUtMS41MmgtLjExYy0uNC0uMDYtLjcyLjEtLjcyLjY2djMuOTNjMCwuNDQuNC43My43OS45MUEzMS41LDMxLjUsMCwwLDAsMTkxLjc3LDU2YzguMDYsMS4xMSwxMC44NC0zLDEwLjg0LTcuMjhabTI0LjIzLDEyLjQxVjU3LjM5YTEsMSwwLDAsMC0uNzgtMWwtOC0xLjczYy0xLjg0LS40LTIuNS0xLjE5LTIuNS0zLjI4VjQ3LjE2bDEwLjE0LDIuMjFhLjYyLjYyLDAsMCwwLC43OS0uNjNWNDQuOTNhMS4wNSwxLjA1LDAsMCwwLS43OS0xTDIxNS42LDQxLjc1VjM4LjFjMC0yLjA4LjY2LTIuNTgsMi41LTIuMThsOCwxLjc0YS42Mi42MiwwLDAsMCwuNzgtLjY0VjMzLjNjMC0uNTMtLjIzLS43OC0uNzgtMWE1MCw1MCwwLDAsMC03LjU2LTIuMTZjLTUuMDYtMS4xLTkuNTYtLjgtOS41Niw2LjQ5VjUwYzAsNy4zLDQuNDYsOS42LDkuNTIsMTAuN2E0Ni4zMSw0Ni4zMSwwLDAsMCw3LjYsMS4xM2MuNTUsMCwuNzgtLjE1Ljc4LS42N1oiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0zNy44NCAtNC4wMykiIHN0eWxlPSJmaWxsOiMyMjIyMjEiLz48cGF0aCBkPSJNMjAyLjI0LDIzN2EyNzMuMjIsMjczLjIyLDAsMCwxLTUzLjc4LDUuNjFBMjc0LjU3LDI3NC41NywwLDAsMSw5NiwyMzcuMjV2LTMwYzE1LjY2LDMuMDYsMzMuNTEsNS41OSw1Mi40OSw1LjU5QTI3Mi40NSwyNzIuNDUsMCwwLDAsMjAyLjI0LDIwN3YzMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0zNy44NCAtNC4wMykiIHN0eWxlPSJmaWxsOiNmZmYiLz48cGF0aCBkPSJNMjAyLjQzLDIzOGMtOCwxLjYyLTE2LjYyLDMtMjUuNjUsNGEyNTUuOTIsMjU1LjkyLDAsMCwxLTI4LjMyLDEuNkEyNTUuNjEsMjU1LjYxLDAsMCwxLDEyMC44NywyNDJjLTguODMtMS0xNy4yNC0yLjMtMjUuMDgtMy44NGwtLjc5LS4xNXYtMzJsMS4xNi4yMmM3LjgxLDEuNTMsMTYuMTYsMi45MiwyNC45MiwzLjkzYTIzOC44MiwyMzguODIsMCwwLDAsMjcuMzgsMS42NCwyNDIuMTgsMjQyLjE4LDAsMCwwLDI4LjExLTEuN2M5LTEuMDYsMTcuNTQtMi41MSwyNS40OC00LjEybDEuMTYtLjIzdjMybC0uNzguMTZabS0yNS44NiwyLjFjOC43MS0xLDE3LTIuMywyNC43LTMuODR2LTI4Yy03LjY5LDEuNTItMTUuOSwyLjktMjQuNDgsMy45MWEyNDMuODcsMjQzLjg3LDAsMCwxLTI4LjMzLDEuNzIsMjQwLjY4LDI0MC42OCwwLDAsMS0yNy42LTEuNjVjLTguMzktMS0xNi40LTIuMjktMjMuOTItMy43M3YyOGM3LjU5LDEuNDcsMTUuNjcsMi43NSwyNC4xMywzLjY3YTI1My44OCwyNTMuODgsMCwwLDAsMjcuMzksMS41MiwyNTYuNDUsMjU2LjQ1LDAsMCwwLDI4LjExLTEuNTlaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMjIyMjIxIi8+PHBhdGggZD0iTTExNy4wNSwyMjkuODV2LS4zN2E0LjY0LDQuNjQsMCwwLDAtMi4xNi0zLjkzLDMuMywzLjMsMCwwLDAsMi0zLjMxdi0uNDVjMC0zLjg5LTMuMDgtNS41NS03LjY2LTYuMmE0MC44MSw0MC44MSwwLDAsMC00LjM0LS4zNGMtMSwwLTEuMjkuMzEtMS4yOSwxLjQxdjE0LjlhMS41NSwxLjU1LDAsMCwwLDEuMzMsMS43OCwzMi4zLDMyLjMsMCwwLDAsNC40NC45MmM0LjIuNTksNy42NS0uMSw3LjY1LTQuNDFabS00LjEzLThjMCwxLS41NiwxLjg2LTIuNDcsMS41OWwtMi43Mi0uMzl2LTQuMjRjLjM0LDAsMS40Ni4xOCwxLjg0LjI0LDIuNS4zNSwzLjM1LDEuMDgsMy4zNSwyLjQzdi4zN1ptLjEsNy4zMWMwLDEuMzctLjgsMi0zLjMsMS42OS0uMzQsMC0xLjYtLjI1LTItLjNWMjI2bDIuNzIuMzhjMS45NC4yNywyLjU3LDEuMzcsMi41NywyLjU0di4yN1ptMTkuMzQsNi41OHYtMi4yOGEuNTQuNTQsMCwwLDAtLjQ5LS41M2wtNS0uMzdjLTEuMTQtLjA4LTEuNTYtLjUtMS41Ni0xLjc4di0yLjZsNi4zMy40N2EuNDUuNDUsMCwwLDAsLjQ5LS40NXYtMi4zM2EuNTMuNTMsMCwwLDAtLjQ5LS41MmwtNi4zMy0uNDd2LTIuMjNjMC0xLjI4LjQyLTEuNjQsMS41Ni0xLjU1bDUsLjM2YS40NS40NSwwLDAsMCwuNDktLjQ1di0yLjI4YzAtLjMyLS4xNC0uNDUtLjQ5LS41MmEyNy42NSwyNy42NSwwLDAsMC00LjcxLS42N2MtMy4xNS0uMjQtNiwuMzQtNiw0Ljh2OC4xM2MwLDQuNDYsMi43OCw1LjQ4LDUuOTMsNS43MWEyNy43NSwyNy43NSwwLDAsMCw0Ljc0LDBjLjM1LDAsLjQ5LS4xNi40OS0uNDdabTE4LjU1LjgxYS42Ny42NywwLDAsMC0uMDgtLjI3bC0zLjctN2E0Ljg0LDQuODQsMCwwLDAsMy4xNi00Ljg1di0uMzFjMC00LjM0LTMuMjEtNS43OS03LjM3LTUuODVhMzcuMTEsMzcuMTEsMCwwLDAtNSwuMjRjLS43Ni4xMS0xLjExLjMyLTEuMTEsMS4xNnYxNi40NGEuNDkuNDksMCwwLDAsLjQ5LjQ5bDMuMTksMGEuNDguNDgsMCwwLDAsLjQ5LS40OFYyMzBjLjQ2LDAsMS4yMi4wNywxLjc0LjA4bC4yNywwLDMuMjgsNi4yNWMuMTIuMjUuMjIuNS40OS41bDMuNzUuMDZjLjI3LDAsLjM3LS4xMi4zNy0uMjlabS00Ljc4LTEyLjE1YzAsMS42Ni0uODEsMi4zMS0zLjM4LDIuMjctLjI3LDAtMS40NywwLTEuNzQtLjA3di00LjcxYy4yOSwwLDEuNTcsMCwxLjkxLDAsMi4wNiwwLDMuMjEuNzQsMy4yMSwyLjIzdi4zMlptMTkuMjMsMTEuMzd2LTIuMjdhLjQ4LjQ4LDAsMCwwLS40OS0uNDhsLTQuMjEuMTZjLTEuMTUuMDUtMS41Ny0uMzMtMS41Ny0xLjZWMjE4LjkzYS40Ny40NywwLDAsMC0uNDktLjQ3bC0zLjIxLjEyYS41Mi41MiwwLDAsMC0uNDkuNTF2MTIuNjdjMCw0LjQ1LDIuODIsNS4xNiw2LDVhMjUuOTIsMjUuOTIsMCwwLDAsNC0uNDdjLjM0LS4wOS40OS0uMjIuNDktLjU0Wm03LjgyLS40NVYyMTguMDlhLjQxLjQxLDAsMCwwLS40Ni0uNDNsLTMuMjguMjZhLjQ4LjQ4LDAsMCwwLS40NC41djE3LjI1YS40MS40MSwwLDAsMCwuNDQuNDVsMy4yOC0uMjVhLjUyLjUyLDAsMCwwLC40Ni0uNTNabTE5LjEzLTIuNjRWMjE1Ljg5YS40LjQsMCwwLDAtLjQ4LS40bC0yLjg3LjM3YS41Ni41NiwwLDAsMC0uNDkuNTN2MTAuMzdjMCwuMTctLjA3LjIzLS4xMi4yM3MtLjA5LDAtLjE5LS4xN2wtNS43Ni05LjM0Yy0uMjktLjQ3LS41My0uNjktMS0uNjJsLTIuNDUuMzJhMS4wOCwxLjA4LDAsMCwwLS45MywxVjIzNWEuNDMuNDMsMCwwLDAsLjQ5LjQzbDIuODctLjM4YS41Ny41NywwLDAsMCwuNDgtLjU1di05LjkyYzAtLjE1LDAtLjIxLjEyLS4yMnMuMTMsMCwuMjIuMTdsNS41NCw4LjkzYTEuMDksMS4wOSwwLDAsMCwxLjI2LjU5bDIuMzktLjMxYTEuMSwxLjEsMCwwLDAsLjk0LTEuMDVaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMjIyMjIxIi8+PHBhdGggZD0iTTIwMC43NSw3NS40NUMxODUuNjYsODMsMTY5LjUxLDk0Ljc5LDE2MiwxMTcuM2E5NC4wOCw5NC4wOCwwLDAsMC0yNS44MiwwQzEyOC43LDk0Ljc5LDExMi41Niw4Myw5Ny40Nyw3NS40NWMtOC4zNSwyOC40OC41NSw0My4yOCw4LjUsNTIuMDh2LjIxYzAsMTYuNjEtLjA5LDM3LjU2LDE3LjY1LDQ1Ljc1LDIwLDkuMjYsMTQuNTksMjkuMTIsMjUuNDksMjkuMTJzNS40NS0xOS44NiwyNS40OS0yOS4xMmMxNy43My04LjE5LDE3LjY1LTI5LjE0LDE3LjY1LTQ1Ljc1di0uMjFjNy45NC04LjgsMTYuODQtMjMuNiw4LjUtNTIuMDhaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojYzIwZTFhIi8+PHBhdGggZD0iTTE0MywxNzAuNTVhNDkuMjcsNDkuMjcsMCwwLDAtLjU1LTgsMjAuOTQsMjAuOTQsMCwwLDAtMTguNjYtMTguMDksMjAuOTEsMjAuOTEsMCwwLDAsNiwxMi43M2MuNS41LDEsMSwxLjU1LDEuMzkuNTYtLjU5LDEuMDgtMi4xMiwxLjItNS43MywxLjEzLDEuMTQsMi4xLDQuNjYsMi4zMiw4LjA2YTIxLjM2LDIxLjM2LDAsMCwwLDQuODYsMS44MywyMi44NCwyMi44NCwwLDAsMSwzLjI0LDcuODNaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMjIyMjIxIi8+PHBhdGggZD0iTTE3NC40MiwxNDQuNDRhMjAuOTQsMjAuOTQsMCwwLDAtMTguNjcsMTguMDksNDkuMjgsNDkuMjgsMCwwLDAtLjU0LDgsMjIuODQsMjIuODQsMCwwLDEsMy4yNC03LjgzLDIxLjUsMjEuNSwwLDAsMCw0LjQtMS42Yy4xOS0zLjQ3LDEuMTgtNy4xMiwyLjMzLTguMjkuMTQsNC4wOC43OSw1LjUxLDEuNDIsNS45MWEyMS43MywyMS43MywwLDAsMCwxLjc4LTEuNTcsMjAuOTEsMjAuOTEsMCwwLDAsNi0xMi43M1oiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0zNy44NCAtNC4wMykiIHN0eWxlPSJmaWxsOiMyMjIyMjEiLz48cGF0aCBkPSJNMTQ5LjIxLDdjNTEsMCw4Ny4xNiwxMi42NCw5OC4yNCwxNy44NywxNy43Miw0MC43MSw5LjI4LDk1Ljg5LTYuMjgsMTI1LjE4LTUuMTEsOS42MS0xMy42NSwyMS0yMy44OSwzMi00LjIzLDQuNTMtOC43NCw5LTEzLjQzLDEzLjIzYTE3NC40MiwxNzQuNDIsMCwwLDEtMTYuNDUsMTMuMzZjNS44MS0uODcsMTAuNDctMS43NywxNS44LTIuODVsMCwzMmEyNjEuOTQsMjYxLjk0LDAsMCwxLTQxLjcyLDUuNDNjLTEuNDguMDgtMywuMTQtNC40Ni4xOC0uNjcsMC0xLjM1LDAtMiwuMDZxLTMuMzcuMDktNi42OS4wOWEyNTguNjUsMjU4LjY1LDAsMCwxLTM3LjQ3LTIuNzRjLTUuMzktLjc3LTEwLjctMS42OC0xNS44NS0yLjczbDAtMzJjNS4zOSwxLDEwLjEyLDEuODgsMTYsMi43OC0xLjc4LTEuMzItMy41OC0yLjY1LTUuMzMtNC0uNjctLjUyLTEuMzItMS0yLTEuNTdxLTEuNjktMS4zNy0zLjM4LTIuNzZjLTE4LjQ0LTE1LjQ1LTM1LjEzLTM1LjIyLTQzLjIzLTUwLjQ3QzQxLjQ5LDEyMC43OSwzMyw2NS42MSw1MC43NywyNC45LDYxLjg1LDE5LjY3LDk4LDcsMTQ5LDdsLjEuMzQuMS0uMzRtMi0zSDE0N2EyOTIuNzYsMjkyLjc2LDAsMCwwLTYyLjcyLDdjLTIwLjEsNC41Ni0zMS43LDkuNjYtMzQuNzgsMTEuMTFsLTEsLjQ4LS40NSwxQzM3LjQ3LDQ3Ljk0LDM3LDc0LjIzLDM4LjQ0LDkyYzEuOCwyMi4wOSw3LjYyLDQzLjc2LDE2LDU5LjQ2LDguNDYsMTUuOTMsMjUuNzEsMzYuMDksNDMuOTUsNTEuMzdsMS4zLDEuMDdjLTEuMy0uMjQtMi42NS0uNDktNC4wOC0uNzdMOTIsMjAyLjQ2djMuNjRsMCwzMnYyLjQ1bDIuNC40OWM1LDEsMTAuNDQsMiwxNiwyLjc2YTI2My43NCwyNjMuNzQsMCwwLDAsMzcuOSwyLjc3YzIuMjIsMCw0LjUsMCw2Ljc3LS4wOS42OCwwLDEuMzcsMCwyLS4wNiwxLjQ5LS4wNSwzLS4xMSw0LjUxLS4xOGEyNjYuNzUsMjY2Ljc1LDAsMCwwLDQyLjIxLTUuNWwyLjM2LS41MnYtMi40MmwwLTMxLjk1di0zLjY2bC0zLjU5LjcyLTMuNzUuNzVxMy4zNi0yLjc5LDctNi4xYzQuNjgtNC4yMyw5LjI2LTguNzQsMTMuNjEtMTMuNDEsMTAuNS0xMS4yNSwxOS4xNC0yMi44NSwyNC4zNS0zMi42NSw4LjM0LTE1LjcsMTQuMTYtMzcuMzcsMTYtNTkuNDYsMS40NS0xNy43OSwxLTQ0LjA4LTkuNTgtNjguMzFsLS40NS0xLTEtLjQ4Yy0zLjA4LTEuNDUtMTQuNjgtNi41NS0zNC43OC0xMS4xMWEyOTIuODMsMjkyLjgzLDAsMCwwLTYyLjcyLTdaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojZmZmIi8+PC9zdmc+" alt="Füchse Berlin">
-  <div class="header-text">
-    <h1>Füchse Berlin</h1>
-    <p id="header-sub">Spielerverfügbarkeit</p>
+  <div class="logo">
+    <img class="logo-img" src="data:image/svg+xml;base64,PHN2ZyB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBpZD0iYjYwNWMxN2ItYmMxNS00NjY4LTkzZDItOGQ0MzBlZjNjNjZhIiBkYXRhLW5hbWU9IkViZW5lIDEiIHZpZXdCb3g9IjAgMCAyMjIuNTQgMjQyLjUxIiB3aWR0aD0iMjIyLjU0IiAgaGVpZ2h0PSIyNDIuNTEiID48cGF0aCBkPSJNNTAuNzcsMjQuODdDNjEuODUsMTkuNjQsOTgsNywxNDksN2wuMS4zNC4xLS4zNGM1MSwwLDg3LjE2LDEyLjY0LDk4LjI0LDE3Ljg3LDE3LjcyLDQwLjcxLDkuMjgsOTUuODktNi4yOCwxMjUuMThDMjI1LjgzLDE3OC45MywxNzkuNTUsMjI0LDE0OSwyMjUuMjRjMCwwLDAsMCwwLDAtMzAuNTMtMS4yNi03Ni42Mi00Ni4zMS05Mi03NS4xOUM0MS40OSwxMjAuNzYsMzMsNjUuNTgsNTAuNzcsMjQuODdaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMmY0ODFiIi8+PHBhdGggZD0iTTYzLjk0LDI4Ljc3YzkuNi01LDQwLjk0LTE3LjIsODUuMDgtMTcuMmwuMDkuMzIuMDktLjMyYzQ0LjEzLDAsNzUuNDgsMTIuMTYsODUuMDcsMTcuMiwxNS4zNiwzOS4xNyw4LDkyLjI3LTUuNDMsMTIwLjQ2QzIxNS41NSwxNzcsMTc1LjQ2LDIyMC4zOCwxNDksMjIxLjU5Yy0yNi40NC0xLjIxLTY2LjM0LTQ0LjU3LTc5LjYzLTcyLjM2QzU1LjksMTIxLDQ4LjU5LDY3Ljk0LDYzLjk0LDI4Ljc3Wm0tNi4xLDQ2LjExYy0uNjYsMjcuNjQsNSw1NS4yMSwxMy40LDcyLjg2LDEzLDI3LjMyLDUxLjk0LDY5Ljk1LDc3Ljc3LDcxLjE1LDI1LjgzLTEuMiw2NS00My44Myw3OC03MS4xNSw4LjM4LTE3LjY1LDE0LjA3LTQ1LjIyLDEzLjQxLTcyLjg2LTE0LjM1LTUuNzUtNDctMTUuNDgtOTEuMjctMTUuNDhTNzIuMTksNjkuMTMsNTcuODQsNzQuODhaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojZmZmIi8+PHBhdGggZD0iTTkwLjY2LDMyLjk0VjI5LjIxYzAtLjUyLS4yNC0uNjctLjc5LS42NGE0NS44LDQ1LjgsMCwwLDAtNy41NywxLjA3Yy01LjA2LDEuMDYtOS41OCwzLjI5LTkuNTgsMTAuNThWNjFhLjYzLjYzLDAsMCwwLC43OS42NGw1LjEtMS4wN2ExLDEsMCwwLDAsLjc5LTFWNDcuODVsMTAuMTYtMi4xM2ExLDEsMCwwLDAsLjc4LTFWNDAuOTRhLjYyLjYyLDAsMCwwLS43OC0uNjNMNzkuNCw0Mi40M3YtMy42YzAtMi4wOS42Ni0yLjg3LDIuNTEtMy4yNmw4LTEuNjZhMSwxLDAsMCwwLC43OS0xWm0yOS44Myw5Ljg3VjI1YS43LjcsMCwwLDAtLjg0LS42NmwtNS4xOC41OWEuODguODgsMCwwLDAtLjc5Ljg1VjQzLjU5YzAsNC4wOS0xLjEyLDUuOTQtNC43LDYuMzZzLTQuNjYtMS4xOS00LjY2LTUuMjhWMjYuODNhLjY3LjY3LDAsMCwwLS44LS42N2wtNS4yMi41OWEuODguODgsMCwwLDAtLjc5Ljg2VjQ1LjQ1YzAsOS4xNCw1LjEzLDEwLjk1LDExLjQ3LDEwLjIzUzEyMC40OSw1MiwxMjAuNDksNDIuODFaTTExNiwyMS41OVYxNy44N2EuNzYuNzYsMCwwLDAtLjg4LS43bC0zLjc0LjQyYTEsMSwwLDAsMC0uODQuOXYzLjczYS43NC43NCwwLDAsMCwuODQuNzFsMy43NC0uNDNhMSwxLDAsMCwwLC44OC0uOTFabS04LjY1LDFWMTguODZhLjczLjczLDAsMCwwLS44My0uNzFsLTMuNzUuNDNhMSwxLDAsMCwwLS44Ny45djMuNzNhLjc2Ljc2LDAsMCwwLC44Ny43bDMuNzUtLjQzYTEsMSwwLDAsMCwuODMtLjg5Wm0zOC42NSwyOVY0Ny43YS42OC42OCwwLDAsMC0uNzYtLjc3aC0uMTJjLTEuNTIuMTctMy43My40NC01LjkzLjUyLTIuNzcuMDktNS0xLjI4LTUtNi42MnYtNWMwLTUuMzMsMi4yLTYuODUsNS02Ljk0LDIuMi0uMDcsNC40MS4wNiw1LjkzLjEzaC4xMmEuNzQuNzQsMCwwLDAsLjc2LS44M1YyNC4yNWMwLS41Ni0uMzItLjcxLS44OC0uODVhMjIuMjMsMjIuMjMsMCwwLDAtNi0uNDljLTYuMDkuMi0xMS44NiwzLjU2LTExLjg2LDEzLjF2NS4wNWMwLDkuNTQsNS43NywxMi41NiwxMS44NiwxMi4zNmEyMi44NiwyMi44NiwwLDAsMCw2LS44OGMuNTYtLjE4Ljg4LS4zOS44OC0uOTVaTTE3Ni4xMSw1M1YyNC43OWEuODIuODIsMCwwLDAtLjgtLjhsLTUuMjQtLjI1YS43NC43NCwwLDAsMC0uODEuNzNWMzUuMTNsLTkuODktLjQ3VjI0YS44Mi44MiwwLDAsMC0uOC0uOEwxNTMuMzMsMjNhLjczLjczLDAsMCwwLS44LjcyVjUxLjlhLjg2Ljg2LDAsMCwwLC44Ljg0bDUuMjQuMjRhLjc1Ljc1LDAsMCwwLC44LS43NlY0MC42M2w5Ljg5LjQ3VjUyLjY5YS44NS44NSwwLDAsMCwuODEuODRsNS4yNC4yNWEuNzYuNzYsMCwwLDAsLjgtLjc2Wm0yNi41LTQuMzFjMC0zLjI1LTEuMjMtNi4wNy01LjM2LTguODhsLTUuMDgtMy40N2MtMi4xNS0xLjQ1LTIuNjYtMi0yLjY2LTMuMTcsMC0xLjQ0LjgzLTIsMy4xLTEuNywyLjcuMzgsNy4zLDEuMzcsOC40MSwxLjZoLjA4Yy41Mi4wOC42OC0uMjIuNjgtLjU4VjI4LjQ3YS44NS44NSwwLDAsMC0uNi0uODEsNDYuNTksNDYuNTksMCwwLDAtOC40Mi0yYy03LjctMS4wNi0xMC4xNiwyLTEwLjE2LDYuNDIsMCwyLjkzLDEsNS41OSw0LjY4LDguM2w1LjQ4LDRjMi4wNywxLjUzLDIuNjMsMi4yNSwyLjYzLDMuNDEsMCwxLjkzLS44LDIuNy0zLjU0LDIuMzItMS41NS0uMjEtNS45Mi0xLjEzLTcuNTUtMS41MmgtLjExYy0uNC0uMDYtLjcyLjEtLjcyLjY2djMuOTNjMCwuNDQuNC43My43OS45MUEzMS41LDMxLjUsMCwwLDAsMTkxLjc3LDU2YzguMDYsMS4xMSwxMC44NC0zLDEwLjg0LTcuMjhabTI0LjIzLDEyLjQxVjU3LjM5YTEsMSwwLDAsMC0uNzgtMWwtOC0xLjczYy0xLjg0LS40LTIuNS0xLjE5LTIuNS0zLjI4VjQ3LjE2bDEwLjE0LDIuMjFhLjYyLjYyLDAsMCwwLC43OS0uNjNWNDQuOTNhMS4wNSwxLjA1LDAsMCwwLS43OS0xTDIxNS42LDQxLjc1VjM4LjFjMC0yLjA4LjY2LTIuNTgsMi41LTIuMThsOCwxLjc0YS42Mi42MiwwLDAsMCwuNzgtLjY0VjMzLjNjMC0uNTMtLjIzLS43OC0uNzgtMWE1MCw1MCwwLDAsMC03LjU2LTIuMTZjLTUuMDYtMS4xLTkuNTYtLjgtOS41Niw2LjQ5VjUwYzAsNy4zLDQuNDYsOS42LDkuNTIsMTAuN2E0Ni4zMSw0Ni4zMSwwLDAsMCw3LjYsMS4xM2MuNTUsMCwuNzgtLjE1Ljc4LS42N1oiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0zNy44NCAtNC4wMykiIHN0eWxlPSJmaWxsOiMyMjIyMjEiLz48cGF0aCBkPSJNMjAyLjI0LDIzN2EyNzMuMjIsMjczLjIyLDAsMCwxLTUzLjc4LDUuNjFBMjc0LjU3LDI3NC41NywwLDAsMSw5NiwyMzcuMjV2LTMwYzE1LjY2LDMuMDYsMzMuNTEsNS41OSw1Mi40OSw1LjU5QTI3Mi40NSwyNzIuNDUsMCwwLDAsMjAyLjI0LDIwN3YzMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0zNy44NCAtNC4wMykiIHN0eWxlPSJmaWxsOiNmZmYiLz48cGF0aCBkPSJNMjAyLjQzLDIzOGMtOCwxLjYyLTE2LjYyLDMtMjUuNjUsNGEyNTUuOTIsMjU1LjkyLDAsMCwxLTI4LjMyLDEuNkEyNTUuNjEsMjU1LjYxLDAsMCwxLDEyMC44NywyNDJjLTguODMtMS0xNy4yNC0yLjMtMjUuMDgtMy44NGwtLjc5LS4xNXYtMzJsMS4xNi4yMmM3LjgxLDEuNTMsMTYuMTYsMi45MiwyNC45MiwzLjkzYTIzOC44MiwyMzguODIsMCwwLDAsMjcuMzgsMS42NCwyNDIuMTgsMjQyLjE4LDAsMCwwLDI4LjExLTEuN2M5LTEuMDYsMTcuNTQtMi41MSwyNS40OC00LjEybDEuMTYtLjIzdjMybC0uNzguMTZabS0yNS44NiwyLjFjOC43MS0xLDE3LTIuMywyNC43LTMuODR2LTI4Yy03LjY5LDEuNTItMTUuOSwyLjktMjQuNDgsMy45MWEyNDMuODcsMjQzLjg3LDAsMCwxLTI4LjMzLDEuNzIsMjQwLjY4LDI0MC42OCwwLDAsMS0yNy42LTEuNjVjLTguMzktMS0xNi40LTIuMjktMjMuOTItMy43M3YyOGM3LjU5LDEuNDcsMTUuNjcsMi43NSwyNC4xMywzLjY3YTI1My44OCwyNTMuODgsMCwwLDAsMjcuMzksMS41MiwyNTYuNDUsMjU2LjQ1LDAsMCwwLDI4LjExLTEuNTlaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMjIyMjIxIi8+PHBhdGggZD0iTTExNy4wNSwyMjkuODV2LS4zN2E0LjY0LDQuNjQsMCwwLDAtMi4xNi0zLjkzLDMuMywzLjMsMCwwLDAsMi0zLjMxdi0uNDVjMC0zLjg5LTMuMDgtNS41NS03LjY2LTYuMmE0MC44MSw0MC44MSwwLDAsMC00LjM0LS4zNGMtMSwwLTEuMjkuMzEtMS4yOSwxLjQxdjE0LjlhMS41NSwxLjU1LDAsMCwwLDEuMzMsMS43OCwzMi4zLDMyLjMsMCwwLDAsNC40NC45MmM0LjIuNTksNy42NS0uMSw3LjY1LTQuNDFabS00LjEzLThjMCwxLS41NiwxLjg2LTIuNDcsMS41OWwtMi43Mi0uMzl2LTQuMjRjLjM0LDAsMS40Ni4xOCwxLjg0LjI0LDIuNS4zNSwzLjM1LDEuMDgsMy4zNSwyLjQzdi4zN1ptLjEsNy4zMWMwLDEuMzctLjgsMi0zLjMsMS42OS0uMzQsMC0xLjYtLjI1LTItLjNWMjI2bDIuNzIuMzhjMS45NC4yNywyLjU3LDEuMzcsMi41NywyLjU0di4yN1ptMTkuMzQsNi41OHYtMi4yOGEuNTQuNTQsMCwwLDAtLjQ5LS41M2wtNS0uMzdjLTEuMTQtLjA4LTEuNTYtLjUtMS41Ni0xLjc4di0yLjZsNi4zMy40N2EuNDUuNDUsMCwwLDAsLjQ5LS40NXYtMi4zM2EuNTMuNTMsMCwwLDAtLjQ5LS41MmwtNi4zMy0uNDd2LTIuMjNjMC0xLjI4LjQyLTEuNjQsMS41Ni0xLjU1bDUsLjM2YS40NS40NSwwLDAsMCwuNDktLjQ1di0yLjI4YzAtLjMyLS4xNC0uNDUtLjQ5LS41MmEyNy42NSwyNy42NSwwLDAsMC00LjcxLS42N2MtMy4xNS0uMjQtNiwuMzQtNiw0Ljh2OC4xM2MwLDQuNDYsMi43OCw1LjQ4LDUuOTMsNS43MWEyNy43NSwyNy43NSwwLDAsMCw0Ljc0LDBjLjM1LDAsLjQ5LS4xNi40OS0uNDdabTE4LjU1LjgxYS42Ny42NywwLDAsMC0uMDgtLjI3bC0zLjctN2E0Ljg0LDQuODQsMCwwLDAsMy4xNi00Ljg1di0uMzFjMC00LjM0LTMuMjEtNS43OS03LjM3LTUuODVhMzcuMTEsMzcuMTEsMCwwLDAtNSwuMjRjLS43Ni4xMS0xLjExLjMyLTEuMTEsMS4xNnYxNi40NGEuNDkuNDksMCwwLDAsLjQ5LjQ5bDMuMTksMGEuNDguNDgsMCwwLDAsLjQ5LS40OFYyMzBjLjQ2LDAsMS4yMi4wNywxLjc0LjA4bC4yNywwLDMuMjgsNi4yNWMuMTIuMjUuMjIuNS40OS41bDMuNzUuMDZjLjI3LDAsLjM3LS4xMi4zNy0uMjlabS00Ljc4LTEyLjE1YzAsMS42Ni0uODEsMi4zMS0zLjM4LDIuMjctLjI3LDAtMS40NywwLTEuNzQtLjA3di00LjcxYy4yOSwwLDEuNTcsMCwxLjkxLDAsMi4wNiwwLDMuMjEuNzQsMy4yMSwyLjIzdi4zMlptMTkuMjMsMTEuMzd2LTIuMjdhLjQ4LjQ4LDAsMCwwLS40OS0uNDhsLTQuMjEuMTZjLTEuMTUuMDUtMS41Ny0uMzMtMS41Ny0xLjZWMjE4LjkzYS40Ny40NywwLDAsMC0uNDktLjQ3bC0zLjIxLjEyYS41Mi41MiwwLDAsMC0uNDkuNTF2MTIuNjdjMCw0LjQ1LDIuODIsNS4xNiw2LDVhMjUuOTIsMjUuOTIsMCwwLDAsNC0uNDdjLjM0LS4wOS40OS0uMjIuNDktLjU0Wm03LjgyLS40NVYyMTguMDlhLjQxLjQxLDAsMCwwLS40Ni0uNDNsLTMuMjguMjZhLjQ4LjQ4LDAsMCwwLS40NC41djE3LjI1YS40MS40MSwwLDAsMCwuNDQuNDVsMy4yOC0uMjVhLjUyLjUyLDAsMCwwLC40Ni0uNTNabTE5LjEzLTIuNjRWMjE1Ljg5YS40LjQsMCwwLDAtLjQ4LS40bC0yLjg3LjM3YS41Ni41NiwwLDAsMC0uNDkuNTN2MTAuMzdjMCwuMTctLjA3LjIzLS4xMi4yM3MtLjA5LDAtLjE5LS4xN2wtNS43Ni05LjM0Yy0uMjktLjQ3LS41My0uNjktMS0uNjJsLTIuNDUuMzJhMS4wOCwxLjA4LDAsMCwwLS45MywxVjIzNWEuNDMuNDMsMCwwLDAsLjQ5LjQzbDIuODctLjM4YS41Ny41NywwLDAsMCwuNDgtLjU1di05LjkyYzAtLjE1LDAtLjIxLjEyLS4yMnMuMTMsMCwuMjIuMTdsNS41NCw4LjkzYTEuMDksMS4wOSwwLDAsMCwxLjI2LjU5bDIuMzktLjMxYTEuMSwxLjEsMCwwLDAsLjk0LTEuMDVaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMjIyMjIxIi8+PHBhdGggZD0iTTIwMC43NSw3NS40NUMxODUuNjYsODMsMTY5LjUxLDk0Ljc5LDE2MiwxMTcuM2E5NC4wOCw5NC4wOCwwLDAsMC0yNS44MiwwQzEyOC43LDk0Ljc5LDExMi41Niw4Myw5Ny40Nyw3NS40NWMtOC4zNSwyOC40OC41NSw0My4yOCw4LjUsNTIuMDh2LjIxYzAsMTYuNjEtLjA5LDM3LjU2LDE3LjY1LDQ1Ljc1LDIwLDkuMjYsMTQuNTksMjkuMTIsMjUuNDksMjkuMTJzNS40NS0xOS44NiwyNS40OS0yOS4xMmMxNy43My04LjE5LDE3LjY1LTI5LjE0LDE3LjY1LTQ1Ljc1di0uMjFjNy45NC04LjgsMTYuODQtMjMuNiw4LjUtNTIuMDhaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojYzIwZTFhIi8+PHBhdGggZD0iTTE0MywxNzAuNTVhNDkuMjcsNDkuMjcsMCwwLDAtLjU1LTgsMjAuOTQsMjAuOTQsMCwwLDAtMTguNjYtMTguMDksMjAuOTEsMjAuOTEsMCwwLDAsNiwxMi43M2MuNS41LDEsMSwxLjU1LDEuMzkuNTYtLjU5LDEuMDgtMi4xMiwxLjItNS43MywxLjEzLDEuMTQsMi4xLDQuNjYsMi4zMiw4LjA2YTIxLjM2LDIxLjM2LDAsMCwwLDQuODYsMS44MywyMi44NCwyMi44NCwwLDAsMSwzLjI0LDcuODNaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMjIyMjIxIi8+PHBhdGggZD0iTTE3NC40MiwxNDQuNDRhMjAuOTQsMjAuOTQsMCwwLDAtMTguNjcsMTguMDksNDkuMjgsNDkuMjgsMCwwLDAtLjU0LDgsMjIuODQsMjIuODQsMCwwLDEsMy4yNC03LjgzLDIxLjUsMjEuNSwwLDAsMCw0LjQtMS42Yy4xOS0zLjQ3LDEuMTgtNy4xMiwyLjMzLTguMjkuMTQsNC4wOC43OSw1LjUxLDEuNDIsNS45MWEyMS43MywyMS43MywwLDAsMCwxLjc4LTEuNTcsMjAuOTEsMjAuOTEsMCwwLDAsNi0xMi43M1oiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0zNy44NCAtNC4wMykiIHN0eWxlPSJmaWxsOiMyMjIyMjEiLz48cGF0aCBkPSJNMTQ5LjIxLDdjNTEsMCw4Ny4xNiwxMi42NCw5OC4yNCwxNy44NywxNy43Miw0MC43MSw5LjI4LDk1Ljg5LTYuMjgsMTI1LjE4LTUuMTEsOS42MS0xMy42NSwyMS0yMy44OSwzMi00LjIzLDQuNTMtOC43NCw5LTEzLjQzLDEzLjIzYTE3NC40MiwxNzQuNDIsMCwwLDEtMTYuNDUsMTMuMzZjNS44MS0uODcsMTAuNDctMS43NywxNS44LTIuODVsMCwzMmEyNjEuOTQsMjYxLjk0LDAsMCwxLTQxLjcyLDUuNDNjLTEuNDguMDgtMywuMTQtNC40Ni4xOC0uNjcsMC0xLjM1LDAtMiwuMDZxLTMuMzcuMDktNi42OS4wOWEyNTguNjUsMjU4LjY1LDAsMCwxLTM3LjQ3LTIuNzRjLTUuMzktLjc3LTEwLjctMS42OC0xNS44NS0yLjczbDAtMzJjNS4zOSwxLDEwLjEyLDEuODgsMTYsMi43OC0xLjc4LTEuMzItMy41OC0yLjY1LTUuMzMtNC0uNjctLjUyLTEuMzItMS0yLTEuNTdxLTEuNjktMS4zNy0zLjM4LTIuNzZjLTE4LjQ0LTE1LjQ1LTM1LjEzLTM1LjIyLTQzLjIzLTUwLjQ3QzQxLjQ5LDEyMC43OSwzMyw2NS42MSw1MC43NywyNC45LDYxLjg1LDE5LjY3LDk4LDcsMTQ5LDdsLjEuMzQuMS0uMzRtMi0zSDE0N2EyOTIuNzYsMjkyLjc2LDAsMCwwLTYyLjcyLDdjLTIwLjEsNC41Ni0zMS43LDkuNjYtMzQuNzgsMTEuMTFsLTEsLjQ4LS40NSwxQzM3LjQ3LDQ3Ljk0LDM3LDc0LjIzLDM4LjQ0LDkyYzEuOCwyMi4wOSw3LjYyLDQzLjc2LDE2LDU5LjQ2LDguNDYsMTUuOTMsMjUuNzEsMzYuMDksNDMuOTUsNTEuMzdsMS4zLDEuMDdjLTEuMy0uMjQtMi42NS0uNDktNC4wOC0uNzdMOTIsMjAyLjQ2djMuNjRsMCwzMnYyLjQ1bDIuNC40OWM1LDEsMTAuNDQsMiwxNiwyLjc2YTI2My43NCwyNjMuNzQsMCwwLDAsMzcuOSwyLjc3YzIuMjIsMCw0LjUsMCw2Ljc3LS4wOS42OCwwLDEuMzcsMCwyLS4wNiwxLjQ5LS4wNSwzLS4xMSw0LjUxLS4xOGEyNjYuNzUsMjY2Ljc1LDAsMCwwLDQyLjIxLTUuNWwyLjM2LS41MnYtMi40MmwwLTMxLjk1di0zLjY2bC0zLjU5LjcyLTMuNzUuNzVxMy4zNi0yLjc5LDctNi4xYzQuNjgtNC4yMyw5LjI2LTguNzQsMTMuNjEtMTMuNDEsMTAuNS0xMS4yNSwxOS4xNC0yMi44NSwyNC4zNS0zMi42NSw4LjM0LTE1LjcsMTQuMTYtMzcuMzcsMTYtNTkuNDYsMS40NS0xNy43OSwxLTQ0LjA4LTkuNTgtNjguMzFsLS40NS0xLTEtLjQ4Yy0zLjA4LTEuNDUtMTQuNjgtNi41NS0zNC43OC0xMS4xMWEyOTIuODMsMjkyLjgzLDAsMCwwLTYyLjcyLTdaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojZmZmIi8+PC9zdmc+" alt="Füchse Berlin">
+    <div><h1>Club Manager</h1><span>Füchse Berlin · TVBB</span></div>
   </div>
-  <div class="lang-bar">
-    <button class="lang-btn active" onclick="setLang('de')">DE</button>
-    <button class="lang-btn" onclick="setLang('es')">ES</button>
-    <button class="lang-btn" onclick="setLang('en')">EN</button>
+  <div class="header-right">
+    <div class="lang-bar">
+      <button class="lang-btn" onclick="setLang('es')">ES</button>
+      <button class="lang-btn active" onclick="setLang('de')">DE</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+    <a id="download-spieler-btn" href="spieler.html" download="spieler.html" style="padding:3px 9px;font-size:10px;font-weight:600;border:1px solid var(--court)55;border-radius:20px;color:var(--court);background:#1a2e26;text-decoration:none;white-space:nowrap">↓ Spieler-App</a>
+    <div id="sync-badge" class="sync-badge sync-ing">⟳</div>
+    <div class="tvbb-badge">TVBB</div>
   </div>
 </header>
 
+<div class="tabs">
+  <button class="tab active" onclick="showTab('import',event)" data-tab="import"></button>
+  <button class="tab" onclick="showTab('players',event)" data-tab="players"></button>
+  <button class="tab" onclick="showTab('teams',event)" data-tab="teams"></button>
+  <button class="tab" onclick="showTab('matches',event)" data-tab="matches"></button>
+  <button class="tab" onclick="showTab('avail',event)" data-tab="avail"></button>
+  <button class="tab" onclick="showTab('lineup',event)" data-tab="lineup"></button>
+  <button class="tab" onclick="showTab('blocking',event)" data-tab="blocking"></button>
+</div>
+
 <main>
 
-<!-- STEP 1: Find yourself -->
-<div class="step active" id="step-find">
-  <div class="step-label" id="lbl-step1"></div>
-  <div class="step-title" id="ttl-step1"></div>
-  <div class="step-sub" id="sub-step1"></div>
+<!-- IMPORT -->
+<div class="section active" id="sec-import">
+  <div class="section-title" data-i18n="importTitle"></div>
+  <div class="section-sub" data-i18n="importSub"></div>
   <div class="card">
-    <div class="ac-wrap">
-      <input id="ac-input" oninput="onAcInput()" autocomplete="off" placeholder="...">
-      <div class="ac-list" id="ac-list" style="display:none"></div>
+    <div class="upload-area" id="pdf-drop" onclick="document.getElementById('pdf-input').click()">
+      <div style="font-size:26px;color:var(--muted);margin-bottom:5px">↑</div>
+      <strong data-i18n="uploadBtn"></strong>
+      <p data-i18n="uploadSub"></p>
+      <input type="file" id="pdf-input" accept=".pdf" style="display:none" multiple>
     </div>
-    <div id="find-status" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
+    <div id="parse-status" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
+  </div>
+  <div id="preview-section" style="display:none">
+    <div class="section-title" style="font-size:20px" data-i18n="previewTitle"></div>
+    <div id="preview-list"></div>
+    <div style="display:flex;gap:9px;margin-top:11px">
+      <button class="btn btn-primary" onclick="confirmImport()" data-i18n="confirmImport"></button>
+      <button class="btn btn-outline" onclick="document.getElementById('preview-section').style.display='none'" data-i18n="cancel"></button>
+    </div>
+  </div>
+
+  <!-- TEAMS PDF -->
+  <div style="margin-top:16px">
+    <div class="section-title" style="font-size:20px" data-i18n="teamsImportTitle"></div>
+    <div class="section-sub" data-i18n="teamsImportSub"></div>
+    <div class="card">
+      <div class="upload-area" id="teams-pdf-drop" onclick="document.getElementById('teams-pdf-input').click()">
+        <div style="font-size:24px;color:var(--muted);margin-bottom:5px">🏆</div>
+        <strong data-i18n="teamsUploadBtn"></strong>
+        <p data-i18n="teamsUploadSub"></p>
+        <input type="file" id="teams-pdf-input" accept=".pdf" style="display:none">
+      </div>
+      <div id="teams-parse-status" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
+    </div>
+    <div id="teams-preview-section" style="display:none">
+      <div id="teams-preview-list"></div>
+      <div style="display:flex;gap:9px;margin-top:11px">
+        <button class="btn btn-primary" onclick="confirmTeamsImport()" data-i18n="confirmImport"></button>
+        <button class="btn btn-outline" onclick="document.getElementById('teams-preview-section').style.display='none'" data-i18n="cancel"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MATCHES PDF -->
+  <div style="margin-top:16px">
+    <div class="section-title" style="font-size:20px" data-i18n="matchesImportTitle"></div>
+    <div class="section-sub" data-i18n="matchesImportSub"></div>
+    <div class="card">
+      <div class="upload-area" id="matches-pdf-drop" onclick="document.getElementById('matches-pdf-input').click()">
+        <div style="font-size:24px;color:var(--muted);margin-bottom:5px">📅</div>
+        <strong data-i18n="matchesUploadBtn"></strong>
+        <p data-i18n="matchesUploadSub"></p>
+        <input type="file" id="matches-pdf-input" accept=".pdf" style="display:none">
+      </div>
+      <div id="matches-parse-status" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
+    </div>
+    <div id="matches-preview-section" style="display:none">
+      <div id="matches-preview-list"></div>
+      <div style="display:flex;gap:9px;margin-top:11px">
+        <button class="btn btn-primary" onclick="confirmMatchesImport()" data-i18n="confirmImport"></button>
+        <button class="btn btn-outline" onclick="document.getElementById('matches-preview-section').style.display='none'" data-i18n="cancel"></button>
+      </div>
+    </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <button class="btn btn-danger" onclick="deleteAllMatches()" data-i18n="deleteAllMatches"></button>
+    </div>
   </div>
 </div>
 
-<!-- STEP 2: Match list -->
-<div class="step" id="step-matches">
-  <div class="back-row">
-    <button class="back-btn" onclick="goFind()">←</button>
-    <div>
-      <div class="step-label" id="lbl-step2"></div>
-      <div id="selected-player-name" style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--white)"></div>
+<!-- PLAYERS -->
+<div class="section" id="sec-players">
+  <div class="section-title" data-i18n="playersTitle"></div>
+  <div class="section-sub" data-i18n="playersSub"></div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+    <select id="filter-team" onchange="renderPlayers()" style="width:auto;font-size:12px;padding:5px 9px"></select>
+    <select id="filter-gender" onchange="renderPlayers()" style="width:auto;font-size:12px;padding:5px 9px">
+      <option value="" data-i18n="allGenders"></option>
+      <option value="M" data-i18n="genderM"></option>
+      <option value="F" data-i18n="genderF"></option>
+    </select>
+    <input id="search-players" oninput="renderPlayers()" style="width:160px;font-size:12px;padding:5px 9px" data-i18n-placeholder="searchPlaceholder">
+    <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0">
+      <input type="checkbox" id="filter-blocked" onchange="renderPlayers()" style="width:auto;padding:0"> <span data-i18n="showBlocked"></span>
+    </label>
+  </div>
+  <div class="stats-row" id="stats-row"></div>
+  <div id="player-list"></div>
+</div>
+
+<!-- TEAMS -->
+<div class="section" id="sec-teams">
+  <div class="section-title" data-i18n="teamsTitle"></div>
+  <div class="section-sub" data-i18n="teamsSub"></div>
+  <div class="card">
+    <div class="card-title" data-i18n="addTeam"></div>
+    <div class="form-row">
+      <div class="form-group"><label data-i18n="teamName"></label><input id="t-name" data-i18n-placeholder="teamNamePh"></div>
+      <div class="form-group"><label data-i18n="liga"></label><input id="t-liga" data-i18n-placeholder="ligaPh"></div>
+      <div class="form-group"><label data-i18n="category"></label>
+        <select id="t-cat">
+          <option value="Herren">Herren</option>
+          <option value="Herren 30">Herren 30</option>
+          <option value="Herren 40">Herren 40</option>
+          <option value="Herren 50">Herren 50</option>
+          <option value="Herren 55">Herren 55</option>
+          <option value="Herren 60">Herren 60</option>
+          <option value="Herren 70">Herren 70</option>
+          <option value="Herren 75">Herren 75</option>
+          <option value="Damen">Damen</option>
+          <option value="Damen 30">Damen 30</option>
+          <option value="Damen 40">Damen 40</option>
+          <option value="Damen 50">Damen 50</option>
+          <option value="Damen 60">Damen 60</option>
+        </select>
+      </div>
+      <div class="form-group"><label data-i18n="teamNumber"></label><input id="t-num" type="number" min="1" value="1" style="width:70px"></div>
+      <div class="form-group"><label data-i18n="season"></label>
+        <select id="t-season"><option value="Sommer" data-i18n="summer"></option><option value="Winter" data-i18n="winter"></option></select>
+      </div>
+      <div class="form-group" style="justify-content:flex-end;min-width:80px"><label>&nbsp;</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0;cursor:pointer">
+          <input type="checkbox" id="t-is4er" style="width:auto;padding:0"> <span>4er</span>
+        </label>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="addTeam()" data-i18n="addTeamBtn"></button>
+  </div>
+  <div id="team-list"></div>
+</div>
+
+<!-- MATCHES -->
+<div class="section" id="sec-matches">
+  <div class="section-title" data-i18n="matchesTitle"></div>
+  <div class="section-sub" data-i18n="matchesSub"></div>
+  <div class="card">
+    <div class="form-row">
+      <div class="form-group"><label data-i18n="team"></label><select id="m-team"></select></div>
+      <div class="form-group"><label data-i18n="opponent"></label><input id="m-opp" placeholder="TC Blau-Weiss"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label data-i18n="date"></label><input type="date" id="m-date"></div>
+      <div class="form-group"><label data-i18n="time"></label><input type="time" id="m-time" value="10:00"></div>
+      <div class="form-group"><label data-i18n="venueType"></label>
+        <select id="m-home"><option value="Heim" data-i18n="home"></option><option value="Auswärts" data-i18n="away"></option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label data-i18n="venue"></label><input id="m-venue" data-i18n-placeholder="venuePh"></div>
+      <div class="form-group" style="justify-content:flex-end;min-width:110px"><label>&nbsp;</label>
+        <button class="btn btn-primary" onclick="addMatch()" data-i18n="addMatchBtn"></button>
+      </div>
     </div>
   </div>
-  <div id="player-info-card"></div>
-  <div class="step-sub" id="sub-step2"></div>
   <div id="match-list"></div>
 </div>
 
-<!-- STEP 3: Confirm availability -->
-<div class="step" id="step-confirm">
-  <div class="back-row">
-    <button class="back-btn" onclick="goMatches()">←</button>
-    <div>
-      <div id="confirm-match-name" style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:var(--white)"></div>
-      <div id="confirm-match-meta" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
+<!-- AVAILABILITY -->
+<div class="section" id="sec-avail">
+  <div class="section-title" data-i18n="availTitle"></div>
+  <div class="section-sub" data-i18n="availSub"></div>
+  <div class="card">
+    <div class="form-group" style="margin-bottom:0"><label data-i18n="selectMatch"></label>
+      <select id="av-match" onchange="renderAvail()"></select>
     </div>
   </div>
-  <div id="confirm-player-card"></div>
-  <div id="confirm-blocked"></div>
-  <div class="step-sub" id="sub-step3"></div>
-  <div class="avail-btns">
-    <button class="avail-btn yes" id="btn-yes" onclick="setAvail('yes')" data-i18n="yesBtn"></button>
-    <button class="avail-btn maybe" id="btn-maybe" onclick="setAvail('maybe')" data-i18n="maybeBtn"></button>
-    <button class="avail-btn no" id="btn-no" onclick="setAvail('no')" data-i18n="noBtn"></button>
+  <div id="avail-content"></div>
+</div>
+
+<!-- LINEUP -->
+<div class="section" id="sec-lineup">
+  <div class="section-title" data-i18n="lineupTitle"></div>
+  <div class="section-sub" data-i18n="lineupSub"></div>
+  <div class="card">
+    <div class="form-group" style="margin-bottom:0"><label data-i18n="selectMatch"></label>
+      <select id="lineup-match" onchange="renderLineup()"></select>
+    </div>
   </div>
-  <div class="saved-msg" id="saved-msg"></div>
-  <div style="margin-top:16px;text-align:center">
-    <button class="btn btn-outline btn-sm" onclick="goMatches()" id="btn-back-matches"></button>
+  <div id="lineup-content"></div>
+</div>
+
+<!-- BLOCKING -->
+<div class="section" id="sec-blocking">
+  <div class="section-title" data-i18n="blockingTitle"></div>
+  <div class="section-sub" data-i18n="blockingSub"></div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <select id="block-cat-filter" onchange="renderBlocking()" style="width:auto;font-size:12px;padding:5px 9px">
+      <option value="" data-i18n="allCategories"></option>
+    </select>
   </div>
+  <div id="blocking-content"></div>
 </div>
 
 </main>
 
+<!-- PLAYER VIEW -->
+<div class="player-view" id="player-view">
+  <div class="pv-header">
+    <button class="pv-back" onclick="closePlayerView()">←</button>
+    <div><div class="pv-title">🎾 Club Manager</div><div class="pv-sub" id="pv-sub"></div></div>
+  </div>
+  <div id="pv-step-match">
+    <div class="card"><div class="card-title" data-i18n="pvPickMatch"></div><div id="pv-match-list"></div></div>
+  </div>
+  <div id="pv-step-player" style="display:none">
+    <div class="card">
+      <div class="card-title" data-i18n="pvWhoAreYou"></div>
+      <div class="autocomplete-wrap" style="margin-top:7px">
+        <input id="pv-ac-input" oninput="onPvAcInput()" autocomplete="off" data-i18n-placeholder="playerSearchPh">
+        <div class="ac-list" id="pv-ac-list" style="display:none"></div>
+      </div>
+      <div id="pv-selected-info" style="margin-top:7px;font-size:12px;color:var(--muted)"></div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="pvGoBack()" data-i18n="pvChangeMatch"></button>
+  </div>
+  <div id="pv-step-confirm" style="display:none">
+    <div class="card" id="pv-confirm-card"></div>
+    <button class="btn btn-outline btn-sm" onclick="pvGoPickPlayer()" style="margin-top:9px" data-i18n="pvChangePlayer"></button>
+  </div>
+</div>
+
+<!-- ASSIGN MODAL -->
+<div class="modal-overlay" id="assign-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('assign-modal')">✕</button>
+    <div class="modal-title" id="assign-modal-title"></div>
+    <div id="assign-modal-body"></div>
+  </div>
+</div>
+
 <script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
 const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
 const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
 const HDR={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 
 async function sbGet(t,p=''){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{headers:{...HDR,'Prefer':''}});if(!r.ok)throw new Error(await r.text());return r.json();}
-async function sbUpsert(t,d){const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...HDR,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());}
+async function sbUpsert(t,d){const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...HDR,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(Array.isArray(d)?d:[d])});if(!r.ok)throw new Error(await r.text());}
+async function sbDelete(t,f){const r=await fetch(`${SB_URL}/rest/v1/${t}?${f}`,{method:'DELETE',headers:HDR});if(!r.ok)throw new Error(await r.text());}
+
+function setSync(s,m){const b=document.getElementById('sync-badge');b.className='sync-badge sync-'+s;b.textContent=m;}
+
+// ── CATEGORY HELPERS ──
+function catGender(cat){if(!cat)return'M';const c=cat.toLowerCase();if(c.startsWith('damen'))return'F';return'M';}
+function teamNumber(team){
+  if(team.team_number)return parseInt(team.team_number);
+  const n=team.name.match(/(\d+)$/);if(n)return parseInt(n[1]);
+  const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
+  const r=team.name.match(/\b(VIII|VII|VI|IV|V|III|II|I)\b/);
+  if(r)return roman[r[1]]||1;
+  return 1;
+}
 
 const T={
-  de:{
-    headerSub:'Spielerverfügbarkeit',
-    step1Label:'Schritt 1 von 2',step1Title:'Wer bist du?',step1Sub:'Suche deinen Namen in der Kaderliste.',
-    step1Ph:'Namen eingeben...',findStatus:'Lade Spieler...',
-    step2Label:'Schritt 2 von 2',step2Sub:'Tippe auf ein Spiel um deine Verfügbarkeit zu bestätigen.',
-    step3Sub:'Kannst du spielen?',
-    yesBtn:'✓ Ja',maybeBtn:'? Vielleicht',noBtn:'✗ Nein',
-    saved:'✓ Gespeichert',saving:'Speichern...',
-    backMatches:'← Zurück zu den Spielen',
-    blockedWarn:'⛔ Du bist für dieses Spiel gesperrt (Stammkader / Stammmannschaft).',
-    noMatches:'Keine Spiele für deine Mannschaft gefunden.',
-    noPlayers:'Keine Spieler gefunden.',
-  },
-  es:{
-    headerSub:'Disponibilidad de jugadores',
-    step1Label:'Paso 1 de 2',step1Title:'¿Quién sos?',step1Sub:'Buscá tu nombre en el plantel.',
-    step1Ph:'Escribí tu nombre...',findStatus:'Cargando jugadores...',
-    step2Label:'Paso 2 de 2',step2Sub:'Tocá un partido para confirmar tu disponibilidad.',
-    step3Sub:'¿Podés jugar?',
-    yesBtn:'✓ Sí',maybeBtn:'? Quizás',noBtn:'✗ No',
-    saved:'✓ Guardado',saving:'Guardando...',
-    backMatches:'← Volver a los partidos',
-    blockedWarn:'⛔ Estás bloqueado para este partido (Stammkader / Stammmannschaft).',
-    noMatches:'No hay partidos para tu equipo.',
-    noPlayers:'No se encontraron jugadores.',
-  },
-  en:{
-    headerSub:'Player availability',
-    step1Label:'Step 1 of 2',step1Title:'Who are you?',step1Sub:'Search your name in the club roster.',
-    step1Ph:'Type your name...',findStatus:'Loading players...',
-    step2Label:'Step 2 of 2',step2Sub:'Tap a match to confirm your availability.',
-    step3Sub:'Can you play?',
-    yesBtn:'✓ Yes',maybeBtn:'? Maybe',noBtn:'✗ No',
-    saved:'✓ Saved',saving:'Saving...',
-    backMatches:'← Back to matches',
-    blockedWarn:'⛔ You are blocked for this match (Stammkader / Stammmannschaft).',
-    noMatches:'No matches found for your team.',
-    noPlayers:'No players found.',
-  }
+  es:{tabs:['Importar PDF','Jugadores','Equipos','Partidos','Disponibilidad','Alineación','Bloqueos'],
+    importTitle:'Importar jugadores desde PDF',importSub:'Formato oficial TVBB Berlin',
+    uploadBtn:'Subir PDF del TVBB',uploadSub:'Namentliche Mannschaftsmeldung · Sommer / Winter',
+    teamsImportTitle:'Importar equipos',teamsImportSub:'ResultReport PDF del TVBB — detecta equipos y ligas automáticamente',
+    teamsUploadBtn:'Subir ResultReport PDF',teamsUploadSub:'Ergebnistabellen · detecta Herren, Damen, Senioren...',
+    teamsImportedMsg:(n)=>`✓ ${n} equipos importados.`,
+    matchesImportTitle:'Importar partidos',matchesImportSub:'Begegnungen PDF del TVBB — crea todos los partidos automáticamente',
+    matchesUploadBtn:'Subir Begegnungen PDF',matchesUploadSub:'Lista de partidos · filtra juveniles automáticamente',
+    matchesImportedMsg:(n)=>`✓ ${n} partidos importados.`,
+    deleteAllMatches:'🗑 Borrar todos los partidos',deleteAllConfirm:'¿Borrar TODOS los partidos? Esto no se puede deshacer.',
+    deletedMsg:'✓ Todos los partidos borrados.',matchesParsedMsg:(n)=>`${n} partidos adultos encontrados.`,
+    teamsParsedMsg:(n)=>`${n} equipos encontrados.`,
+    noTeamMatch:'Equipo no encontrado — importá los equipos primero.',
+    previewTitle:'Vista previa',confirmImport:'Importar todos',cancel:'Cancelar',
+    playersTitle:'Jugadores',playersSub:'Plantel — ordenado por LK',
+    searchPlaceholder:'Buscar...',allTeams:'Todos los equipos',allGenders:'Todos',genderM:'Masculino',genderF:'Femenino',showBlocked:'Solo bloqueados',
+    teamsTitle:'Equipos',teamsSub:'Gestión de equipos',addTeam:'Crear equipo',teamName:'Nombre',teamNamePh:'Herren 1...',
+    liga:'Liga',ligaPh:'Verbandsliga...',category:'Categoría',teamNumber:'Número',season:'Temporada',summer:'Sommer (6)',winter:'Winter (4)',addTeamBtn:'+ Crear',
+    matchesTitle:'Partidos',matchesSub:'Calendario',team:'Equipo',opponent:'Rival',date:'Fecha',time:'Hora',
+    venueType:'Sede',home:'Heimspiel',away:'Auswärtsspiel',venue:'Lugar',venuePh:'Tennisanlage...',addMatchBtn:'+ Agregar',
+    availTitle:'Disponibilidad',availSub:'Vista del admin',selectMatch:'Partido',
+    yesBtn:'✓ Sí',noBtn:'✗ No',maybeBtn:'? Quizás',
+    lineupTitle:'Alineación',lineupSub:'Asignar jugadores · Orden LK',singles:'Singles',doubles:'Dobles',
+    autoLineup:'⚡ Generar automático',goAvail:'Ver disponibilidad →',
+    blockingTitle:'Bloqueos',blockingSub:'Reglas Stammkader + Stammmannschaft (TVBB)',allCategories:'Todas las categorías',
+    noPlayers:'Sin jugadores. Importá un PDF primero.',noMatches:'Sin partidos aún.',noTeamPlayers:'Sin jugadores para este equipo.',noMatchSel:'Seleccioná un partido.',noBlocked:'Sin bloqueos activos.',
+    available:'disponibles',withLineup:'Con alineación',
+    parsedMsg:(n,f)=>`${n} jugadores en ${f} PDF${f>1?'s':''}.`,importedMsg:(n,t)=>`✓ ${n} importados. ${t} en total.`,addedPlayers:n=>`+${n} más...`,
+    matchAlert:'Completá equipo, rival y fecha.',lkViolation:(i,a,j,b)=>`⚠️ Pos. ${i} (${a}) peor que pos. ${j} (${b})`,
+    lineupValid:'✓ Alineación válida',lineupNote:'TVBB: Singles antes del inicio. Dobles máximo 10 min después.',
+    blockedInLineup:(name,team)=>`⛔ ${name} bloqueado — ya jugó 2 veces en ${team}`,
+    assignTeam:'Equipos',saveAssign:'Guardar',noTeam:'Sin equipo',
+    players:'Jugadores',teams:'Equipos',matches:'Partidos',
+    matchesPlayed:'partidos jugados',blockedFrom:'bloqueado en equipos inferiores a',warnOneMatch:'1 partido — próximo bloqueo',
+    back:'Volver',pvPickMatch:'Seleccioná tu partido',pvWhoAreYou:'¿Quién sos?',playerSearchPh:'Buscar jugador...',
+    pvChangeMatch:'← Cambiar partido',pvChangePlayer:'← Cambiar jugador',pvOpenView:'Vista jugador',
+    syncOk:'● sync',syncErr:'✕ offline',syncIng:'⟳',availSaved:'✓ Guardado',confirmingAvail:'Guardando...',
+    addMatchCount:'+ Sumar partido',blockNote:'La regla aplica dentro de cada categoría (Herren, Herren 30, etc.) por separado.'},
+  de:{tabs:['PDF importieren','Spieler','Mannschaften','Spiele','Verfügbarkeit','Aufstellung','Sperren'],
+    importTitle:'Spieler aus PDF importieren',importSub:'Offizielles TVBB-Format',
+    uploadBtn:'TVBB-PDF hochladen',uploadSub:'Namentliche Mannschaftsmeldung · Sommer / Winter',
+    teamsImportTitle:'Mannschaften importieren',teamsImportSub:'ResultReport PDF — erkennt Mannschaften und Ligen automatisch',
+    teamsUploadBtn:'ResultReport PDF hochladen',teamsUploadSub:'Ergebnistabellen · erkennt Herren, Damen, Senioren...',
+    teamsImportedMsg:(n)=>`✓ ${n} Mannschaften importiert.`,
+    matchesImportTitle:'Spiele importieren',matchesImportSub:'Begegnungen PDF — erstellt alle Spiele automatisch',
+    matchesUploadBtn:'Begegnungen PDF hochladen',matchesUploadSub:'Spielliste · filtert Junioren automatisch',
+    matchesImportedMsg:(n)=>`✓ ${n} Spiele importiert.`,
+    deleteAllMatches:'🗑 Alle Spiele löschen',deleteAllConfirm:'Alle Spiele wirklich löschen? Dies kann nicht rückgängig gemacht werden.',
+    deletedMsg:'✓ Alle Spiele gelöscht.',matchesParsedMsg:(n)=>`${n} Erwachsenenspiele gefunden.`,
+    teamsParsedMsg:(n)=>`${n} Mannschaften gefunden.`,
+    noTeamMatch:'Mannschaft nicht gefunden — bitte zuerst Mannschaften importieren.',
+    previewTitle:'Vorschau',confirmImport:'Alle importieren',cancel:'Abbrechen',
+    playersTitle:'Spieler',playersSub:'Vereinskader — sortiert nach LK',
+    searchPlaceholder:'Suchen...',allTeams:'Alle Mannschaften',allGenders:'Alle',genderM:'Herren',genderF:'Damen',showBlocked:'Nur Gesperrte',
+    teamsTitle:'Mannschaften',teamsSub:'Mannschaftsverwaltung',addTeam:'Mannschaft erstellen',teamName:'Name',teamNamePh:'Herren 1...',
+    liga:'Liga',ligaPh:'Verbandsliga...',category:'Kategorie',teamNumber:'Nummer',season:'Saison',summer:'Sommer (6)',winter:'Winter (4)',addTeamBtn:'+ Erstellen',
+    matchesTitle:'Spiele',matchesSub:'Spielkalender',team:'Mannschaft',opponent:'Gegner',date:'Datum',time:'Uhrzeit',
+    venueType:'Spielort',home:'Heimspiel',away:'Auswärtsspiel',venue:'Anlage',venuePh:'Tennisanlage...',addMatchBtn:'+ Hinzufügen',
+    availTitle:'Verfügbarkeit',availSub:'Admin-Ansicht',selectMatch:'Spiel',
+    yesBtn:'✓ Ja',noBtn:'✗ Nein',maybeBtn:'? Vielleicht',
+    lineupTitle:'Aufstellung',lineupSub:'Spieler zuordnen · LK-Reihenfolge',singles:'Einzel',doubles:'Doppel',
+    autoLineup:'⚡ Automatisch',goAvail:'Verfügbarkeit →',
+    blockingTitle:'Sperren',blockingSub:'Stammkader + Stammmannschaft-Regel (TVBB)',allCategories:'Alle Kategorien',
+    noPlayers:'Keine Spieler. PDF importieren.',noMatches:'Noch keine Spiele.',noTeamPlayers:'Keine Spieler für diese Mannschaft.',noMatchSel:'Bitte Spiel auswählen.',noBlocked:'Keine aktiven Sperren.',
+    available:'verfügbar',withLineup:'Mit Aufstellung',
+    parsedMsg:(n,f)=>`${n} Spieler in ${f} PDF${f>1?'s':''}.`,importedMsg:(n,t)=>`✓ ${n} importiert. ${t} insgesamt.`,addedPlayers:n=>`+${n} weitere...`,
+    matchAlert:'Bitte Mannschaft, Gegner und Datum angeben.',lkViolation:(i,a,j,b)=>`⚠️ Pos. ${i} (${a}) schlechter als Pos. ${j} (${b})`,
+    lineupValid:'✓ Aufstellung regelkonform',lineupNote:'TVBB: Einzel vor Spielbeginn. Doppel max. 10 Min.',
+    blockedInLineup:(name,team)=>`⛔ ${name} gesperrt — 2× gespielt in ${team}`,
+    assignTeam:'Mannschaften',saveAssign:'Speichern',noTeam:'Keine',
+    players:'Spieler',teams:'Mannschaften',matches:'Spiele',
+    matchesPlayed:'Spiele gespielt',blockedFrom:'gesperrt unter',warnOneMatch:'1 Spiel — nächste Sperre',
+    back:'Zurück',pvPickMatch:'Spiel auswählen',pvWhoAreYou:'Wer bist du?',playerSearchPh:'Spieler suchen...',
+    pvChangeMatch:'← Spiel ändern',pvChangePlayer:'← Spieler ändern',pvOpenView:'Spieleransicht',
+    syncOk:'● sync',syncErr:'✕ offline',syncIng:'⟳',availSaved:'✓ Gespeichert',confirmingAvail:'Speichern...',
+    addMatchCount:'+ Spiel addieren',blockNote:'Die Regel gilt innerhalb jeder Kategorie (Herren, Herren 30 usw.) getrennt.'},
+  en:{tabs:['Import PDF','Players','Teams','Matches','Availability','Lineup','Blocks'],
+    importTitle:'Import players from PDF',importSub:'Official TVBB Berlin format',
+    uploadBtn:'Upload TVBB PDF',uploadSub:'Namentliche Mannschaftsmeldung · Summer / Winter',
+    teamsImportTitle:'Import teams',teamsImportSub:'ResultReport PDF — detects teams and leagues automatically',
+    teamsUploadBtn:'Upload ResultReport PDF',teamsUploadSub:'Ergebnistabellen · detects Herren, Damen, Seniors...',
+    teamsImportedMsg:(n)=>`✓ ${n} teams imported.`,
+    matchesImportTitle:'Import matches',matchesImportSub:'Begegnungen PDF — creates all matches automatically',
+    matchesUploadBtn:'Upload Begegnungen PDF',matchesUploadSub:'Match list · filters juniors automatically',
+    matchesImportedMsg:(n)=>`✓ ${n} matches imported.`,
+    deleteAllMatches:'🗑 Delete all matches',deleteAllConfirm:'Delete ALL matches? This cannot be undone.',
+    deletedMsg:'✓ All matches deleted.',matchesParsedMsg:(n)=>`${n} adult matches found.`,
+    teamsParsedMsg:(n)=>`${n} teams found.`,noTeamMatch:'Team not found — please import teams first.',
+    previewTitle:'Preview',confirmImport:'Import all',cancel:'Cancel',
+    playersTitle:'Players',playersSub:'Club roster — sorted by LK',
+    searchPlaceholder:'Search...',allTeams:'All teams',allGenders:'All',genderM:'Male',genderF:'Female',showBlocked:'Blocked only',
+    teamsTitle:'Teams',teamsSub:'Team management',addTeam:'Create team',teamName:'Name',teamNamePh:'Herren 1...',
+    liga:'League',ligaPh:'Verbandsliga...',category:'Category',teamNumber:'Number',season:'Season',summer:'Summer (6)',winter:'Winter (4)',addTeamBtn:'+ Create',
+    matchesTitle:'Matches',matchesSub:'Schedule',team:'Team',opponent:'Opponent',date:'Date',time:'Time',
+    venueType:'Venue',home:'Home',away:'Away',venue:'Location',venuePh:'Tennis club...',addMatchBtn:'+ Add',
+    availTitle:'Availability',availSub:'Admin view',selectMatch:'Match',
+    yesBtn:'✓ Yes',noBtn:'✗ No',maybeBtn:'? Maybe',
+    lineupTitle:'Lineup',lineupSub:'Assign players · LK order',singles:'Singles',doubles:'Doubles',
+    autoLineup:'⚡ Auto-generate',goAvail:'View availability →',
+    blockingTitle:'Blocks',blockingSub:'Stammkader + Stammmannschaft rule (TVBB)',allCategories:'All categories',
+    noPlayers:'No players. Import a PDF first.',noMatches:'No matches yet.',noTeamPlayers:'No players for this team.',noMatchSel:'Please select a match.',noBlocked:'No active blocks.',
+    available:'available',withLineup:'With lineup',
+    parsedMsg:(n,f)=>`${n} players in ${f} PDF${f>1?'s':''}.`,importedMsg:(n,t)=>`✓ ${n} imported. ${t} total.`,addedPlayers:n=>`+${n} more...`,
+    matchAlert:'Please fill in team, opponent and date.',lkViolation:(i,a,j,b)=>`⚠️ Pos. ${i} (${a}) worse than pos. ${j} (${b})`,
+    lineupValid:'✓ Valid lineup',lineupNote:'TVBB: Singles before match start. Doubles max 10 min.',
+    blockedInLineup:(name,team)=>`⛔ ${name} blocked — played 2× in ${team}`,
+    assignTeam:'Teams',saveAssign:'Save',noTeam:'No team',
+    players:'Players',teams:'Teams',matches:'Matches',
+    matchesPlayed:'matches played',blockedFrom:'blocked below',warnOneMatch:'1 match — next blocks',
+    back:'Back',pvPickMatch:'Select your match',pvWhoAreYou:'Who are you?',playerSearchPh:'Search player...',
+    pvChangeMatch:'← Change match',pvChangePlayer:'← Change player',pvOpenView:'Player view',
+    syncOk:'● sync',syncErr:'✕ offline',syncIng:'⟳',availSaved:'✓ Saved',confirmingAvail:'Saving...',
+    addMatchCount:'+ Add match',blockNote:'Rule applies within each category (Herren, Herren 30, etc.) separately.'}
 };
 
 let lang='de';
-let state={players:[],teams:[],matches:[],availability:{},matchCounts:{},playerTeams:[]};
-let selectedPlayer=null,selectedMatch=null;
+let state={players:[],teams:[],matches:[],availability:{},lineups:{},matchCounts:{}};
 
-function tr(k){return T[lang][k]||T.de[k]||k}
-
-function setLang(l){
-  lang=l;
-  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));
-  applyT();
-}
-
-function applyT(){
-  document.getElementById('header-sub').textContent=tr('headerSub');
-  document.getElementById('lbl-step1').textContent=tr('step1Label');
-  document.getElementById('ttl-step1').textContent=tr('step1Title');
-  document.getElementById('sub-step1').textContent=tr('step1Sub');
-  document.getElementById('ac-input').placeholder=tr('step1Ph');
-  document.getElementById('lbl-step2').textContent=tr('step2Label');
-  document.getElementById('sub-step2').textContent=tr('step2Sub');
-  document.getElementById('sub-step3').textContent=tr('step3Sub');
-  document.getElementById('btn-yes').textContent=tr('yesBtn');
-  document.getElementById('btn-maybe').textContent=tr('maybeBtn');
-  document.getElementById('btn-no').textContent=tr('noBtn');
-  document.getElementById('btn-back-matches').textContent=tr('backMatches');
-}
-
+function tr(k){return T[lang][k]??T.de[k]??k}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
 function initials(n){return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
-function fmtDate(d){
-  if(!d)return'';
-  const[y,m,day]=d.split('-');
-  const months=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
-  return{day,month:months[parseInt(m)-1],full:`${day}.${m}.${y}`};
-}
+function fmtDate(d){if(!d)return '';const[y,m,day]=d.split('-');return`${day}.${m}.${y}`}
 function teamById(id){return state.teams.find(t=>t.id===id)}
 function playerById(id){return state.players.find(p=>p.id===id)}
-function getPlayerTeamIds(playerId){return state.playerTeams.filter(r=>r.player_id===playerId).map(r=>r.team_id);}
-function teamSize(t){return t&&t.season==='Winter'?4:6}
-function teamNumber(team){
-  if(team.team_number)return parseInt(team.team_number);
-  const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
-  const r=team.name.match(/\b(VIII|VII|VI|IV|V|III|II|I)\b/);if(r)return roman[r[1]]||1;
-  const n=team.name.match(/(\d+)$/);return n?parseInt(n[1]):1;
-}
+function lkVal(lk){return parseFloat(lk)||99}
+function teamSize(t){return t&&(t.is_4er||t.season==='Winter')?4:6}
 
 // ── BLOCKING LOGIC ──
-// Same dual-rule system as admin:
-// Rule 1 – Stammkader: LK position within category → locked to team, blocked in higher-numbered teams
-// Rule 2 – Stammmannschaft: 2+ matches in team → blocked in all higher-numbered teams in same category
-function isBlocked(playerId,teamId){
-  const team=teamById(teamId);if(!team)return false;
-  const cat=team.category||'Herren';
-  const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
-  const counts=state.matchCounts[playerId]||{};
-  const thisNum=teamNumber(team);
-  // Rule 2: Stammmannschaft
-  for(const t of catTeams){const c=counts[t.id]||0;if(c>=2&&teamNumber(t)<thisNum)return true;}
-  // Rule 1: Stammkader
-  const catPlayers=state.players.filter(p=>{const tids=getPlayerTeamIds(p.id);return tids.some(tid=>catTeams.find(t=>t.id===tid));}).sort((a,b)=>a.lk-b.lk);
+// Rule 1 – STAMMKADER: Players sorted by LK within a category.
+//   Pos 1–6 (Sommer) / 1–4 (Winter) → Team 1, next group → Team 2, etc.
+//   Cannot play in teams with HIGHER number than their Stammkader team.
+// Rule 2 – STAMMMANNSCHAFT: 2+ matches played in team X → blocked in all teams
+//   with higher number than X, within the same category.
+// Both rules are INDEPENDENT and applied separately.
+
+function getStammkaderTeam(playerId, catGroup){
+  const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  if(!catTeams.length)return null;
+  const groupSize=teamSize(catTeams[0]);
+  const catPlayers=state.players
+    .filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid)))
+    .sort((a,b)=>a.lk-b.lk);
   const posInCat=catPlayers.findIndex(p=>p.id===playerId);
-  if(posInCat<0)return false;
-  const groupSize=teamSize(catTeams[0]||team);
-  const stammTeamIdx=Math.floor(posInCat/groupSize);
-  const stammTeam=catTeams[stammTeamIdx]||catTeams[catTeams.length-1];
-  if(stammTeam&&teamNumber(stammTeam)<thisNum)return true;
-  return false;
+  if(posInCat<0)return null;
+  const teamIndex=Math.floor(posInCat/groupSize);
+  return catTeams[teamIndex]||catTeams[catTeams.length-1];
 }
 
+function getPlayerBlockStatus(playerId, catGroup){
+  const counts=state.matchCounts[playerId]||{};
+  const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
+
+  // Rule 1: Stammkader
+  const stammkaderTeam=getStammkaderTeam(playerId,catGroup);
+  const stammkaderTeamNum=stammkaderTeam?teamNumber(stammkaderTeam):null;
+  const stammkaderBlocked=stammkaderTeamNum!==null?catTeams.filter(t=>teamNumber(t)>stammkaderTeamNum):[];
+
+  // Rule 2: Stammmannschaft
+  let highestBlockTeamNum=null,stammmannschaftSource='';
+  for(const t of catTeams){
+    const c=counts[t.id]||0;
+    if(c>=2){const num=teamNumber(t);if(highestBlockTeamNum===null||num<highestBlockTeamNum){highestBlockTeamNum=num;stammmannschaftSource=t.name;}}
+  }
+  const stammmannschaftBlocked=highestBlockTeamNum!==null?catTeams.filter(t=>teamNumber(t)>highestBlockTeamNum):[];
+  const stammmannschaftWarned=catTeams.filter(t=>{const c=counts[t.id]||0;return c===1&&(highestBlockTeamNum===null||teamNumber(t)<=highestBlockTeamNum);});
+
+  const allBlockedIds=new Set([...stammkaderBlocked.map(t=>t.id),...stammmannschaftBlocked.map(t=>t.id)]);
+  return{stammkaderTeam,stammkaderTeamNum,stammkaderBlocked,stammmannschaftBlocked,stammmannschaftWarned,stammmannschaftSource,highestBlockTeamNum,blocked:catTeams.filter(t=>allBlockedIds.has(t.id)),warned:stammmannschaftWarned};
+}
+
+function isPlayerBlockedForTeam(playerId,teamId){
+  const team=teamById(teamId);if(!team)return false;
+  const status=getPlayerBlockStatus(playerId,team.category);
+  return status.blocked.some(b=>b.id===teamId);
+}
+
+function blockReasonForTeam(playerId,teamId){
+  const team=teamById(teamId);if(!team)return'';
+  const status=getPlayerBlockStatus(playerId,team.category);
+  const reasons=[];
+  if(status.stammkaderBlocked.some(t=>t.id===teamId))reasons.push(`Stammkader ${status.stammkaderTeam?.name||''}`);
+  if(status.stammmannschaftBlocked.some(t=>t.id===teamId))reasons.push(`Stammmannschaft (2× ${status.stammmannschaftSource})`);
+  return reasons.join(' · ');
+}
+
+// ── LOAD ──
 async function loadAll(){
-  document.getElementById('find-status').textContent=tr('findStatus');
+  setSync('ing',tr('syncIng'));
   try{
-    const[teams,players,matches,avRows,countRows,ptRows]=await Promise.all([
+    const[teams,players,matches,avRows,lineupRows,countRows]=await Promise.all([
       sbGet('teams','order=category,team_number'),
       sbGet('players','order=lk'),
       sbGet('matches','order=date'),
       sbGet('availability',''),
-      sbGet('player_match_counts',''),
-      sbGet('player_teams','')
+      sbGet('lineups',''),
+      sbGet('player_match_counts','')
     ]);
-    state.teams=teams;
-    state.players=players.map(p=>({...p,lkStr:p.lk_str,rawName:p.raw_name,year:p.year}));
-    state.matches=matches.map(m=>({...m,teamId:m.team_id}));
+    state.teams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
+    state.players=players.map(p=>({id:p.id,name:p.name,rawName:p.raw_name,idnr:p.idnr,lk:p.lk,lkStr:p.lk_str,year:p.year,teamIds:[],gender:p.gender||'M',rank:p.rank}));
+    state.matches=matches.map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue}));
     state.availability={};
     for(const r of avRows){if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
+    state.lineups={};
+    for(const r of lineupRows)state.lineups[r.match_id]=r.slots;
     state.matchCounts={};
     for(const r of countRows){if(!state.matchCounts[r.player_id])state.matchCounts[r.player_id]={};state.matchCounts[r.player_id][r.team_id]=r.matches_played;}
-    state.playerTeams=ptRows;
-    document.getElementById('find-status').textContent='';
-  }catch(e){document.getElementById('find-status').textContent='Verbindungsfehler. Bitte Seite neu laden.';console.error(e);}
+    const ptRows=await sbGet('player_teams','');
+    for(const r of ptRows){const p=state.players.find(x=>x.id===r.player_id);if(p&&!p.teamIds.includes(r.team_id))p.teamIds.push(r.team_id);}
+    setSync('ok',tr('syncOk'));
+    renderAll();
+  }catch(e){setSync('err',tr('syncErr'));console.error(e);}
 }
 
-function onAcInput(){
-  const val=document.getElementById('ac-input').value.toLowerCase();
-  const list=document.getElementById('ac-list');
-  if(!val||val.length<2){list.style.display='none';return;}
-  const filtered=state.players.filter(p=>p.name.toLowerCase().includes(val)||(p.raw_name||p.rawName||'').toLowerCase().includes(val)).slice(0,10);
-  if(!filtered.length){list.style.display='none';return;}
-  list.innerHTML=filtered.map(p=>`<div class="ac-item" onclick="selectPlayer('${p.id}')">
-    <div class="avatar">${initials(p.name)}</div>
-    <div style="flex:1"><div style="font-weight:600">${p.name}</div><div style="font-size:11px;color:var(--muted)">${p.year||''}</div></div>
-    <span class="lk-badge">${p.lk_str||p.lkStr||'?'}</span>
-  </div>`).join('');
-  list.style.display='block';
+// ── LANG ──
+function setLang(l){lang=l;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));applyT();renderAll();}
+function applyT(){
+  document.querySelectorAll('[data-tab]').forEach((tab,i)=>{tab.textContent=T[lang].tabs[i];});
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(T[lang][k]!==undefined)el.textContent=T[lang][k];});
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const k=el.getAttribute('data-i18n-placeholder');if(T[lang][k]!==undefined)el.placeholder=T[lang][k];});
+  document.querySelectorAll('option[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(T[lang][k]!==undefined)el.textContent=T[lang][k];});
 }
 
-document.addEventListener('click',e=>{if(!e.target.closest('.ac-wrap'))document.getElementById('ac-list').style.display='none';});
-
-function selectPlayer(id){
-  selectedPlayer=state.players.find(p=>p.id===id);
-  document.getElementById('ac-input').value=selectedPlayer.name;
-  document.getElementById('ac-list').style.display='none';
-  goMatches();
+function showTab(name,e){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  if(e)e.target.classList.add('active');
+  document.getElementById('sec-'+name).classList.add('active');
+  if(name==='players')renderPlayers();
+  if(name==='teams')renderTeams();
+  if(name==='matches')renderMatches();
+  if(name==='avail'){populateMatchSel('av-match');renderAvail();}
+  if(name==='lineup'){populateMatchSel('lineup-match');renderLineup();}
+  if(name==='blocking')renderBlocking();
 }
 
-function showStep(name){
-  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
-  document.getElementById('step-'+name).classList.add('active');
-  window.scrollTo(0,0);
+// ── DRAG & DROP SETUP ──
+function setupDrop(zoneId,inputId,handler){
+  const zone=document.getElementById(zoneId);if(!zone)return;
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)handler(f);});
 }
 
-function goFind(){selectedPlayer=null;showStep('find');}
-function goMatches(){if(!selectedPlayer)return showStep('find');renderMatchList();showStep('matches');}
+// ── PLAYERS PDF PARSER ──
+document.getElementById('pdf-input').addEventListener('change',async e=>{
+  const files=Array.from(e.target.files);if(!files.length)return;
+  document.getElementById('parse-status').textContent='...';
+  let allP=[],allT=[];
+  for(const file of files){try{const res=await parsePDF(file);allP=allP.concat(res.players);for(const t of res.teams)if(!allT.find(x=>x.name===t.name))allT.push(t);}catch(err){console.error(err);}}
+  state._pending={players:allP,teams:allT};
+  showPreview(state._pending);
+  document.getElementById('parse-status').textContent=T[lang].parsedMsg(allP.length,files.length);
+  e.target.value='';
+});
 
-function renderMatchList(){
-  const p=selectedPlayer;
-  const teamIds=getPlayerTeamIds(p.id);
-  document.getElementById('selected-player-name').textContent=p.name;
-  const teams=teamIds.map(tid=>teamById(tid)).filter(Boolean);
-  document.getElementById('player-info-card').innerHTML=`<div class="player-card">
-    <div class="avatar" style="width:44px;height:44px;font-size:15px">${initials(p.name)}</div>
-    <div>
-      <div style="font-size:13px;color:var(--muted)">${p.lk_str||p.lkStr||''} · Jg. ${p.year||'—'}</div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${teams.map(t=>`<span style="font-size:11px;background:#2a1010;border:1px solid var(--red)33;color:var(--red);padding:2px 8px;border-radius:10px">${t.name}</span>`).join('')}</div>
-    </div>
-  </div>`;
-  const myMatches=[...state.matches].filter(m=>teamIds.includes(m.team_id)).sort((a,b)=>a.date.localeCompare(b.date));
-  const el=document.getElementById('match-list');
-  if(!myMatches.length){el.innerHTML=`<div class="empty">${tr('noMatches')}</div>`;return;}
-  el.innerHTML=myMatches.map(m=>{
-    const team=teamById(m.team_id);
-    const avail=state.availability[m.id]?.[p.id]||'';
-    const d=fmtDate(m.date);
-    const blocked=isBlocked(p.id,m.team_id);
-    let avBadge='';
-    if(avail==='yes')avBadge=`<span class="match-avail av-yes">${tr('yesBtn')}</span>`;
-    else if(avail==='no')avBadge=`<span class="match-avail av-no">${tr('noBtn')}</span>`;
-    else if(avail==='maybe')avBadge=`<span class="match-avail av-maybe">${tr('maybeBtn')}</span>`;
-    else avBadge=`<span class="match-avail av-open">?</span>`;
-    return`<div class="match-item" onclick="selectMatch('${m.id}')">
-      <div style="text-align:center;min-width:40px">
-        <div class="match-date">${d.day}</div>
-        <div class="match-month">${d.month}</div>
-      </div>
-      <div class="match-info">
-        <div class="match-teams">${team?.name||'?'} vs ${m.opponent}</div>
-        <div class="match-meta">${m.time} · ${m.home}${blocked?' · ⛔':''}</div>
-      </div>
-      ${avBadge}
+async function parsePDF(file){
+  const ab=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+  let txt='';
+  for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i);const tc=await pg.getTextContent();txt+=tc.items.map(x=>x.str).join(' ')+'\n';}
+  return extractPlayers(txt);
+}
+
+function extractPlayers(text){
+  const teams={};
+  const tPat=/(Herren\s*(?:\d+\s*)?(?:II|III|IV|V|VI|VII)?|Damen\s*(?:\d+\s*)?(?:II|III|IV|V)?)\s*(?:\(4er\))?\s*\|\s*([^\n\r]+)/gi;
+  let tm;
+  while((tm=tPat.exec(text))!==null){
+    const raw=tm[1].trim().replace(/\s+/,' ');
+    const catMatch=raw.match(/^(Herren|Damen)(?:\s+(\d+))?/i);
+    const baseCat=catMatch?catMatch[1].charAt(0).toUpperCase()+catMatch[1].slice(1).toLowerCase():'Herren';
+    const ageGroup=catMatch&&catMatch[2]?catMatch[2]:null;
+    const category=ageGroup?`${baseCat} ${ageGroup}`:baseCat;
+    const numMatch=raw.match(/(\d+)$|(?:^|\s)(VIII|VII|VI|IV|V|III|II|I)$/);
+    const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
+    let tnum=1;
+    if(numMatch){tnum=numMatch[1]?parseInt(numMatch[1]):(roman[numMatch[2]]||1);}
+    const liga=tm[2].trim().replace(/MF:.*/,'').trim();
+    if(!teams[raw])teams[raw]={liga,id:uid(),is4:tm[0].includes('(4er)'),category,tnum,gender:catGender(category)};
+  }
+  const teamArr=Object.entries(teams).map(([name,v])=>({id:v.id,name,liga:v.liga,season:'Sommer',is_4er:v.is4||false,category:v.category,team_number:v.tnum,gender:v.gender}));
+  const players=[];
+  const pPat=/(\d{1,3})\s+([A-ZÄÖÜa-zäöüß][A-ZÄÖÜa-zäöüß\s,.\-\']+?)\s+\((\d{4})\)\s+(?:[A-Z]{2,3}\*?\s+)?(\d{7,9})\s+(LK[\d,]+)/g;
+  let m;
+  while((m=pPat.exec(text))!==null){
+    const rank=parseInt(m[1]),name=m[2].trim(),year=m[3],idnr=m[4];
+    const lkStr=m[5],lk=parseFloat(lkStr.replace('LK','').replace(',','.'));
+    const idx=Math.min(Math.floor((rank-1)/6),teamArr.length-1);
+    const t=teamArr[idx]||null;
+    const gender=t?catGender(t.category):'M';
+    players.push({rank,name,year,idnr,lkStr,lk,teamId:t?.id||null,teamName:t?.name||'?',teamCategory:t?.category||'Herren',gender});
+  }
+  return{players,teams:teamArr};
+}
+
+function showPreview(data){
+  if(!data||!data.players.length){document.getElementById('preview-section').style.display='none';return;}
+  const byTeam={};
+  for(const p of data.players){const k=p.teamName||'?';if(!byTeam[k])byTeam[k]=[];byTeam[k].push(p);}
+  let html='';
+  for(const[team,ps]of Object.entries(byTeam)){
+    const g=ps[0]?.gender||'M';
+    html+=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:8px">
+      <div class="team-section-header">${team} <span class="${g==='F'?'g-f':'g-m'}">${g==='F'?'F':'M'}</span> · ${ps.length} ${tr('players')}</div>
+      ${ps.slice(0,5).map(p=>`<div class="player-row" style="border-radius:0;border:none;border-bottom:1px solid #2e4a4233;margin:0">
+        <span style="color:var(--muted);min-width:18px;font-size:11px">${p.rank}</span>
+        <div class="player-avatar">${initials(p.name.includes(',')?p.name.split(',')[1].trim()+' '+p.name.split(',')[0]:p.name)}</div>
+        <span class="player-name">${p.name}</span>
+        <span class="year-badge">${p.year}</span>
+        <span class="lk-badge">${p.lkStr}</span>
+      </div>`).join('')}
+      ${ps.length>5?`<div style="padding:6px 12px;font-size:11px;color:var(--muted)">${T[lang].addedPlayers(ps.length-5)}</div>`:''}
+    </div>`;
+  }
+  document.getElementById('preview-list').innerHTML=html;
+  document.getElementById('preview-section').style.display='block';
+}
+
+async function confirmImport(){
+  const data=state._pending;if(!data)return;
+  const btn=document.querySelector('#preview-section .btn-primary');btn.textContent='...';btn.disabled=true;
+  setSync('ing',tr('syncIng'));
+  try{
+    // Insert NEW teams; update season for existing ones if PDF says (4er)
+    const teamsToInsert=data.teams.filter(t=>!state.teams.find(x=>x.name===t.name));
+    if(teamsToInsert.length)await sbUpsert('teams',teamsToInsert.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category,team_number:t.team_number,gender:t.gender})));
+    // Update is_4er for existing teams detected as (4er) in PDF
+    for(const t of data.teams.filter(x=>x.is_4er)){const ex=state.teams.find(x=>x.name===t.name);if(ex&&!ex.is_4er)await fetch(`${SB_URL}/rest/v1/teams?id=eq.${ex.id}`,{method:'PATCH',headers:HDR,body:JSON.stringify({is_4er:true})});}
+
+    const freshTeams=await sbGet('teams','');
+    state.teams=freshTeams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
+    const playersToInsert=[];
+    const playersToUpdate=[];  // existing players whose LK may have changed
+    const ptInsert=[];
+    for(const p of data.players){
+      const dn=p.name.includes(',')?p.name.split(',')[1].trim()+' '+p.name.split(',')[0].trim():p.name;
+      const teamId=state.teams.find(x=>x.name===p.teamName)?.id||null;
+      const existing=state.players.find(x=>x.idnr===p.idnr);
+      if(!existing){
+        // New player
+        playersToInsert.push({id:uid(),name:dn,raw_name:p.name,idnr:p.idnr,lk:p.lk,lk_str:p.lkStr,year:p.year,gender:p.gender||'M',rank:p.rank});
+      } else if(existing.lk!==p.lk){
+        // Existing player with updated LK — update it
+        playersToUpdate.push({id:existing.id,lk:p.lk,lk_str:p.lkStr});
+      }
+      // Always add team assignment (upsert handles duplicates)
+      if(teamId){
+        const pid=existing?.id||playersToInsert.find(x=>x.idnr===p.idnr)?.id;
+        if(pid)ptInsert.push({player_id:pid,team_id:teamId});
+      }
+    }
+    if(playersToInsert.length){for(let i=0;i<playersToInsert.length;i+=100)await sbUpsert('players',playersToInsert.slice(i,i+100));}
+    // Update LK for existing players individually
+    for(const upd of playersToUpdate){
+      await fetch(`${SB_URL}/rest/v1/players?id=eq.${upd.id}`,{method:'PATCH',headers:HDR,body:JSON.stringify({lk:upd.lk,lk_str:upd.lk_str})});
+    }
+    // Add new team assignments without removing existing ones
+    if(ptInsert.length){for(let i=0;i<ptInsert.length;i+=100)await sbUpsert('player_teams',ptInsert.slice(i,i+100));}
+    await loadAll();
+    document.getElementById('preview-section').style.display='none';
+    document.getElementById('parse-status').textContent=T[lang].importedMsg(playersToInsert.length,state.players.length);
+  }catch(e){setSync('err',tr('syncErr'));console.error(e);}
+  finally{btn.disabled=false;applyT();}
+}
+
+// ── PLAYERS ──
+function renderPlayers(){
+  const ftSel=document.getElementById('filter-team');if(!ftSel)return;
+  const cur=ftSel.value;
+  ftSel.innerHTML=`<option value="">${tr('allTeams')}</option>`+state.teams.map(t=>`<option value="${t.id}" ${cur===t.id?'selected':''}>${t.name}</option>`).join('');
+  ftSel.value=cur;
+  const filterTeam=ftSel.value;
+  const filterGender=document.getElementById('filter-gender')?.value||'';
+  const search=(document.getElementById('search-players')?.value||'').toLowerCase();
+  const onlyBlocked=document.getElementById('filter-blocked')?.checked||false;
+  let players=[...state.players].sort((a,b)=>a.lk-b.lk);
+  if(filterTeam)players=players.filter(p=>p.teamIds.includes(filterTeam));
+  if(filterGender)players=players.filter(p=>p.gender===filterGender);
+  if(search)players=players.filter(p=>p.name.toLowerCase().includes(search)||(p.rawName||'').toLowerCase().includes(search));
+  const blockedCount=state.players.filter(p=>{const cats=[...new Set(p.teamIds.map(tid=>teamById(tid)?.category).filter(Boolean))];return cats.some(cat=>getPlayerBlockStatus(p.id,cat).blocked.length>0);}).length;
+  if(onlyBlocked){players=players.filter(p=>{const cats=[...new Set(p.teamIds.map(tid=>teamById(tid)?.category).filter(Boolean))];return cats.some(cat=>getPlayerBlockStatus(p.id,cat).blocked.length>0);});}
+  document.getElementById('stats-row').innerHTML=`
+    <div class="stat-card"><div class="stat-num">${state.players.length}</div><div class="stat-label">${tr('players')}</div></div>
+    <div class="stat-card"><div class="stat-num">${state.teams.length}</div><div class="stat-label">${tr('teams')}</div></div>
+    <div class="stat-card"><div class="stat-num">${state.matches.length}</div><div class="stat-label">${tr('matches')}</div></div>
+    <div class="stat-card" style="${blockedCount>0?'border-color:var(--danger)55;background:#2d1a1a':''}"><div class="stat-num" style="${blockedCount>0?'color:var(--danger)':''}">${blockedCount}</div><div class="stat-label">${tr('blockingTitle')}</div></div>`;
+  const el=document.getElementById('player-list');
+  if(!players.length){el.innerHTML=`<div class="empty">${tr('noPlayers')}</div>`;return;}
+  el.innerHTML=players.map(p=>{
+    const teams=p.teamIds.map(tid=>teamById(tid)).filter(Boolean);
+    const cats=[...new Set(teams.map(t=>t.category))];
+    let blockedChips='',warnChips='';
+    for(const cat of cats){const{blocked,warned}=getPlayerBlockStatus(p.id,cat);for(const b of blocked)blockedChips+=`<span class="blocked-badge">⛔ ${b.name}</span>`;for(const w of warned)warnChips+=`<span class="warn-badge">⚠ ${w.name}</span>`;}
+    const teamChips=teams.map(t=>`<span class="team-chip ${t.gender==='F'?'f':'m'}">${t.name}</span>`).join('');
+    return`<div class="player-row">
+      <div class="player-avatar">${initials(p.name)}</div>
+      <div style="flex:1;min-width:100px"><div class="player-name">${p.name}</div><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">${teamChips}</div></div>
+      <span class="year-badge">${p.year||'—'}</span>
+      <span class="lk-badge">${p.lkStr||'LK?'}</span>
+      <span class="${p.gender==='F'?'g-f':'g-m'}">${p.gender==='F'?'F':'M'}</span>
+      ${blockedChips}${warnChips}
+      <button class="btn btn-outline btn-sm" onclick="openAssignModal('${p.id}')">${tr('assignTeam')}</button>
     </div>`;
   }).join('');
 }
 
-function selectMatch(id){
-  selectedMatch=state.matches.find(m=>m.id===id);
-  if(!selectedMatch)return;
-  renderConfirm();showStep('confirm');
+// ── TEAMS ──
+async function addTeam(){
+  const name=document.getElementById('t-name').value.trim();
+  const liga=document.getElementById('t-liga').value.trim();
+  const season=document.getElementById('t-season').value;
+  const category=document.getElementById('t-cat').value;
+  const teamNum=parseInt(document.getElementById('t-num').value)||1;
+  const is_4er=document.getElementById('t-is4er')?.checked||false;
+  const gender=catGender(category);
+  if(!name)return;
+  const newTeam={id:uid(),name,liga,season,is_4er,category,team_number:teamNum,gender};
+  try{await sbUpsert('teams',[newTeam]);state.teams.push({...newTeam,teamNumber:teamNum});}catch(e){console.error(e);}
+  document.getElementById('t-name').value='';document.getElementById('t-liga').value='';
+  renderTeams();renderPlayers();
 }
 
-function renderConfirm(){
-  const m=selectedMatch;const p=selectedPlayer;
-  const team=teamById(m.team_id);
-  const d=fmtDate(m.date);
-  const blocked=isBlocked(p.id,m.team_id);
-  const avail=state.availability[m.id]?.[p.id]||'';
-  document.getElementById('confirm-match-name').textContent=`${team?.name||'?'} vs ${m.opponent}`;
-  document.getElementById('confirm-match-meta').textContent=`${d.full} · ${m.time} · ${m.home}`;
-  document.getElementById('confirm-player-card').innerHTML=`<div class="player-card">
-    <div class="avatar">${initials(p.name)}</div>
-    <div><div style="font-weight:600">${p.name}</div><div style="font-size:12px;color:var(--muted)">${p.lk_str||p.lkStr||''} · Jg. ${p.year||'—'}</div></div>
+function renderTeams(){
+  const el=document.getElementById('team-list');
+  if(!state.teams.length){el.innerHTML=`<div class="empty">${tr('noTeam')}</div>`;return;}
+  const byCat={};
+  for(const t of state.teams){const c=t.category||'Herren';if(!byCat[c])byCat[c]=[];byCat[c].push(t);}
+  let html='';
+  for(const[cat,teams]of Object.entries(byCat)){
+    const sorted=teams.sort((a,b)=>teamNumber(a)-teamNumber(b));
+    html+=`<div style="margin-bottom:6px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${cat}</div>`;
+    for(const t of sorted){
+      const players=[...state.players.filter(p=>p.teamIds.includes(t.id))].sort((a,b)=>a.lk-b.lk);
+      html+=`<div class="card" style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
+          <div>
+            <div style="display:flex;align-items:center;gap:7px">
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--court)">${t.name}</span>
+              <span class="${t.gender==='F'?'g-f':'g-m'}">${t.gender==='F'?'F':'M'}</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted)">${t.liga} · ${t.season} · #${teamNumber(t)}</div>
+          </div>
+          <div style="display:flex;gap:6px">
+              <button class="btn btn-outline btn-sm" onclick="editTeamSize('${t.id}')" style="font-size:10px;padding:3px 8px" title="Toggle group size">${t.season==='Winter'?'Winter (4)':(t.is_4er?'Sommer 4er':'Sommer (6)')}</button>
+              <button class="btn btn-danger" onclick="removeTeam('${t.id}')">✕</button>
+            </div>
+        </div>
+        ${players.length?players.map((p,i)=>`<div class="player-row" style="padding:6px 10px;margin-bottom:4px">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--court);min-width:18px">${i+1}</span>
+          <div class="player-avatar" style="width:24px;height:24px;font-size:9px">${initials(p.name)}</div>
+          <span class="player-name" style="font-size:12px">${p.name}</span>
+          <span class="year-badge">${p.year||'—'}</span>
+          <span class="lk-badge">${p.lkStr}</span>
+          ${isPlayerBlockedForTeam(p.id,t.id)?`<span class="blocked-badge">⛔</span>`:''}
+        </div>`).join(''):`<div style="color:var(--muted);font-size:12px">${tr('noTeamPlayers')}</div>`}
+      </div>`;
+    }
+    html+='<div style="height:8px"></div>';
+  }
+  el.innerHTML=html;
+}
+
+async function editTeamSize(teamId){
+  const t=state.teams.find(x=>x.id===teamId);if(!t)return;
+  if(t.season==='Winter'){alert('Winter teams are always 4 players.');return;}
+  const new4er=!t.is_4er;
+  if(!confirm(`Change to ${new4er?'4er (4 players)':'standard (6 players)'}?`))return;
+  try{
+    await fetch(`${SB_URL}/rest/v1/teams?id=eq.${teamId}`,{method:'PATCH',headers:HDR,body:JSON.stringify({is_4er:new4er})});
+    t.is_4er=new4er;
+    renderTeams();
+  }catch(e){console.error(e);}
+}
+
+async function removeTeam(id){
+  try{await sbDelete('teams',`id=eq.${id}`);}catch(e){console.error(e);}
+  state.teams=state.teams.filter(t=>t.id!==id);
+  state.players.forEach(p=>{p.teamIds=p.teamIds.filter(tid=>tid!==id);});
+  renderTeams();
+}
+
+function openAssignModal(playerId){
+  const p=playerById(playerId);
+  document.getElementById('assign-modal-title').textContent=p.name;
+  const compatible=state.teams.filter(t=>t.gender===p.gender||t.gender===undefined);
+  const byCat={};
+  for(const t of compatible){const c=t.category||'?';if(!byCat[c])byCat[c]=[];byCat[c].push(t);}
+  let html=`<div style="margin-bottom:12px;font-size:12px;color:var(--muted)">Mannschaften auswählen:</div>`;
+  for(const[cat,teams]of Object.entries(byCat)){
+    html+=`<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">${cat}</div>`;
+    for(const t of teams.sort((a,b)=>teamNumber(a)-teamNumber(b))){
+      const checked=p.teamIds.includes(t.id);
+      const counts=state.matchCounts[p.id]?.[t.id]||0;
+      const blocked=isPlayerBlockedForTeam(p.id,t.id);
+      const reason=blocked?blockReasonForTeam(p.id,t.id):'';
+      html+=`<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1b2926;border-radius:8px;margin-bottom:4px;cursor:pointer;border:1px solid ${blocked?'var(--danger)33':'#2e4a42'}">
+        <input type="checkbox" data-tid="${t.id}" ${checked?'checked':''} style="width:auto;padding:0">
+        <span style="flex:1;font-size:13px">${t.name}</span>
+        <span style="font-size:11px;color:var(--muted)">${counts} Sp.</span>
+        ${blocked?`<span class="blocked-badge" title="${reason}">⛔ ${reason}</span>`:''}
+      </label>`;
+    }
+    html+='<div style="height:6px"></div>';
+  }
+  html+=`<div style="display:flex;gap:8px;margin-top:12px">
+    <button class="btn btn-primary" onclick="saveAssign('${playerId}')">${tr('saveAssign')}</button>
+    <button class="btn btn-outline btn-sm" style="font-size:12px" onclick="closeModal('assign-modal')" data-i18n="cancel"></button>
   </div>`;
-  document.getElementById('confirm-blocked').innerHTML=blocked?`<div class="blocked-warn">${tr('blockedWarn')}</div>`:'';
-  ['yes','maybe','no'].forEach(s=>{document.getElementById('btn-'+s).classList.toggle('on',avail===s);});
-  document.getElementById('saved-msg').textContent=avail?tr('saved'):'';
+  html+=`<div style="margin-top:14px;border-top:1px solid #2e4a42;padding-top:12px">
+    <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${tr('matchesPlayed')}</div>
+    ${state.teams.filter(t=>compatible.some(x=>x.id===t.id)).map(t=>{
+      const c=state.matchCounts[p.id]?.[t.id]||0;
+      return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:12px">
+        <span style="flex:1">${t.name}</span>
+        <button onclick="adjustCount('${p.id}','${t.id}',-1)" style="background:#181818;border:1px solid var(--border);color:var(--white);border-radius:5px;padding:1px 7px;cursor:pointer">−</button>
+        <span style="min-width:20px;text-align:center;font-weight:600" id="cnt-${p.id}-${t.id}">${c}</span>
+        <button onclick="adjustCount('${p.id}','${t.id}',1)" style="background:#181818;border:1px solid var(--border);color:var(--white);border-radius:5px;padding:1px 7px;cursor:pointer">+</button>
+      </div>`;
+    }).join('')}
+  </div>`;
+  document.getElementById('assign-modal-body').innerHTML=html;
+  document.getElementById('assign-modal').classList.add('open');
 }
 
-async function setAvail(status){
-  if(!selectedMatch||!selectedPlayer)return;
-  const matchId=selectedMatch.id,playerId=selectedPlayer.id;
-  document.getElementById('saved-msg').innerHTML=`<span class="spinner"></span>${tr('saving')}`;
+async function adjustCount(playerId,teamId,delta){
+  if(!state.matchCounts[playerId])state.matchCounts[playerId]={};
+  const cur=state.matchCounts[playerId][teamId]||0;
+  const next=Math.max(0,cur+delta);
+  state.matchCounts[playerId][teamId]=next;
+  const el=document.getElementById(`cnt-${playerId}-${teamId}`);
+  if(el)el.textContent=next;
+  try{await sbUpsert('player_match_counts',[{player_id:playerId,team_id:teamId,matches_played:next}]);}catch(e){console.error(e);}
+  renderBlocking();
+}
+
+async function saveAssign(playerId){
+  const p=playerById(playerId);
+  const checkboxes=document.querySelectorAll('#assign-modal-body input[type="checkbox"][data-tid]');
+  const newTeamIds=[...checkboxes].filter(c=>c.checked).map(c=>c.getAttribute('data-tid'));
+  const toRemove=p.teamIds.filter(tid=>!newTeamIds.includes(tid));
+  const toAdd=newTeamIds.filter(tid=>!p.teamIds.includes(tid));
+  for(const tid of toRemove){try{await sbDelete('player_teams',`player_id=eq.${playerId}&team_id=eq.${tid}`);}catch(e){console.error(e);}}
+  if(toAdd.length)await sbUpsert('player_teams',toAdd.map(tid=>({player_id:playerId,team_id:tid})));
+  p.teamIds=newTeamIds;
+  closeModal('assign-modal');renderPlayers();renderTeams();renderBlocking();
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// ── MATCHES ──
+function populateTeamSel(selId){const sel=document.getElementById(selId);if(!sel)return;const cur=sel.value;sel.innerHTML=state.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');if(cur)sel.value=cur;}
+
+async function addMatch(){
+  const teamId=document.getElementById('m-team')?.value;
+  const opp=document.getElementById('m-opp')?.value.trim();
+  const date=document.getElementById('m-date')?.value;
+  const time=document.getElementById('m-time')?.value||'10:00';
+  const home=document.getElementById('m-home')?.value;
+  const venue=document.getElementById('m-venue')?.value.trim();
+  if(!teamId||!opp||!date){alert(tr('matchAlert'));return;}
+  const nm={id:uid(),teamId,opponent:opp,date,time,home,venue};
+  try{await sbUpsert('matches',[{id:nm.id,team_id:teamId,opponent:opp,date,time,home,venue}]);state.matches.push(nm);}catch(e){console.error(e);}
+  document.getElementById('m-opp').value='';document.getElementById('m-venue').value='';
+  renderMatches();
+}
+
+function renderMatches(){
+  populateTeamSel('m-team');
+  const el=document.getElementById('match-list');
+  if(!state.matches.length){el.innerHTML=`<div class="empty">${tr('noMatches')}</div>`;return;}
+  const sorted=[...state.matches].sort((a,b)=>a.date.localeCompare(b.date));
+  el.innerHTML=sorted.map(m=>{
+    const team=teamById(m.teamId);
+    const avail=state.availability[m.id]||{};
+    const tp=state.players.filter(p=>p.teamIds.includes(m.teamId));
+    const yes=tp.filter(p=>avail[p.id]==='yes').length;
+    const pct=tp.length>0?Math.round(yes/tp.length*100):0;
+    const hasLineup=state.lineups[m.id]?.some(Boolean);
+    return`<div class="match-card" onclick="openMatchAvail('${m.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px">
+        <div>
+          <div class="match-teams">${team?.name||'?'}<span class="match-vs">vs</span>${m.opponent}</div>
+          <div class="match-info">📅 ${fmtDate(m.date)} · ${m.time} · ${m.home} · 📍 ${m.venue||'—'}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+          <span class="match-status ${hasLineup?'status-ready':'status-open'}">${hasLineup?'✓ OK':'⏳'}</span>
+          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openPlayerView('${m.id}')" style="font-size:10px;padding:2px 7px">${tr('pvOpenView')}</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:9px">
+        <div class="prog-bar" style="flex:1"><div class="prog-fill" style="width:${pct}%"></div></div>
+        <span style="font-size:11px;color:var(--muted)">${yes}/${tp.length} ${tr('available')}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── AVAILABILITY ──
+function populateMatchSel(selId){
+  const sel=document.getElementById(selId);if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML=[...state.matches].sort((a,b)=>a.date.localeCompare(b.date)).map(m=>{const t=teamById(m.teamId);return`<option value="${m.id}">${fmtDate(m.date)} · ${t?.name||'?'} vs ${m.opponent}</option>`;}).join('');
+  if(cur)sel.value=cur;
+}
+
+function openMatchAvail(matchId){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===4));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-avail').classList.add('active');
+  populateMatchSel('av-match');
+  document.getElementById('av-match').value=matchId;
+  renderAvail();
+}
+
+async function setAvail(matchId,playerId,status){
   if(!state.availability[matchId])state.availability[matchId]={};
   state.availability[matchId][playerId]=status;
-  try{
-    await sbUpsert('availability',[{match_id:matchId,player_id:playerId,status}]);
-    ['yes','maybe','no'].forEach(s=>document.getElementById('btn-'+s).classList.toggle('on',s===status));
-    document.getElementById('saved-msg').textContent=tr('saved');
-    setTimeout(()=>{if(selectedPlayer)renderMatchList();},300);
-  }catch(e){document.getElementById('saved-msg').textContent='Fehler. Bitte erneut versuchen.';console.error(e);}
+  try{await sbUpsert('availability',[{match_id:matchId,player_id:playerId,status}]);}catch(e){console.error(e);}
+  renderAvail();renderMatches();
 }
 
+function renderAvail(){
+  const matchId=document.getElementById('av-match')?.value;
+  const el=document.getElementById('avail-content');
+  if(!matchId||!state.matches.find(m=>m.id===matchId)){el.innerHTML=`<div class="empty">${tr('noMatchSel')}</div>`;return;}
+  const match=state.matches.find(m=>m.id===matchId);
+  const avail=state.availability[matchId]||{};
+  const tp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>a.lk-b.lk);
+  if(!tp.length){el.innerHTML=`<div class="empty">${tr('noTeamPlayers')}</div>`;return;}
+  const yesCount=tp.filter(p=>avail[p.id]==='yes').length;
+  el.innerHTML=`<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--court)">${teamById(match.teamId)?.name||'?'} vs ${match.opponent}</div>
+        <div style="font-size:11px;color:var(--muted)">${fmtDate(match.date)} · ${match.time}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--court);line-height:1">${yesCount}<span style="font-size:12px;color:var(--muted)">/${tp.length}</span></div>
+        <div style="font-size:10px;color:var(--muted)">${tr('available')}</div>
+      </div>
+    </div>
+    <table class="avail-table">
+      <thead><tr><th>#</th><th>${tr('players')}</th><th>LK</th><th>Jg.</th><th></th></tr></thead>
+      <tbody>
+        ${tp.map((p,i)=>{
+          const s=avail[p.id]||'';
+          const blocked=isPlayerBlockedForTeam(p.id,match.teamId);
+          return`<tr style="${blocked?'background:#2d151544':''}">
+            <td style="color:var(--muted)">${i+1}</td>
+            <td><strong>${p.name}</strong>${blocked?` <span class="blocked-badge">⛔</span>`:''}</td>
+            <td><span class="lk-badge">${p.lkStr}</span></td>
+            <td style="color:var(--muted)">${p.year||'—'}</td>
+            <td><div style="display:flex;gap:4px">
+              <button class="avail-btn yes ${s==='yes'?'active':''}" onclick="setAvail('${matchId}','${p.id}','yes')">${tr('yesBtn')}</button>
+              <button class="avail-btn maybe ${s==='maybe'?'active':''}" onclick="setAvail('${matchId}','${p.id}','maybe')">${tr('maybeBtn')}</button>
+              <button class="avail-btn no ${s==='no'?'active':''}" onclick="setAvail('${matchId}','${p.id}','no')">${tr('noBtn')}</button>
+            </div></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    ${yesCount>0?`<div style="display:flex;gap:9px;margin-top:11px">
+      <button class="btn btn-primary" onclick="autoLineup('${matchId}')">${tr('autoLineup')}</button>
+      <button class="btn btn-outline" onclick="goToLineup('${matchId}')">${tr('goAvail')}</button>
+    </div>`:''}
+  </div>`;
+}
+
+// ── BLOCKING VIEW ──
+function renderBlocking(){
+  const cats=[...new Set(state.teams.map(t=>t.category))].sort();
+  const catSel=document.getElementById('block-cat-filter');
+  const curCat=catSel?.value||'';
+  if(catSel){catSel.innerHTML=`<option value="">${tr('allCategories')}</option>`+cats.map(c=>`<option value="${c}" ${curCat===c?'selected':''}>${c}</option>`).join('');catSel.value=curCat;}
+  const el=document.getElementById('blocking-content');
+  const filterCat=catSel?.value||'';
+  const catsToShow=filterCat?[filterCat]:cats;
+  let html=`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <div class="rule-box" style="flex:1;margin:0"><strong>Stammkader:</strong> Pos. 1–6 (Sommer) / 1–4 (Winter) → Mannschaft 1, usw. Spieler dürfen nicht in niedrigere Mannschaft der Kategorie.</div>
+    <div class="rule-box warn" style="flex:1;margin:0"><strong>Stammmannschaft:</strong> 2 Spiele in einer Mannschaft → gesperrt für alle niedrigeren in dieser Kategorie.</div>
+  </div>`;
+  let anyEntry=false;
+  for(const cat of catsToShow){
+    const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+    if(!catTeams.length)continue;
+    const groupSize=teamSize(catTeams[0]);
+    const catPlayers=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>a.lk-b.lk);
+    if(!catPlayers.length)continue;
+    anyEntry=true;
+    html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court);letter-spacing:1px;margin:14px 0 8px">${cat}</div>`;
+    html+=`<div class="card" style="padding:0;overflow:hidden;overflow-x:auto;margin-bottom:10px">`;
+    html+=`<table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="border-bottom:1px solid #2e4a42">
+        <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);min-width:160px">Spieler</th>
+        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:10px">LK</th>
+        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:10px">Jg.</th>
+        ${catTeams.map(t=>`<th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--court);font-size:11px;white-space:nowrap">${t.name}${t.is_4er?' <span style="font-size:9px;color:var(--warn)">(4er)</span>':''}</th>`).join('')}
+      </tr></thead><tbody>`;
+    for(let i=0;i<catPlayers.length;i++){
+      const p=catPlayers[i];
+      const status=getPlayerBlockStatus(p.id,cat);
+      const counts=state.matchCounts[p.id]||{};
+      const skIdx=Math.floor(i/groupSize);
+      const skTeam=catTeams[skIdx]||catTeams[catTeams.length-1];
+      const cells=catTeams.map(t=>{
+        const c=counts[t.id]||0;
+        const isSkTeam=t.id===skTeam.id;
+        const isSkBlocked=status.stammkaderBlocked.some(x=>x.id===t.id);
+        const isSmBlocked=status.stammmannschaftBlocked.some(x=>x.id===t.id);
+        const isSmWarned=status.stammmannschaftWarned.some(x=>x.id===t.id);
+        const isAssigned=p.teamIds.includes(t.id);
+        let bg='',txt='',label='',title='';
+        if(isSkTeam){bg='background:#1a2d3d';txt='color:var(--info)';label='SK';title='Stammkader';}
+        if(isSmBlocked&&isSkBlocked){bg='background:#3d1a1a';txt='color:var(--danger)';label=`⛔${c>0?` (${c})`:''}`;title='SK + SM';}
+        else if(isSmBlocked){bg='background:#2d1a1a';txt='color:var(--danger)';label=`SM${c>0?` (${c})`:''}`;title=`2× ${status.stammmannschaftSource}`;}
+        else if(isSkBlocked){bg='background:#1a1a2d';txt='color:#a78bfa';label='SK⛔';title='Stammkader gesperrt';}
+        else if(isSmWarned){bg='background:#2d2215';txt='color:var(--warn)';label=`⚠ ${c}/2`;title='1 Spiel';}
+        else if(c>0){txt='color:var(--court)';label=`${c}×`;}
+        else if(isAssigned){txt='color:var(--muted)';label='—';}
+        else{txt='color:#2e4a42';label='·';}
+        return`<td style="padding:7px 8px;text-align:center;border-left:1px solid #2e4a4222;${bg}" title="${title}"><span style="font-size:11px;font-weight:600;${txt}">${label}</span></td>`;
+      }).join('');
+      const rowBg=status.blocked.length>0?'background:#1e1e1e':'';
+      html+=`<tr style="border-bottom:1px solid #2e4a4222;${rowBg}">
+        <td style="padding:7px 12px;white-space:nowrap"><div style="font-weight:600;font-size:12px">${p.name}</div></td>
+        <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:10px">${p.lkStr||'?'}</span></td>
+        <td style="padding:7px 8px;text-align:center;font-size:11px;color:var(--muted)">${p.year||'—'}</td>
+        ${cells}
+      </tr>`;
+    }
+    html+=`</tbody></table>
+      <div style="padding:8px 12px;display:flex;gap:10px;flex-wrap:wrap;border-top:1px solid #2e4a42">
+        <span style="font-size:10px;color:var(--info)">■ SK = Stammkader</span>
+        <span style="font-size:10px;color:#a78bfa">■ SK⛔ = Stammkader gesperrt</span>
+        <span style="font-size:10px;color:var(--danger)">■ SM = Stammmannschaft gesperrt</span>
+        <span style="font-size:10px;color:var(--warn)">■ ⚠ = 1 Spiel</span>
+        <span style="font-size:10px;color:var(--court)">■ Zahl = Spiele</span>
+      </div></div>`;
+  }
+  if(!anyEntry)html+=`<div class="empty">${tr('noBlocked')}</div>`;
+  el.innerHTML=html;
+}
+
+// ── LINEUP ──
+async function autoLineup(matchId){
+  const match=state.matches.find(m=>m.id===matchId);if(!match)return;
+  const team=teamById(match.teamId);
+  const avail=state.availability[matchId]||{};
+  const size=teamSize(team);
+  const available=[...state.players.filter(p=>p.teamIds.includes(match.teamId)&&avail[p.id]==='yes'&&!isPlayerBlockedForTeam(p.id,match.teamId))].sort((a,b)=>a.lk-b.lk);
+  const slots=available.slice(0,size).map(p=>p.id);
+  state.lineups[matchId]=slots;
+  try{await sbUpsert('lineups',[{match_id:matchId,slots}]);}catch(e){console.error(e);}
+  goToLineup(matchId);
+}
+
+function goToLineup(matchId){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===5));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-lineup').classList.add('active');
+  populateMatchSel('lineup-match');
+  document.getElementById('lineup-match').value=matchId;
+  renderLineup();
+}
+
+async function setLineupPlayer(matchId,pos,playerId){
+  if(!state.lineups[matchId])state.lineups[matchId]=[];
+  state.lineups[matchId][pos]=playerId||null;
+  try{await sbUpsert('lineups',[{match_id:matchId,slots:state.lineups[matchId]}]);}catch(e){console.error(e);}
+  renderLineup();
+}
+
+function renderLineup(){
+  const matchId=document.getElementById('lineup-match')?.value;
+  const el=document.getElementById('lineup-content');
+  if(!matchId){el.innerHTML=`<div class="empty">${tr('noMatchSel')}</div>`;return;}
+  const match=state.matches.find(m=>m.id===matchId);if(!match){el.innerHTML='';return;}
+  const team=teamById(match.teamId);
+  const size=teamSize(team);
+  const dc=size===6?3:2;
+  const avail=state.availability[matchId]||{};
+  const allTp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>a.lk-b.lk);
+  const lineup=state.lineups[matchId]||[];
+  const warnings=[];
+  for(let i=0;i<size-1;i++){const p1=lineup[i]?playerById(lineup[i]):null;const p2=lineup[i+1]?playerById(lineup[i+1]):null;if(p1&&p2&&lkVal(p1.lk)>lkVal(p2.lk))warnings.push(T[lang].lkViolation(i+1,p1.lkStr,i+2,p2.lkStr));}
+  const blockedWarnings=lineup.filter(Boolean).map(pid=>{const p=playerById(pid);if(!p)return null;if(isPlayerBlockedForTeam(pid,match.teamId))return T[lang].blockedInLineup(p.name,teamById(match.teamId)?.name);return null;}).filter(Boolean);
+  let dHtml='';
+  for(let d=0;d<dc;d++){const p1=lineup[d*2]?playerById(lineup[d*2]):null;const p2=lineup[d*2+1]?playerById(lineup[d*2+1]):null;dHtml+=`<div class="lineup-slot"><div class="lineup-pos">D${d+1}</div><div style="font-size:12px">${p1&&p2?`${p1.name} / ${p2.name}`:`<span style="color:var(--muted);font-style:italic">—</span>`}</div></div>`;}
+  el.innerHTML=`<div class="card">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--court);margin-bottom:2px">${team?.name||'?'} vs ${match.opponent}</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${fmtDate(match.date)} · ${match.time}</div>
+    ${blockedWarnings.length?`<div class="rule-box danger">${blockedWarnings.map(w=>`<div>${w}</div>`).join('')}</div>`:''}
+    ${warnings.length?`<div style="background:#3d1a1a;border:1px solid var(--danger)44;border-radius:8px;padding:8px 12px;margin-bottom:9px">${warnings.map(w=>`<div style="font-size:12px;color:var(--danger)">${w}</div>`).join('')}</div>`:lineup.filter(Boolean).length>=size&&!blockedWarnings.length?`<div style="background:#1a2d22;border:1px solid var(--court)33;border-radius:8px;padding:6px 12px;margin-bottom:9px;font-size:12px;color:var(--court)">${tr('lineupValid')}</div>`:''}
+    <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${tr('singles')}</div>
+    <div class="lineup-grid">
+      ${Array.from({length:size},(_,i)=>{
+        const pid=lineup[i]||'';const p=pid?playerById(pid):null;
+        const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
+        const lkOk=!p||!prev||lkVal(p.lk)>=lkVal(prev.lk);
+        const isBlocked=pid?isPlayerBlockedForTeam(pid,match.teamId):false;
+        return`<div class="lineup-slot ${p?(isBlocked?'blocked-slot':lkOk?'ok':'warning'):''}">
+          <div class="lineup-pos">${i+1}</div>
+          <select style="flex:1;background:#181818;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:4px 8px;font-size:11px;font-family:'DM Sans',sans-serif" onchange="setLineupPlayer('${matchId}',${i},this.value)">
+            <option value="">—</option>
+            ${allTp.map(tp=>{const bl=isPlayerBlockedForTeam(tp.id,match.teamId);return`<option value="${tp.id}" ${pid===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;}).join('')}
+          </select>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 6px">${tr('doubles')}</div>
+    <div class="lineup-grid">${dHtml}</div>
+    <div class="rule-box" style="margin-top:10px">${tr('lineupNote')}</div>
+  </div>`;
+}
+
+// ── PLAYER VIEW ──
+let pvMatchId=null,pvPlayerId=null;
+function openPlayerView(matchId){
+  pvMatchId=matchId||null;pvPlayerId=null;
+  document.getElementById('player-view').classList.add('open');
+  if(pvMatchId){pvGoPickPlayer();}
+  else{renderPvMatchList();document.getElementById('pv-step-match').style.display='block';document.getElementById('pv-step-player').style.display='none';document.getElementById('pv-step-confirm').style.display='none';}
+}
+function closePlayerView(){document.getElementById('player-view').classList.remove('open');pvMatchId=null;pvPlayerId=null;}
+function renderPvMatchList(){
+  document.getElementById('pv-match-list').innerHTML=[...state.matches].sort((a,b)=>a.date.localeCompare(b.date)).map(m=>{
+    const t=teamById(m.teamId);
+    return`<div class="player-row" style="cursor:pointer;margin-bottom:7px" onclick="pvSelectMatch('${m.id}')">
+      <div style="flex:1"><div class="player-name">${t?.name||'?'} vs ${m.opponent}</div><div class="player-meta">${fmtDate(m.date)} · ${m.time}</div></div>
+      <span style="font-size:18px;color:var(--court)">→</span>
+    </div>`;
+  }).join('');
+}
+function pvSelectMatch(id){pvMatchId=id;pvGoPickPlayer();}
+function pvGoPickPlayer(){
+  document.getElementById('pv-step-match').style.display='none';document.getElementById('pv-step-confirm').style.display='none';document.getElementById('pv-step-player').style.display='block';
+  document.getElementById('pv-ac-input').value='';document.getElementById('pv-selected-info').innerHTML='';pvPlayerId=null;
+  const m=state.matches.find(x=>x.id===pvMatchId);
+  if(m){const t=teamById(m.teamId);document.getElementById('pv-sub').textContent=`${t?.name||'?'} vs ${m.opponent} · ${fmtDate(m.date)}`;}
+}
+function pvGoBack(){pvMatchId=null;pvPlayerId=null;document.getElementById('pv-step-player').style.display='none';document.getElementById('pv-step-confirm').style.display='none';renderPvMatchList();document.getElementById('pv-step-match').style.display='block';}
+
+function onPvAcInput(){
+  const val=document.getElementById('pv-ac-input').value.toLowerCase();
+  const list=document.getElementById('pv-ac-list');
+  const match=pvMatchId?state.matches.find(m=>m.id===pvMatchId):null;
+  const teamId=match?.teamId;
+  let pool=teamId?state.players.filter(p=>p.teamIds.includes(teamId)):state.players;
+  if(!val||val.length<2){list.style.display='none';return;}
+  const filtered=pool.filter(p=>p.name.toLowerCase().includes(val)).slice(0,10);
+  if(!filtered.length){list.style.display='none';return;}
+  list.innerHTML=filtered.map(p=>{
+    const blocked=teamId?isPlayerBlockedForTeam(p.id,teamId):false;
+    return`<div class="ac-item ${blocked?'blocked':''}" onclick="pvSelectPlayer('${p.id}')">
+      <div class="player-avatar" style="width:28px;height:28px;font-size:10px">${initials(p.name)}</div>
+      <div style="flex:1"><div style="font-weight:600">${p.name}${blocked?' ⛔':''}</div><div style="font-size:11px;color:var(--muted)">${p.year||''}</div></div>
+      <span class="lk-badge">${p.lkStr||'?'}</span>
+    </div>`;
+  }).join('');
+  list.style.display='block';
+}
+
+function pvSelectPlayer(id){
+  pvPlayerId=id;const p=playerById(id);
+  document.getElementById('pv-ac-input').value=p.name;document.getElementById('pv-ac-list').style.display='none';
+  document.getElementById('pv-selected-info').innerHTML=`<span class="lk-badge">${p.lkStr||'?'}</span><span class="year-badge" style="margin-left:5px">${p.year||'—'}</span>`;
+  renderPvConfirm();
+  document.getElementById('pv-step-player').style.display='none';document.getElementById('pv-step-confirm').style.display='block';
+}
+
+function renderPvConfirm(){
+  const p=playerById(pvPlayerId);
+  const avail=state.availability[pvMatchId]||{};
+  const s=avail[pvPlayerId]||'';
+  const blocked=pvMatchId?isPlayerBlockedForTeam(pvPlayerId,state.matches.find(m=>m.id===pvMatchId)?.teamId):false;
+  const match=state.matches.find(m=>m.id===pvMatchId);
+  const team=match?teamById(match.teamId):null;
+  document.getElementById('pv-confirm-card').innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div class="player-avatar" style="width:40px;height:40px;font-size:14px">${initials(p.name)}</div>
+      <div><div style="font-weight:600;font-size:15px">${p.name}</div><div style="font-size:11px;color:var(--muted)">${p.lkStr||''} · Jg. ${p.year||'—'}</div></div>
+    </div>
+    ${blocked?`<div class="rule-box danger" style="margin-bottom:12px">⛔ ${T[lang].blockedInLineup(p.name,team?.name||'?')}</div>`:''}
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">${match?`${team?.name||'?'} vs ${match.opponent} · ${fmtDate(match.date)}`:''}</div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <button class="avail-btn yes ${s==='yes'?'active':''}" style="padding:9px 18px;font-size:13px" onclick="pvSetAvail('yes')">${tr('yesBtn')}</button>
+      <button class="avail-btn maybe ${s==='maybe'?'active':''}" style="padding:9px 18px;font-size:13px" onclick="pvSetAvail('maybe')">${tr('maybeBtn')}</button>
+      <button class="avail-btn no ${s==='no'?'active':''}" style="padding:9px 18px;font-size:13px" onclick="pvSetAvail('no')">${tr('noBtn')}</button>
+    </div>
+    <div id="pv-saved-msg" style="margin-top:12px;font-size:12px;color:var(--court);min-height:18px">${s?tr('availSaved'):''}</div>`;
+}
+
+async function pvSetAvail(status){
+  if(!pvMatchId||!pvPlayerId)return;
+  document.getElementById('pv-saved-msg').innerHTML=`<span class="spinner"></span>${tr('confirmingAvail')}`;
+  await setAvail(pvMatchId,pvPlayerId,status);
+  renderPvConfirm();document.getElementById('pv-saved-msg').textContent=tr('availSaved');
+}
+
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.autocomplete-wrap')){
+    ['ac-list','pv-ac-list'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  }
+});
+
+function renderAll(){renderPlayers();renderTeams();renderMatches();renderBlocking();applyT();}
+
+// ── LIGA → CATEGORY MAP ──
+const LIGA_CAT_MAP={
+  'H Verbandsliga':'Herren','H Bezirksoberliga I':'Herren','H Bezirksliga I':'Herren','H Bezirksklasse I':'Herren',
+  'H Bezirksoberliga':'Herren','H Bezirksliga':'Herren','H Bezirksklasse':'Herren',
+  'H30 Verbandsoberliga':'Herren 30','H30 Bezirksoberliga I':'Herren 30','H30 Bezirksklasse II':'Herren 30',
+  'H30 Bezirksoberliga':'Herren 30','H30 Bezirksklasse':'Herren 30',
+  'H40 Bezirksoberliga I':'Herren 40','H40 Bezirksoberliga':'Herren 40',
+  'H50 Verbandsliga':'Herren 50','H50 Bezirksklasse II':'Herren 50','H50 Bezirksklasse':'Herren 50',
+  'H55 Bezirksoberliga I':'Herren 55','H55 Bezirksoberliga':'Herren 55',
+  'H60 Verbandsliga':'Herren 60','H60 Bezirksoberliga I':'Herren 60',
+  'M70OL':'Herren 70','H70':'Herren 70',
+  'H75 Meisterklasse':'Herren 75','H75 Verbandsoberliga':'Herren 75',
+  'D00 Bezirksoberliga I':'Damen','D00 Bezirksoberliga':'Damen',
+  'D30 Verbandsliga':'Damen 30','D40 Verbandsoberliga':'Damen 40',
+  'D50 Verbandsliga':'Damen 50','D60 Bezirksoberliga I':'Damen 60','D60 Bezirksoberliga':'Damen 60',
+};
+const JUVENILE_RE=/^(U\d+|Mid\b)/i;
+
+function ligaToCategory(liga){
+  if(LIGA_CAT_MAP[liga])return LIGA_CAT_MAP[liga];
+  for(const[key,val]of Object.entries(LIGA_CAT_MAP)){if(liga.startsWith(key))return val;}
+  if(/^H\d+/.test(liga)){const m=liga.match(/^H(\d+)/);return`Herren ${m[1]}`;}
+  if(/^D\d+/.test(liga)){const m=liga.match(/^D(\d+)/);return`Damen ${m[1]}`;}
+  if(/^H\b/.test(liga))return'Herren';
+  if(/^D\b/.test(liga)||/^D00/.test(liga))return'Damen';
+  return null;
+}
+
+// ══════════════════════════════════════════════════════
+// TEAMS PDF PARSER (ResultReport) — POSICIÓN X/Y
+// Busca TODAS las ocurrencias de "Füchse Berlin Reinickendorf e.V."
+// por fila con matchAll, incluyendo sufijos romanos II/III/IV
+// ══════════════════════════════════════════════════════
+const CLUB_FULL='Füchse Berlin Reinickendorf e.V.';
+const ROMAN_MAP_TEAMS={II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
+
+document.getElementById('teams-pdf-input').addEventListener('change',async e=>{
+  const file=e.target.files[0];if(!file)return;
+  document.getElementById('teams-parse-status').textContent='...';
+  try{
+    const teams=await parseResultReportPDF(file);
+    state._pendingTeams=teams;
+    showTeamsPreview(teams);
+    document.getElementById('teams-parse-status').textContent=T[lang].teamsParsedMsg(teams.length);
+  }catch(err){document.getElementById('teams-parse-status').textContent='Fehler: '+err.message;console.error(err);}
+  e.target.value='';
+});
+
+async function parseResultReportPDF(file){
+  // PDF.js devuelve cada celda como un item completo (no palabras sueltas).
+  // Ej: item.str = 'Herren 70 Ostliga Gruppe B'  x=28
+  //     item.str = 'Füchse Berlin Reinickendorf e.V. III'  x=637
+  //
+  // Algoritmo:
+  //   1. Agrupar items por Y (tolerancia 4px)
+  //   2. Fila con 'Gruppe' → extraer categoría+liga de cada item por columna
+  //   3. Fila con 'Reinickendorf' → el item incluye el sufijo romano si existe
+
+  const ab = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: ab}).promise;
+  const teams = [];
+  const seen = new Set();
+  const ROMAN = {II:2, III:3, IV:4, V:5, VI:6, VII:7, VIII:8};
+  // X de inicio de cada columna (del PDF real)
+  const COLS = [28, 227, 427, 626];
+
+  function colIdx(x) {
+    // Devuelve la columna más cercana para un item en x
+    let best = 0, bestD = Infinity;
+    for (let i = 0; i < COLS.length; i++) {
+      const d = Math.abs(COLS[i] - x);
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    return best;
+  }
+
+  // active[ci] = {category, liga} o null
+  const active = [null, null, null, null];
+
+  for (let pn = 1; pn <= pdf.numPages; pn++) {
+    const page = await pdf.getPage(pn);
+    const vp = page.getViewport({scale: 1});
+    const tc = await page.getTextContent();
+
+    // Agrupar items por Y (tolerancia 4px → round a múltiplo de 4)
+    const rows = {};
+    for (const item of tc.items) {
+      const s = item.str;
+      if (!s || !s.trim()) continue;
+      const x = Math.round(item.transform[4]);
+      const y = Math.round(vp.height - item.transform[5]);
+      const yk = Math.round(y / 4) * 4;
+      if (!rows[yk]) rows[yk] = [];
+      rows[yk].push({s: s.trim(), x});
+    }
+
+    for (const yk of Object.keys(rows).map(Number).sort((a,b)=>a-b)) {
+      const items = rows[yk].sort((a,b) => a.x - b.x);
+      const rowText = items.map(i => i.s).join(' ');
+
+      // Saltar metadatos
+      if (rowText.includes('nu.Dokument') || rowText.includes('Mannschaftsmeisterschaft')
+          || rowText.includes('Ergebnistabellen') || rowText.includes('Pkt.')) continue;
+
+      // ── FILA DE HEADERS ──
+      // Cada item de header es una celda completa: "Herren 70 Ostliga Gruppe B"
+      if (rowText.includes('Gruppe')) {
+        // Resetear todas las columnas de esta fila
+        for (let ci = 0; ci < 4; ci++) active[ci] = null;
+
+        for (const item of items) {
+          if (!item.s.includes('Gruppe')) continue;
+          const ci = colIdx(item.x);
+          // Ignorar juveniles
+          if (/^(U\d+|Midcourt|Mid\b)/i.test(item.s)) { active[ci] = null; continue; }
+          // Parsear adultos: "Herren 70 Ostliga Gruppe B" → cat="Herren 70", liga="Ostliga"
+          const m = item.s.match(/^(Herren(?:\s+\d+)?|Damen(?:\s+\d+)?)\s+(.+?)\s+Gruppe\s+[A-Z]$/);
+          active[ci] = m ? {category: m[1].trim(), liga: m[2].trim()} : null;
+        }
+        continue;
+      }
+
+      // ── FILA DE DATOS ──
+      // Buscar items que contengan "Reinickendorf"
+      for (const item of items) {
+        if (!item.s.includes('Reinickendorf')) continue;
+        // Ignorar la línea del título del documento
+        if (item.s.includes('(12081)')) continue;
+
+        const ci = colIdx(item.x);
+        const col = active[ci];
+        if (!col) continue;
+
+        // El sufijo romano viene en el mismo item: "Füchse Berlin Reinickendorf e.V. III"
+        const sm = item.s.match(/e\.V\.\s+(VIII|VII|VI|IV|V|III|II)\s*$/);
+        const roman = sm ? sm[1] : null;
+        const tnum = roman ? ROMAN[roman] : 1;
+
+        const key = col.category + '__' + tnum;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        teams.push({
+          id: uid(),
+          name: col.category + (roman ? ' ' + roman : ''),
+          category: col.category,
+          liga: col.liga,
+          team_number: tnum,
+          season: 'Sommer',
+          gender: col.category.startsWith('Damen') ? 'F' : 'M'
+        });
+      }
+    }
+  }
+
+  teams.sort((a,b) => a.category.localeCompare(b.category) || a.team_number - b.team_number);
+  return teams;
+}
+function showTeamsPreview(teams){
+  const sec=document.getElementById('teams-preview-section');
+  const list=document.getElementById('teams-preview-list');
+  if(!teams.length){sec.style.display='none';return;}
+  const byCat={};
+  for(const t of teams){if(!byCat[t.category])byCat[t.category]=[];byCat[t.category].push(t);}
+  let html='';
+  for(const[cat,ts]of Object.entries(byCat)){
+    html+=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:8px">
+      <div class="team-section-header">${cat} <span class="${catGender(cat)==='F'?'g-f':'g-m'}">${catGender(cat)==='F'?'F':'M'}</span> · ${ts.length}</div>
+      ${ts.map(t=>`<div class="player-row" style="border-radius:0;border:none;border-bottom:1px solid #2e4a4233;margin:0">
+        <span class="player-name">${t.name}</span>
+        <span style="font-size:11px;color:var(--muted)">${t.liga}</span>
+        <span class="team-chip ${t.gender==='F'?'f':'m'}">${t.season}</span>
+      </div>`).join('')}
+    </div>`;
+  }
+  list.innerHTML=html;
+  sec.style.display='block';
+}
+
+async function confirmTeamsImport(){
+  const teams=state._pendingTeams;if(!teams||!teams.length)return;
+  const btn=document.querySelector('#teams-preview-section .btn-primary');
+  if(btn){btn.textContent='...';btn.disabled=true;}
+  setSync('ing',tr('syncIng'));
+  try{
+    // Only insert teams that don't exist yet (match by name only — never overwrite)
+    const toInsert=teams.filter(t=>!state.teams.find(x=>x.name===t.name));
+    if(toInsert.length)await sbUpsert('teams',toInsert);
+    await loadAll();
+    document.getElementById('teams-preview-section').style.display='none';
+    document.getElementById('teams-parse-status').textContent=T[lang].teamsImportedMsg(toInsert.length);
+  }catch(e){setSync('err',tr('syncErr'));console.error(e);}
+  finally{if(btn){btn.disabled=false;applyT();}}
+}
+
+// ══════════════════════════════════════════════════════
+// MATCHES PDF PARSER (Begegnungen) — POSICIÓN X/Y
+// Formato: LIGA HEIM GAST offen
+// Detecta TODAS las ocurrencias del club con matchAll
+// El sufijo romano (II/III/IV) determina qué equipo es
+// ══════════════════════════════════════════════════════
+const CLUB_NAME='Füchse Berlin Reinickendorf e.V.';
+const ROMAN_MATCH={II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
+
+document.getElementById('matches-pdf-input').addEventListener('change',async e=>{
+  const file=e.target.files[0];if(!file)return;
+  const statusEl=document.getElementById('matches-parse-status');
+  statusEl.textContent='...';
+  try{
+    const ab=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+    let allItems=[];
+    for(let i=1;i<=pdf.numPages;i++){
+      const pg=await pdf.getPage(i);
+      const vp=pg.getViewport({scale:1});
+      const tc=await pg.getTextContent();
+      for(const item of tc.items){
+        if(!item.str.trim())continue;
+        const x=Math.round(item.transform[4]);
+        const y=Math.round(vp.height-item.transform[5]);
+        allItems.push({str:item.str.trim(),x,y,page:i});
+      }
+    }
+    const matches=parseBegegnungenItems(allItems);
+    state._pendingMatches=matches;
+    showMatchesPreview(matches);
+    statusEl.textContent=T[lang].matchesParsedMsg(matches.length);
+  }catch(err){
+    document.getElementById('matches-parse-status').textContent='Fehler: '+err.message;
+    console.error(err);
+  }
+  e.target.value='';
+});
+
+function parseBegegnungenItems(allItems){
+  // Group by page+Y (tolerance ±5px), sort rows top→bottom, items left→right
+  const rows=[];
+  for(const item of allItems){
+    const ex=rows.find(r=>r.page===item.page&&Math.abs(r.y-item.y)<=5);
+    if(ex)ex.items.push(item);
+    else rows.push({page:item.page,y:item.y,items:[item]});
+  }
+  rows.sort((a,b)=>a.page!==b.page?a.page-b.page:a.y-b.y);
+  for(const r of rows)r.items.sort((a,b)=>a.x-b.x);
+  const lines=rows.map(r=>r.items.map(i=>i.str).join(' ').replace(/\s+/g,' ').trim());
+
+  const matches=[];
+  let curDate='',curTime='';
+  // Club regex with matchAll — finds ALL occurrences including II/III/IV/V suffix
+  const CLUB_RE=new RegExp(
+    CLUB_NAME.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:\\s+(VIII|VII|VI|IV|V|III|II))?',
+    'g'
+  );
+
+  for(const line of lines){
+    if(!line)continue;
+    const dateM=line.match(/(?:Mo|Di|Mi|Do|Fr|Sa|So)\.\s+(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}:\d{2})/);
+    if(dateM){curDate=`${dateM[3]}-${dateM[2]}-${dateM[1]}`;curTime=dateM[4];}
+    if(!curDate)continue;
+    let rest=line
+      .replace(/(?:Mo|Di|Mi|Do|Fr|Sa|So)\.\s+\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}\s*/,'')
+      .replace(/\[Routenplan\]/g,'')
+      .replace(/\s+(?:offen|zurückgezogen)(\s.*)?$/,'')
+      .replace(/\s+\d+:\d+\s+\d+:\d+.*$/,'')
+      .replace(/\s+/g,' ').trim();
+    if(!rest||!rest.includes('Füchse'))continue;
+    if(JUVENILE_RE.test(rest))continue;
+    // Liga prefix
+    const ligaM=rest.match(/^((?:H\d{0,2}|D\d{0,2}|M\d+OL?)(?:\s+(?:Verband(?:s)?(?:oberliga|liga)|Bezirk(?:s)?(?:oberliga|liga|klasse)\s*(?:I{0,3})?|Meisterklasse|Verbandsoberliga))?)/i);
+    if(!ligaM||!ligaM[1].trim())continue;
+    const liga=ligaM[1].trim();
+    const category=ligaToCategory(liga);
+    if(!category)continue;
+    const afterLiga=rest.slice(liga.length).trim();
+    // matchAll: find ALL club occurrences
+    CLUB_RE.lastIndex=0;
+    const clubOccurrences=[...afterLiga.matchAll(CLUB_RE)];
+    if(!clubOccurrences.length)continue;
+    const firstClub=clubOccurrences[0];
+    const beforeClub=afterLiga.slice(0,firstClub.index).trim();
+    const afterClub=afterLiga.slice(firstClub.index+firstClub[0].length).trim();
+    let isHome,opponent;
+    if(!beforeClub){
+      isHome=true;
+      CLUB_RE.lastIndex=0;
+      opponent=afterClub.replace(CLUB_RE,'').replace(/\s+/g,' ').trim();
+    }else{
+      isHome=false;
+      opponent=beforeClub;
+    }
+    CLUB_RE.lastIndex=0;
+    opponent=opponent.replace(/^[-·,\s]+/,'').replace(/[-·,\s]+$/,'').replace(CLUB_RE,'').trim();
+    if(!opponent)continue;
+    const ourNum=firstClub[1]?ROMAN_MATCH[firstClub[1]]:1;
+    const catTeams=state.teams.filter(t=>t.category===category).sort((a,b)=>teamNumber(a)-teamNumber(b));
+    const matchingTeam=catTeams[ourNum-1]||null;
+    matches.push({id:uid(),teamId:matchingTeam?.id||null,teamCategory:category,teamNum:ourNum,opponent,date:curDate,time:curTime,home:isHome?'Heim':'Auswärts',venue:'',liga,_teamFound:!!matchingTeam});
+  }
+  // Deduplicate
+  const seen=new Set();
+  return matches.filter(m=>{
+    const k=`${m.date}_${m.time}_${m.teamCategory}_${m.teamNum}_${m.opponent}`;
+    if(seen.has(k))return false;seen.add(k);return true;
+  });
+}
+
+function showMatchesPreview(matches){
+  const sec=document.getElementById('matches-preview-section');
+  const list=document.getElementById('matches-preview-list');
+  if(!matches.length){sec.style.display='none';return;}
+  const byCat={};
+  for(const m of matches){const k=m.teamCategory||'?';if(!byCat[k])byCat[k]=[];byCat[k].push(m);}
+  const unmatched=matches.filter(m=>!m._teamFound).length;
+  let html='';
+  if(unmatched>0)html+=`<div class="rule-box warn" style="margin-bottom:10px">⚠ ${unmatched} ${tr('noTeamMatch')}</div>`;
+  for(const[cat,ms]of Object.entries(byCat)){
+    html+=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:8px">
+      <div class="team-section-header">${cat} · ${ms.length} Spiele</div>
+      ${ms.slice(0,5).map(m=>`<div class="player-row" style="border-radius:0;border:none;border-bottom:1px solid #2e4a4233;margin:0;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--muted);min-width:80px">${fmtDate(m.date)}</span>
+        <span style="font-size:11px;color:var(--muted);min-width:42px">${m.time}</span>
+        <span class="player-name" style="font-size:12px">${m.opponent}</span>
+        <span class="team-chip ${m.home==='Heim'?'m':'f'}">${m.home}</span>
+        ${!m._teamFound?`<span class="warn-badge">⚠ kein Team</span>`:''}
+      </div>`).join('')}
+      ${ms.length>5?`<div style="padding:5px 12px;font-size:11px;color:var(--muted)">${T[lang].addedPlayers(ms.length-5)}</div>`:''}
+    </div>`;
+  }
+  list.innerHTML=html;sec.style.display='block';
+}
+
+async function confirmMatchesImport(){
+  const matches=state._pendingMatches;if(!matches||!matches.length)return;
+  const btn=document.querySelector('#matches-preview-section .btn-primary');
+  if(btn){btn.textContent='...';btn.disabled=true;}
+  setSync('ing',tr('syncIng'));
+  try{
+    for(const m of matches){
+      if(!m.teamId){const t=state.teams.find(x=>x.category===m.teamCategory);if(t)m.teamId=t.id;}
+    }
+    const toInsert=matches
+      .filter(m=>m.teamId&&!state.matches.find(x=>x.date===m.date&&x.teamId===m.teamId&&x.opponent===m.opponent))
+      .map(m=>({id:m.id,team_id:m.teamId,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue}));
+    if(toInsert.length){for(let i=0;i<toInsert.length;i+=100)await sbUpsert('matches',toInsert.slice(i,i+100));}
+    await loadAll();
+    document.getElementById('matches-preview-section').style.display='none';
+    document.getElementById('matches-parse-status').textContent=T[lang].matchesImportedMsg(toInsert.length);
+  }catch(e){setSync('err',tr('syncErr'));console.error(e);}
+  finally{if(btn){btn.disabled=false;applyT();}}
+}
+
+async function deleteAllMatches(){
+  if(!confirm(tr('deleteAllConfirm')))return;
+  const statusEl=document.getElementById('matches-parse-status');
+  statusEl.textContent='...';
+  setSync('ing',tr('syncIng'));
+  try{
+    for(const m of state.matches)await sbDelete('matches',`id=eq.${m.id}`);
+    await loadAll();
+    statusEl.textContent=tr('deletedMsg');
+  }catch(e){setSync('err',tr('syncErr'));console.error(e);}
+}
+
+// Init drop zones after DOM ready
+window.addEventListener('DOMContentLoaded',()=>{
+  setupDrop('pdf-drop','pdf-input',f=>{document.getElementById('pdf-input').files;const dt=new DataTransfer();dt.items.add(f);document.getElementById('pdf-input').files=dt.files;document.getElementById('pdf-input').dispatchEvent(new Event('change'));});
+  setupDrop('teams-pdf-drop','teams-pdf-input',f=>{const dt=new DataTransfer();dt.items.add(f);document.getElementById('teams-pdf-input').files=dt.files;document.getElementById('teams-pdf-input').dispatchEvent(new Event('change'));});
+  setupDrop('matches-pdf-drop','matches-pdf-input',f=>{const dt=new DataTransfer();dt.items.add(f);document.getElementById('matches-pdf-input').files=dt.files;document.getElementById('matches-pdf-input').dispatchEvent(new Event('change'));});
+});
+
 setLang('de');
-applyT();
 loadAll();
 </script>
 </body>
