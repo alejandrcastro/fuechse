@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Füchse Berlin Club Manager — Documentation</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sw:272px;
+  --green:#2d6a4f;--court:#74c69d;
+  --dark:#1a1a2e;--bg:#f8f9fa;--white:#fff;
+  --text:#2c3e50;--muted:#6c757d;--border:#dee2e6;
+  --heading:#1a1a2e;--link:#2d6a4f;
+}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;display:flex;min-height:100vh}
+#sidebar{width:var(--sw);min-width:var(--sw);background:var(--dark);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:100}
+#sidebar::-webkit-scrollbar{width:4px}
+#sidebar::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+.sb-brand{padding:22px 20px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.sb-name{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;letter-spacing:.1em;color:var(--court);line-height:1}
+.sb-sub{font-size:.68rem;color:#555;letter-spacing:.07em;text-transform:uppercase;margin-top:3px}
+.sb-ver{font-size:.68rem;color:#3a3a3a;margin-top:5px}
+.sb-search{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05)}
+.sb-search input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:6px;color:#bbb;padding:6px 10px;font-size:.8rem;font-family:'DM Sans',sans-serif;outline:none}
+.sb-search input::placeholder{color:#444}
+.sb-search input:focus{border-color:var(--court)}
+nav{flex:1;padding:6px 0 24px}
+.ns{padding:14px 16px 4px;font-size:.62rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#3a3a3a}
+.ni{display:block;padding:6px 16px 6px 18px;color:#888;font-size:.82rem;text-decoration:none;border-left:2px solid transparent;transition:all .12s;cursor:pointer;user-select:none}
+.ni:hover{color:#ccc;background:rgba(255,255,255,.04)}
+.ni.on{color:var(--court);border-left-color:var(--court);background:rgba(116,198,157,.07)}
+.ns2{display:block;padding:4px 16px 4px 30px;color:#555;font-size:.78rem;text-decoration:none;transition:color .12s;cursor:pointer;user-select:none}
+.ns2:hover{color:#999}
+.ns2.on{color:var(--court)}
+#main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh}
+#topbar{background:var(--white);border-bottom:1px solid var(--border);padding:10px 40px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.tbc{font-size:.8rem;color:var(--muted)}
+.tbc span{color:var(--text);font-weight:500}
+.tbl{display:flex;gap:16px}
+.tbl a{font-size:.8rem;color:var(--muted);text-decoration:none}
+.tbl a:hover{color:var(--link)}
+#content{padding:40px 48px 80px;max-width:880px}
+.page{display:none}
+.page.on{display:block}
+.hero{background:linear-gradient(135deg,#1a1a2e 0%,#2d6a4f 100%);border-radius:10px;padding:28px 32px;margin-bottom:32px;color:#fff}
+.hero h1{color:#fff;margin-bottom:6px}
+.hero p{color:rgba(255,255,255,.72);margin:0;font-size:.95rem}
+h1{font-family:'Bebas Neue',sans-serif;font-size:2.3rem;letter-spacing:.06em;color:var(--heading);margin-bottom:8px;line-height:1.1}
+h2{font-size:1.35rem;font-weight:600;color:var(--heading);margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+h3{font-size:1.05rem;font-weight:600;color:var(--heading);margin:26px 0 10px}
+h4{font-size:.95rem;font-weight:600;color:var(--heading);margin:18px 0 7px}
+p{margin-bottom:14px}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+ul,ol{margin:0 0 14px 20px}
+li{margin-bottom:5px}
+strong{font-weight:600}
+code{font-family:'DM Mono',monospace;font-size:.82rem;background:#f1f3f5;border:1px solid #e9ecef;border-radius:4px;padding:1px 5px;color:#c0392b}
+pre{background:#1e1e2e;border-radius:8px;padding:18px 20px;overflow-x:auto;margin:16px 0;border:1px solid #2a2a3e}
+pre code{background:none;border:none;padding:0;color:#a8d8b8;font-size:.82rem;line-height:1.65}
+.tw{overflow-x:auto;margin:14px 0}
+table{width:100%;border-collapse:collapse;font-size:.875rem}
+th{background:#f1f3f5;padding:9px 14px;text-align:left;font-weight:600;font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)}
+td{padding:9px 14px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8f9fa}
+.adm{border-radius:8px;padding:14px 18px;margin:16px 0;border-left:4px solid}
+.adm-t{font-weight:700;font-size:.78rem;letter-spacing:.07em;text-transform:uppercase;margin-bottom:5px}
+.anote{background:#e8f4fd;border-color:#3498db}.anote .adm-t{color:#3498db}
+.awarn{background:#fff8e1;border-color:#e67e22}.awarn .adm-t{color:#e67e22}
+.atip{background:#e8f8f0;border-color:#2d6a4f}.atip .adm-t{color:#2d6a4f}
+.adanger{background:#fde8e8;border-color:#e74c3c}.adanger .adm-t{color:#e74c3c}
+.adm p{margin:0;font-size:.875rem}
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:.72rem;font-weight:600}
+.bg{background:#e8f8f0;color:#2d6a4f}.br{background:#fde8e8;color:#c0392b}
+.bb{background:#e8f4fd;color:#2980b9}.by{background:#fff8e1;color:#c67c11}
+.steps{counter-reset:s;margin:20px 0}
+.step{display:flex;gap:16px;margin-bottom:14px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:16px 18px}
+.step::before{counter-increment:s;content:counter(s);min-width:28px;height:28px;border-radius:50%;background:#2d6a4f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;margin-top:1px}
+.step h4{margin:0 0 4px;font-size:.95rem}
+.step p{margin:0;font-size:.86rem;color:var(--muted)}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:18px 0}
+.fc{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:15px 17px}
+.fc h4{margin:0 0 5px;font-size:.93rem}
+.fc p{margin:0;font-size:.83rem;color:var(--muted)}
+.schema{margin:14px 0}
+.sr{display:grid;grid-template-columns:170px 1fr;border-bottom:1px solid var(--border);padding:8px 0;font-size:.875rem}
+.sr:last-child{border-bottom:none}
+.sc{font-family:'DM Mono',monospace;font-size:.79rem;color:var(--link);font-weight:500}
+.sd{color:var(--muted)}
+.rbox{background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:16px 0}
+.rbox-h{background:linear-gradient(90deg,#1a1a2e,#2d6a4f);padding:10px 16px;color:#fff;font-weight:600;font-size:.9rem}
+.rbox-b{padding:14px 16px;font-size:.875rem}
+.rbox-b ul{margin:8px 0 0 16px}
+.rbox-b li{margin-bottom:4px}
+.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.sc2{padding:12px;border-radius:8px;text-align:center;border:1px solid;font-size:.82rem;font-weight:600;line-height:1.4}
+#footer{margin-left:var(--sw);background:var(--white);border-top:1px solid var(--border);padding:14px 40px;display:flex;align-items:center;justify-content:space-between;font-size:.76rem;color:var(--muted)}
+@media(max-width:768px){#sidebar{transform:translateX(-100%)}#main,#footer{margin-left:0}#content{padding:24px 20px 60px}.fgrid,.sgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<aside id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-name">Füchse Berlin</div>
+    <div class="sb-sub">Club Manager Docs</div>
+    <div class="sb-ver">v2.0 · TVBB Berlin · 2026</div>
+  </div>
+  <div class="sb-search"><input type="text" placeholder="Search docs..." oninput="fnav(this.value)"></div>
+  <nav id="navt">
+    <div class="ns">Getting Started</div>
+    <a class="ni on" onclick="go('overview')">📋 Overview</a>
+    <a class="ni" onclick="go('deploy')">🚀 Deployment</a>
+    <a class="ni" onclick="go('login')">🔐 Login & Access</a>
+    <div class="ns">Admin Panel</div>
+    <a class="ni" onclick="go('import')">📥 PDF Import</a>
+    <a class="ns2" onclick="go('import')">ResultReport parser</a>
+    <a class="ns2" onclick="go('import')">Begegnungen parser</a>
+    <a class="ns2" onclick="go('import')">Player import</a>
+    <a class="ni" onclick="go('teams')">🏆 Teams</a>
+    <a class="ni" onclick="go('players')">👤 Players</a>
+    <a class="ni" onclick="go('matches')">📅 Matches</a>
+    <a class="ni" onclick="go('avail')">✅ Availability</a>
+    <a class="ni" onclick="go('lineup')">📋 Lineup</a>
+    <a class="ni" onclick="go('blocking')">🚫 Blocking</a>
+    <div class="ns">Player App</div>
+    <a class="ni" onclick="go('spieler')">📱 Player View</a>
+    <div class="ns">Reference</div>
+    <a class="ni" onclick="go('schema')">🗄️ Database Schema</a>
+    <a class="ni" onclick="go('rules')">⚖️ TVBB Rules</a>
+    <a class="ni" onclick="go('parsers')">🔍 PDF Parsers</a>
+  </nav>
+</aside>
+
+<div id="main">
+  <div id="topbar">
+    <div class="tbc">Füchse Berlin Club Manager › <span id="bc">Overview</span></div>
+    <div class="tbl">
+      <a href="admin.html" target="_blank">Open Admin ↗</a>
+      <a href="index.html" target="_blank">Player App ↗</a>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- OVERVIEW -->
+    <div class="page on" id="page-overview">
+      <div class="hero"><h1>Club Manager</h1><p>Management system for Füchse Berlin Reinickendorf e.V. · TVBB Berlin</p></div>
+      <p>The Club Manager is a two-app web system for managing teams, players, matches, availability and lineups. It runs entirely in the browser — no installation, no build step — backed by Supabase.</p>
+      <div class="fgrid">
+        <div class="fc"><h4>🔧 Admin Panel</h4><p>Full management: import PDFs, configure teams, assign players, generate lineups and enforce blocking rules.</p></div>
+        <div class="fc"><h4>📱 Player App</h4><p>Mobile-optimized view for players to confirm their availability for upcoming matches.</p></div>
+        <div class="fc"><h4>📄 PDF Import</h4><p>Auto-imports teams, players and matches from official TVBB Berlin PDFs.</p></div>
+        <div class="fc"><h4>⚖️ TVBB Rules</h4><p>Stammkader and Stammmannschaft calculated automatically with real-time blocking alerts.</p></div>
+      </div>
+      <h2>Tech Stack</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Component</th><th>Technology</th><th>Version</th></tr></thead>
+        <tbody>
+          <tr><td>Frontend</td><td>HTML + CSS + vanilla JavaScript</td><td>—</td></tr>
+          <tr><td>PDF parsing</td><td>PDF.js</td><td>3.11.174</td></tr>
+          <tr><td>Backend / DB</td><td>Supabase (direct REST API)</td><td>—</td></tr>
+          <tr><td>Deployment</td><td>GitHub Pages</td><td>—</td></tr>
+          <tr><td>Fonts</td><td>Bebas Neue + DM Sans</td><td>Google Fonts</td></tr>
+        </tbody>
+      </table></div>
+      <div class="adm atip"><div class="adm-t">💡 No build step</div><p>No frameworks, bundlers or dependencies to install. Both HTML files are fully self-contained.</p></div>
+      <h2>Languages</h2>
+      <p>The interface supports <strong>German</strong> (default), <strong>Spanish</strong> and <strong>English</strong>. Language is switched with the header buttons and persisted to <code>localStorage</code>.</p>
+    </div>
+
+    <!-- DEPLOY -->
+    <div class="page" id="page-deploy">
+      <div class="hero"><h1>Deployment</h1><p>Get the system online in minutes with GitHub Pages</p></div>
+      <h2>GitHub Pages (recommended)</h2>
+      <p>GitHub Pages serves static files directly from a repository. Free, fast, and gives you a permanent URL.</p>
+      <div class="steps">
+        <div class="step"><div><h4>Create a GitHub repository</h4><p>Go to <a href="https://github.com/new" target="_blank">github.com/new</a> → name it <code>fuchse-manager</code> → set to <strong>Public</strong> → Create</p></div></div>
+        <div class="step"><div><h4>Upload the files</h4><p>Click <strong>Add file → Upload files</strong> → upload <code>index.html</code>, <code>admin.html</code> and <code>docs.html</code> → Commit changes</p></div></div>
+        <div class="step"><div><h4>Enable GitHub Pages</h4><p><strong>Settings → Pages → Source: Deploy from branch → Branch: main → / (root) → Save</strong></p></div></div>
+        <div class="step"><div><h4>Done</h4><p>After ~1 minute the app is live at <code>https://username.github.io/fuchse-manager/</code></p></div></div>
+      </div>
+      <h2>Repository structure</h2>
+      <pre><code>fuchse-manager/
+├── index.html   ← Player App (public homepage)
+├── admin.html   ← Admin Panel (login required)
+└── docs.html    ← This documentation</code></pre>
+      <h2>URLs</h2>
+      <div class="tw"><table>
+        <thead><tr><th>URL</th><th>Description</th><th>Access</th></tr></thead>
+        <tbody>
+          <tr><td><code>/</code> or <code>/index.html</code></td><td>Player app</td><td><span class="badge bg">Public</span></td></tr>
+          <tr><td><code>/admin.html</code></td><td>Admin panel</td><td><span class="badge by">Login</span></td></tr>
+          <tr><td><code>/docs.html</code></td><td>Documentation</td><td><span class="badge bg">Public</span></td></tr>
+        </tbody>
+      </table></div>
+      <div class="adm anote"><div class="adm-t">ℹ️ Alternatives</div><p><strong>Netlify Drop:</strong> Drag the files to <a href="https://app.netlify.com/drop" target="_blank">app.netlify.com/drop</a> — no account needed.<br><strong>Cloudflare Pages:</strong> Same concept as GitHub Pages with global CDN and automatic HTTPS.</p></div>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="page" id="page-login">
+      <div class="hero"><h1>Login & Access</h1><p>Admin panel access control</p></div>
+      <h2>Credentials</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Field</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Username</td><td><code>admin</code></td></tr>
+          <tr><td>Password</td><td><code>argentina</code></td></tr>
+        </tbody>
+      </table></div>
+      <h2>Session behavior</h2>
+      <p>Login uses <code>sessionStorage</code>. The session lasts while the tab is open. Closing the tab ends the session. No "remember me" option.</p>
+      <div class="adm awarn"><div class="adm-t">⚠️ Security note</div><p>The password is stored as plain text in the HTML (client-side). This is sufficient to keep players out of the admin, but it is not cryptographic security.</p></div>
+      <h2>Player App</h2>
+      <p>The main page (<code>index.html</code>) is fully public — no login needed. Any player can access it and confirm their availability.</p>
+    </div>
+
+    <!-- IMPORT -->
+    <div class="page" id="page-import">
+      <div class="hero"><h1>PDF Import</h1><p>Import data from official TVBB Berlin PDFs</p></div>
+      <p>Three PDF types are supported. All use drag &amp; drop or click-to-upload.</p>
+
+      <h2>1. Namentliche Mannschaftsmeldung → Players</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Field</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>Name</td><td>Lastname, Firstname → converted to Firstname Lastname</td></tr>
+          <tr><td>Birth year</td><td>4 digits</td></tr>
+          <tr><td>IDnr</td><td>TVBB registration number (7–9 digits)</td></tr>
+          <tr><td>LK</td><td>Leistungsklasse (e.g. LK8, LK10,5)</td></tr>
+          <tr><td>Team</td><td>Assigned by list position (groups of 6 Sommer / 4 Winter)</td></tr>
+          <tr><td>Gender</td><td>Inferred from team category (Herren=M, Damen=F)</td></tr>
+        </tbody>
+      </table></div>
+      <div class="adm atip"><div class="adm-t">💡 Multiple PDFs</div><p>Upload multiple PDFs at once with Ctrl+Click. The system merges results before showing the preview.</p></div>
+
+      <h2>2. ResultReport PDF → Teams</h2>
+      <p>Auto-detects adult teams with their league, up to 4 teams per category. PDF.js returns each table cell as a complete string — e.g. <code>"Herren 70 Ostliga Gruppe B"</code> is one item.</p>
+      <pre><code>// Real PDF.js items (ResultReport, page 1):
+{str: "Herren 70 Ostliga Gruppe B",           x: 28 }  → header col 0
+{str: "Herren Verbandsliga Gruppe C",          x: 227}  → header col 1
+{str: "Füchse Berlin Reinickendorf e.V.",      x: 239}  → Herren #1
+{str: "Füchse Berlin Reinickendorf e.V. II",   x: 438}  → Herren #2
+{str: "Füchse Berlin Reinickendorf e.V. III",  x: 637}  → Herren #3</code></pre>
+      <div class="adm adanger"><div class="adm-t">🚫 Automatically ignored</div><p>U12, U15, U18 and Midcourt categories are never imported.</p></div>
+
+      <h2>3. Begegnungen PDF → Matches</h2>
+      <p>Imports the match schedule and links each match to the correct team automatically.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Extracted field</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>Date / Time</td><td>Format <code>Mo. DD.MM.YYYY HH:MM</code></td></tr>
+          <tr><td>League</td><td>Prefix (H, H30, D40, M70OL...) mapped to category</td></tr>
+          <tr><td>Opponent</td><td>The team that is not Füchse Berlin</td></tr>
+          <tr><td>Home / Away</td><td>Club name position in the line (first = home)</td></tr>
+          <tr><td>Team number</td><td>Roman suffix in club name (II, III, IV...)</td></tr>
+        </tbody>
+      </table></div>
+      <div class="adm awarn"><div class="adm-t">⚠️ Import teams first</div><p>The Begegnungen parser links matches to teams by category + number. If teams are not imported yet, matches will be left unlinked (shown as a warning in the preview).</p></div>
+    </div>
+
+    <!-- TEAMS -->
+    <div class="page" id="page-teams">
+      <div class="hero"><h1>Teams</h1><p>Manage club teams (Mannschaften)</p></div>
+      <h2>Create a team manually</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Field</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td>Name</td><td>Team name</td><td>Herren 1</td></tr>
+          <tr><td>Liga</td><td>League</td><td>Verbandsliga</td></tr>
+          <tr><td>Category</td><td>Herren, Damen, Herren 30...</td><td>Herren</td></tr>
+          <tr><td>Number</td><td>Team number within category</td><td>1</td></tr>
+          <tr><td>Season</td><td>Sommer (groups of 6) or Winter (groups of 4)</td><td>Sommer</td></tr>
+        </tbody>
+      </table></div>
+      <h2>Team view</h2>
+      <p>Each team card shows its roster sorted by LK with blocking indicators. Deleting a team (✕) removes it and its player assignments — players themselves are not deleted.</p>
+    </div>
+
+    <!-- PLAYERS -->
+    <div class="page" id="page-players">
+      <div class="hero"><h1>Players</h1><p>Manage the full club roster</p></div>
+      <h2>Player list</h2>
+      <p>Full list sorted by LK (best first). Shows name, teams, birth year, LK, gender, active blocking (⛔) and warnings (⚠). Filters: team, gender, name search, "blocked only".</p>
+      <h2>Assign teams and match counts</h2>
+      <p>The <strong>Teams</strong> button opens a modal with checkboxes to assign/unassign teams and + / − buttons to manually adjust the match count per team.</p>
+      <div class="adm atip"><div class="adm-t">💡 Manual match count</div><p>The match counter drives the Stammmannschaft rule. Adjust it manually if matches were played before the system was set up.</p></div>
+    </div>
+
+    <!-- MATCHES -->
+    <div class="page" id="page-matches">
+      <div class="hero"><h1>Matches</h1><p>Match schedule management</p></div>
+      <h2>Match list</h2>
+      <p>All matches sorted by date. Each card shows: team vs opponent, date/time/type/venue, availability progress bar, lineup status (⏳ / ✓), and a "Player view" button to open the availability overlay.</p>
+      <h2>Add a match manually</h2>
+      <p>Fill in team, opponent, date, time, venue type and location. For the full schedule, use the <strong>Begegnungen PDF</strong> import.</p>
+      <h2>Delete all matches</h2>
+      <p>The red button at the bottom of the Import section deletes <em>all</em> matches. Useful to re-import the schedule from scratch.</p>
+    </div>
+
+    <!-- AVAILABILITY -->
+    <div class="page" id="page-avail">
+      <div class="hero"><h1>Availability</h1><p>Player availability per match</p></div>
+      <h2>Admin view</h2>
+      <p>Select a match from the dropdown to see all team players sorted by LK with status buttons. Changes are saved instantly to Supabase.</p>
+      <h2>Availability states</h2>
+      <div class="sgrid">
+        <div class="sc2" style="background:#e8f8f0;border-color:#2d6a4f;color:#2d6a4f">✓ Yes<br><small>Available</small></div>
+        <div class="sc2" style="background:#fff8e1;border-color:#e67e22;color:#c67c11">? Maybe<br><small>Unsure</small></div>
+        <div class="sc2" style="background:#fde8e8;border-color:#e74c3c;color:#c0392b">✗ No<br><small>Unavailable</small></div>
+        <div class="sc2" style="background:#f1f3f5;border-color:#dee2e6;color:#6c757d">—<br><small>No response</small></div>
+      </div>
+      <h2>Generate lineup from availability</h2>
+      <p>When players have responded Yes, the <strong>⚡ Auto</strong> button generates a lineup with available players sorted by LK, excluding blocked players. The <strong>Availability →</strong> button jumps to the Lineup tab for that match.</p>
+    </div>
+
+    <!-- LINEUP -->
+    <div class="page" id="page-lineup">
+      <div class="hero"><h1>Lineup</h1><p>Generate and manage match lineups</p></div>
+      <h2>Structure</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Season</th><th>Singles</th><th>Doubles</th><th>Total</th></tr></thead>
+        <tbody>
+          <tr><td>Sommer</td><td>6</td><td>3</td><td>9</td></tr>
+          <tr><td>Winter</td><td>4</td><td>2</td><td>6</td></tr>
+        </tbody>
+      </table></div>
+      <h2>Auto-generate</h2>
+      <p>Selects available (Yes) players by LK, excludes blocked players, fills singles positions in order.</p>
+      <h2>Manual assignment</h2>
+      <p>Each position dropdown shows: name, LK, availability status (✓/✗/?), birth year, and ⛔ if blocked.</p>
+      <div class="adm adanger"><div class="adm-t">🚫 LK order violation</div><p>If position N has a worse LK than position N-1, a red warning appears. TVBB rules require positions to be ordered best-to-worst LK.</p></div>
+      <div class="adm anote"><div class="adm-t">ℹ️ TVBB Rule</div><p>Singles must be ready before match start. Doubles may start no more than 10 minutes after the last singles match ends.</p></div>
+    </div>
+
+    <!-- BLOCKING -->
+    <div class="page" id="page-blocking">
+      <div class="hero"><h1>Blocking</h1><p>Stammkader and Stammmannschaft rule enforcement</p></div>
+      <h2>Blocking table</h2>
+      <p>Cross-table with players as rows and teams as columns, grouped by category. Filter by category using the dropdown at the top.</p>
+      <h2>Status indicators</h2>
+      <div class="tw"><table>
+        <thead><tr><th>Symbol</th><th>Color</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><strong>SK</strong></td><td style="color:#3498db">Blue</td><td>Player's Stammkader team</td></tr>
+          <tr><td><strong>SK⛔</strong></td><td style="color:#9b59b6">Purple</td><td>Blocked by Stammkader rule</td></tr>
+          <tr><td><strong>SM (N)</strong></td><td style="color:#e74c3c">Red</td><td>Blocked by Stammmannschaft (N matches)</td></tr>
+          <tr><td><strong>⛔ (N)</strong></td><td style="color:#e74c3c">Red</td><td>Blocked by both rules</td></tr>
+          <tr><td><strong>⚠ N/2</strong></td><td style="color:#e67e22">Orange</td><td>1 match played — next match triggers block</td></tr>
+          <tr><td><strong>N×</strong></td><td style="color:#74c69d">Green</td><td>N matches played, no block yet</td></tr>
+          <tr><td><strong>—</strong></td><td style="color:#6c757d">Gray</td><td>Assigned to team, 0 matches</td></tr>
+          <tr><td><strong>·</strong></td><td style="color:#bbb">Light</td><td>Not assigned to this team</td></tr>
+        </tbody>
+      </table></div>
+      <div class="adm atip"><div class="adm-t">💡 Independent rules</div><p>Stammkader and Stammmannschaft are independent rules applied simultaneously. A player can be blocked by one, both, or neither.</p></div>
+    </div>
+
+    <!-- PLAYER APP -->
+    <div class="page" id="page-spieler">
+      <div class="hero"><h1>Player App</h1><p>Mobile-optimized availability view</p></div>
+      <p>Accessible at <code>index.html</code>. No login required. Two-step flow:</p>
+      <div class="steps">
+        <div class="step"><div><h4>Identify yourself</h4><p>Type your name → select from autocomplete results</p></div></div>
+        <div class="step"><div><h4>Confirm availability</h4><p>Tap a match → press ✓ Yes, ? Maybe or ✗ No — saved instantly</p></div></div>
+      </div>
+      <p>Match list shows date, team vs opponent, time/type, a ⛔ if the player is blocked for that match, and the current availability badge. The language switcher (DE/ES/EN) works the same as in the admin.</p>
+    </div>
+
+    <!-- SCHEMA -->
+    <div class="page" id="page-schema">
+      <div class="hero"><h1>Database Schema</h1><p>Supabase table structure</p></div>
+      <h2>Connection</h2>
+      <pre><code>URL: https://kepbpcttbvkbcckqoecv.supabase.co
+Key: sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n</code></pre>
+      <div class="adm anote"><div class="adm-t">ℹ️ Publishable key</div><p>This key is safe to include in client-side HTML. Supabase RLS policies control read/write access.</p></div>
+
+      <h2>teams</h2>
+      <div class="schema">
+        <div class="sr"><div class="sc">id</div><div class="sd">UUID — unique identifier</div></div>
+        <div class="sr"><div class="sc">name</div><div class="sd">Team display name (e.g. "Herren II")</div></div>
+        <div class="sr"><div class="sc">liga</div><div class="sd">League name</div></div>
+        <div class="sr"><div class="sc">category</div><div class="sd">Category string (Herren, Herren 30, Damen...)</div></div>
+        <div class="sr"><div class="sc">team_number</div><div class="sd">Team number within category (1, 2, 3...)</div></div>
+        <div class="sr"><div class="sc">season</div><div class="sd">"Sommer" or "Winter"</div></div>
+        <div class="sr"><div class="sc">gender</div><div class="sd">"M" or "F" — derived from category</div></div>
+      </div>
+
+      <h2>players</h2>
+      <div class="schema">
+        <div class="sr"><div class="sc">id</div><div class="sd">UUID</div></div>
+        <div class="sr"><div class="sc">name</div><div class="sd">Display name (Firstname Lastname)</div></div>
+        <div class="sr"><div class="sc">raw_name</div><div class="sd">Original PDF name (Lastname, Firstname)</div></div>
+        <div class="sr"><div class="sc">idnr</div><div class="sd">TVBB registration number</div></div>
+        <div class="sr"><div class="sc">lk</div><div class="sd">Leistungsklasse as float (e.g. 8.0)</div></div>
+        <div class="sr"><div class="sc">lk_str</div><div class="sd">LK as string from PDF (e.g. "LK8")</div></div>
+        <div class="sr"><div class="sc">year</div><div class="sd">Birth year</div></div>
+        <div class="sr"><div class="sc">gender</div><div class="sd">"M" or "F"</div></div>
+        <div class="sr"><div class="sc">rank</div><div class="sd">Position in the Namentliche Mannschaftsmeldung</div></div>
+      </div>
+
+      <h2>player_teams</h2>
+      <div class="schema">
+        <div class="sr"><div class="sc">player_id</div><div class="sd">FK → players.id</div></div>
+        <div class="sr"><div class="sc">team_id</div><div class="sd">FK → teams.id</div></div>
+      </div>
+
+      <h2>matches</h2>
+      <div class="schema">
+        <div class="sr"><div class="sc">id</div><div class="sd">UUID</div></div>
+        <div class="sr"><div class="sc">team_id</div><div class="sd">FK → teams.id</div></div>
+        <div class="sr"><div class="sc">opponent</div><div class="sd">Opponent team name</div></div>
+        <div class="sr"><div class="sc">date</div><div class="sd">Date in YYYY-MM-DD format</div></div>
+        <div class="sr"><div class="sc">time</div><div class="sd">Time in HH:MM format</div></div>
+        <div class="sr"><div class="sc">home</div><div class="sd">"Heim" or "Auswärts"</div></div>
+        <div class="sr"><div class="sc">venue</div><div class="sd">Match location</div></div>
+      </div>
+
+      <h2>availability</h2>
+      <div class="schema">
+        <div class="sr"><div class="sc">match_id</div><div class="sd">FK → matches.id</div></div>
+        <div class="sr"><div class="sc">player_id</div><div class="sd">FK → players.id</div></div>
+        <div class="sr"><div class="sc">status</div><div class="sd">"yes", "no" or "maybe"</div></div>
+      </div>
+
+      <h2>lineups</h2>
+      <div class="schema">
+        <div class="sr"><div class="sc">match_id</div><div class="sd">FK → matches.id (unique per match)</div></div>
+        <div class="sr"><div class="sc">slots</div><div class="sd">Array of player IDs by position [pos1, pos2, ... pos6]</div></div>
+      </div>
+
+      <h2>player_match_counts</h2>
+      <div class="schema">
+        <div class="sr"><div class="sc">player_id</div><div class="sd">FK → players.id</div></div>
+        <div class="sr"><div class="sc">team_id</div><div class="sd">FK → teams.id</div></div>
+        <div class="sr"><div class="sc">matches_played</div><div class="sd">Number of matches played in this team</div></div>
+      </div>
+    </div>
+
+    <!-- RULES -->
+    <div class="page" id="page-rules">
+      <div class="hero"><h1>TVBB Rules</h1><p>Stammkader and Stammmannschaft — exact implementation</p></div>
+
+      <div class="rbox">
+        <div class="rbox-h">📋 Rule 1 — Stammkader</div>
+        <div class="rbox-b">
+          <p><strong>Definition:</strong> Players within each category are ranked by LK (best first). The first N form the Stammkader of team 1, the next N of team 2, and so on.</p>
+          <ul>
+            <li>N = 6 in Sommer season</li>
+            <li>N = 4 in Winter season</li>
+            <li>A player <strong>cannot</strong> play in any team with a higher number than their Stammkader team</li>
+            <li>A player <strong>can</strong> play in teams with a lower number (better teams)</li>
+          </ul>
+          <br>
+          <p><strong>Example (Sommer, 3 Herren teams):</strong></p>
+          <ul>
+            <li>Ranking 1–6 → Stammkader Herren 1 (blocked in Herren 2 and 3)</li>
+            <li>Ranking 7–12 → Stammkader Herren 2 (blocked in Herren 3 only)</li>
+            <li>Ranking 13+ → Stammkader Herren 3 (no downward restriction)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="rbox">
+        <div class="rbox-h">📋 Rule 2 — Stammmannschaft</div>
+        <div class="rbox-b">
+          <p><strong>Definition:</strong> Playing 2+ matches in team X blocks the player for all teams with a higher number than X, within the same category.</p>
+          <ul>
+            <li>Triggered on the 2nd match (1 match → warning ⚠ only)</li>
+            <li>Applies independently per category</li>
+            <li>Does not affect playing in better teams (lower number)</li>
+            <li>Match count can be adjusted manually in the player assignment modal</li>
+          </ul>
+          <br>
+          <p><strong>Example:</strong> Player plays 2 matches in Herren II → blocked for Herren III and IV, can still play for Herren I.</p>
+        </div>
+      </div>
+
+      <h2>Implementation</h2>
+      <pre><code>// getPlayerBlockStatus(playerId, category)
+
+// Rule 1 – Stammkader
+const catPlayers = playersInCategory.sort(byLK);
+const pos        = catPlayers.indexOf(player);
+const skTeam     = catTeams[Math.floor(pos / groupSize)];
+const skBlocked  = catTeams.filter(t => t.number > skTeam.number);
+
+// Rule 2 – Stammmannschaft
+const highestBlock = catTeams
+  .filter(t => matchCounts[player][t] >= 2)
+  .sort(byNumber)[0];   // lowest-numbered team with 2+ matches
+const smBlocked = catTeams
+  .filter(t => t.number > highestBlock?.number);
+
+// Combined: a team is blocked if EITHER rule blocks it</code></pre>
+    </div>
+
+    <!-- PARSERS -->
+    <div class="page" id="page-parsers">
+      <div class="hero"><h1>PDF Parsers</h1><p>Technical documentation</p></div>
+
+      <h2>PDF.js text items — fundamentals</h2>
+      <p>PDF.js returns document text as a flat list of <em>items</em>. Each item has <code>item.str</code> (text), <code>item.transform[4]</code> (X), and <code>item.transform[5]</code> (Y from bottom of page).</p>
+      <pre><code>const x = Math.round(item.transform[4]);
+const y = Math.round(viewport.height - item.transform[5]);
+// Group into rows by: Math.round(y / 4) * 4</code></pre>
+      <div class="adm adanger"><div class="adm-t">🚫 Critical difference vs pdfplumber/pypdf</div><p>PDF.js returns each table cell as a <strong>single complete string</strong>. The string <code>"Füchse Berlin Reinickendorf e.V. III"</code> arrives as one item — not individual words. Parsers must use <code>item.str.includes()</code>, not word matching.</p></div>
+
+      <h2>ResultReport parser</h2>
+      <h3>Column layout</h3>
+      <p>The PDF has 4 fixed columns at X ≈ 28, 227, 427, 626 px. Each header row contains one item per column:</p>
+      <pre><code>{str: "Herren 70 Ostliga Gruppe B",       x: 28 }  // col 0
+{str: "Herren Verbandsliga Gruppe C",      x: 227}  // col 1
+{str: "Herren Bezirksoberliga I Gruppe D", x: 427}  // col 2
+{str: "Herren Bezirksliga I Gruppe B",     x: 626}  // col 3</code></pre>
+      <h3>Algorithm</h3>
+      <pre><code>for each Y-row:
+  if row has "Gruppe":
+    reset all 4 columns → null
+    for each item:
+      ci = nearest column index for item.x
+      if juvenile (U\d+, Midcourt): active[ci] = null
+      elif adult regex matches:     active[ci] = {category, liga}
+
+  elif row has "Reinickendorf":
+    for each item containing "Reinickendorf":
+      ci  = nearest column index
+      col = active[ci]           // skip if null
+      roman = suffix in item.str (II/III/IV...)
+      register team</code></pre>
+      <h3>Header regex</h3>
+      <pre><code>/^(Herren(?:\s+\d+)?|Damen(?:\s+\d+)?)\s+(.+?)\s+Gruppe\s+[A-Z]$/
+//  category (e.g. "Herren 30")         league    group letter</code></pre>
+
+      <h2>Begegnungen parser</h2>
+      <h3>Typical row</h3>
+      <pre><code>Mo. 05.05.2026 10:00 H Verbandsliga Füchse Berlin Reinickendorf e.V. TC Blau-Weiss offen</code></pre>
+      <h3>Steps</h3>
+      <ol>
+        <li>Group items by Y (4px tolerance)</li>
+        <li>Extract date/time: <code>/(?:Mo|Di|Mi|Do|Fr|Sa|So)\.\s+(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}:\d{2})/</code></li>
+        <li>Extract league prefix, map to category via <code>LIGA_CAT_MAP</code></li>
+        <li>Home/Away: club first in line → home, club second → away</li>
+        <li>Team number from roman suffix (II, III, IV...)</li>
+        <li>Skip juvenile rows (U\d+, Midcourt)</li>
+        <li>Deduplicate by date+time+category+teamNum+opponent</li>
+      </ol>
+      <h3>League map (excerpt)</h3>
+      <pre><code>const LIGA_CAT_MAP = {
+  'H Verbandsliga':        'Herren',
+  'H30 Bezirksoberliga I': 'Herren 30',
+  'H50 Verbandsliga':      'Herren 50',
+  'D40 Verbandsoberliga':  'Damen 40',
+  'M70OL':                 'Herren 70',
+  // ...
+};</code></pre>
+    </div>
+
+  </div>
+</div>
+
+<div id="footer">
+  <div>Füchse Berlin Reinickendorf e.V. · Club Manager Docs · v2.0 · 2026</div>
+  <div>TVBB Berlin · Supabase + PDF.js 3.11.174</div>
+</div>
+
+<script>
+const TITLES={overview:'Overview',deploy:'Deployment',login:'Login & Access',import:'PDF Import',teams:'Teams',players:'Players',matches:'Matches',avail:'Availability',lineup:'Lineup',blocking:'Blocking',spieler:'Player App',schema:'Database Schema',rules:'TVBB Rules',parsers:'PDF Parsers'};
+function go(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ni,.ns2').forEach(n=>n.classList.remove('on'));
+  const pg=document.getElementById('page-'+id);
+  if(pg)pg.classList.add('on');
+  document.getElementById('bc').textContent=TITLES[id]||id;
+  document.querySelectorAll('.ni,.ns2').forEach(n=>{if(n.getAttribute('onclick')?.includes("'"+id+"'"))n.classList.add('on');});
+  window.scrollTo(0,0);
+}
+function fnav(q){
+  q=q.toLowerCase().trim();
+  document.querySelectorAll('.ni,.ns2').forEach(el=>{el.style.display=!q||el.textContent.toLowerCase().includes(q)?'':'none';});
+}
+</script>
+</body>
+</html>
