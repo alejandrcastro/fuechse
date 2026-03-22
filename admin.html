@@ -740,10 +740,9 @@ function extractPlayers(text){
     const baseCat=catMatch?catMatch[1].charAt(0).toUpperCase()+catMatch[1].slice(1).toLowerCase():'Herren';
     const ageGroup=catMatch&&catMatch[2]?catMatch[2]:null;
     const category=ageGroup?`${baseCat} ${ageGroup}`:baseCat;
-    const numMatch=raw.match(/(\d+)$|(?:^|\s)(VIII|VII|VI|IV|V|III|II|I)$/);
     const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
-    let tnum=1;
-    if(numMatch){tnum=numMatch[1]?parseInt(numMatch[1]):(roman[numMatch[2]]||1);}
+    const romanMatch=raw.match(/\s(VIII|VII|VI|IV|V|III|II|I)$/);
+    const tnum=romanMatch?roman[romanMatch[1]]:1;
     const liga=tm[2].trim().replace(/MF:.*/,'').trim();
     if(!teams[raw])teams[raw]={liga,id:uid(),is4:tm[0].includes('(4er)'),category,tnum,gender:catGender(category)};
   }
