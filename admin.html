@@ -818,10 +818,17 @@ async function confirmImport(){
         // Existing player with updated LK — update it
         playersToUpdate.push({id:existing.id,lk:p.lk,lk_str:p.lkStr});
       }
-      // Always add team assignment (upsert handles duplicates)
-      if(teamId){
-        const pid=existing?.id||playersToInsert.find(x=>x.idnr===p.idnr)?.id;
-        if(pid)ptInsert.push({player_id:pid,team_id:teamId,rank:p.rank||null});
+      // Assign to Stammkader team AND all higher (lower-numbered) teams in category.
+      // A player at pos 21 (Herren IV) can play in I, II, III and IV.
+      const pid2=existing?.id||playersToInsert.find(x=>x.idnr===p.idnr)?.id;
+      if(pid2&&teamId){
+        const catTeams=state.teams.filter(t=>t.category===p.teamCategory)
+          .sort((a,b)=>teamNumber(a)-teamNumber(b));
+        const stammIdx=catTeams.findIndex(t=>t.id===teamId);
+        const assignTo=stammIdx>=0?catTeams.slice(0,stammIdx+1):[{id:teamId}];
+        for(const at of assignTo){
+          ptInsert.push({player_id:pid2,team_id:at.id,rank:p.rank||null});
+        }
       }
     }
     if(playersToInsert.length){for(let i=0;i<playersToInsert.length;i+=100)await sbUpsert('players',playersToInsert.slice(i,i+100));}
