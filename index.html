@@ -229,6 +229,7 @@ const T={
     noMatches:'Keine Spiele für deine Mannschaft gefunden.',
     noPlayers:'Keine Spieler gefunden.',
     conflictMsg:(n)=>`⚠️ Konflikt!\n\nDu hast bereits Ja gesagt für:\n${n}\n\nDieses Spiel wird als "Vielleicht" eingetragen.`,
+    sameDayMsg:(n)=>`ℹ️ Du hast am selben Tag auch zugesagt für:\n${n}\n\nTrotzdem zusagen?`,
   },
   es:{
     headerSub:'Disponibilidad de jugadores',
@@ -243,6 +244,7 @@ const T={
     noMatches:'No hay partidos para tu equipo.',
     noPlayers:'No se encontraron jugadores.',
     conflictMsg:(n)=>`⚠️ ¡Conflicto!\n\nYa dijiste Sí para:\n${n}\n\nEste partido se marcará como "Quizás". Por favor decidí cuál podés jugar.`,
+    sameDayMsg:(n)=>`ℹ️ También dijiste Sí el mismo día para:\n${n}\n\n¿Igual querés confirmar?`,
   },
   en:{
     headerSub:'Player availability',
@@ -257,11 +259,13 @@ const T={
     noMatches:'No matches found for your team.',
     noPlayers:'No players found.',
     conflictMsg:(n)=>`⚠️ Conflict!\n\nYou already said Yes to:\n${n}\n\nThis match will be set to "Maybe". Please decide which one you can play.`,
+    sameDayMsg:(n)=>`ℹ️ You also said Yes on the same day to:\n${n}\n\nConfirm anyway?`,
   }
 };
 
 let lang='de';
-let state={players:[],teams:[],matches:[],availability:{},matchCounts:{},playerTeams:[]};
+let state={players:[],teams:[],matches:[],availability:{},matchCounts:{},playerTeams:[],rankByTeam:{}};
+let activeTeamFilter=null;
 let selectedPlayer=null,selectedMatch=null;
 
 function tr(k){return T[lang][k]||T.de[k]||k}
@@ -416,7 +420,7 @@ function showStep(name){
 }
 
 function goFind(){selectedPlayer=null;showStep('find');}
-function goMatches(){if(!selectedPlayer)return showStep('find');renderMatchList();showStep('matches');}
+function goMatches(){if(!selectedPlayer)return showStep('find');activeTeamFilter=null;renderMatchList();showStep('matches');}
 
 function makeICS(m,team){
   const dt=m.date.replace(/-/g,'');
@@ -452,18 +456,21 @@ async function quickAvail(matchId,status,event){
   if(!selectedPlayer)return;
   const pid=selectedPlayer.id;
 
-  // If saying "yes" but already "yes" elsewhere at same date+time → force "maybe"
   if(status==='yes'){
     const thisMatch=state.matches.find(m=>m.id===matchId);
     if(thisMatch){
-      const conflicts=state.matches.filter(m=>
-        m.id!==matchId&&m.date===thisMatch.date&&m.time===thisMatch.time&&
-        state.availability[m.id]?.[pid]==='yes'
-      );
-      if(conflicts.length>0){
-        const names=conflicts.map(m=>{const t=teamById(m.team_id);return`${t?.name||'?'} vs ${m.opponent}`;}).join(', ');
-        alert(T[lang].conflictMsg(names));
+      // Same time → force maybe
+      const sameTime=state.matches.filter(m=>m.id!==matchId&&m.date===thisMatch.date&&m.time===thisMatch.time&&state.availability[m.id]?.[pid]==='yes');
+      if(sameTime.length>0){
+        alert(T[lang].conflictMsg(sameTime.map(m=>{const t=teamById(m.team_id);return`${t?.name||'?'} vs ${m.opponent}`;}).join(', ')));
         status='maybe';
+      } else {
+        // Same day different time → warn, allow cancel
+        const sameDay=state.matches.filter(m=>m.id!==matchId&&m.date===thisMatch.date&&m.time!==thisMatch.time&&state.availability[m.id]?.[pid]==='yes');
+        if(sameDay.length>0){
+          const names=sameDay.map(m=>{const t=teamById(m.team_id);return`${t?.name||'?'} vs ${m.opponent} (${m.time})`;}).join(', ');
+          if(!confirm(T[lang].sameDayMsg(names)))return;
+        }
       }
     }
   }
@@ -476,6 +483,11 @@ async function quickAvail(matchId,status,event){
   }catch(e){console.error(e);}
 }
 
+function toggleTeamFilter(teamId){
+  activeTeamFilter=teamId;
+  renderMatchList();
+}
+
 function renderMatchList(){
   const p=selectedPlayer;
   const teamIds=getPlayerTeamIds(p.id);
@@ -483,12 +495,19 @@ function renderMatchList(){
   const teams=teamIds.map(tid=>teamById(tid)).filter(Boolean);
   document.getElementById('player-info-card').innerHTML=`<div class="player-card">
     <div class="avatar" style="width:44px;height:44px;font-size:15px">${initials(p.name)}</div>
-    <div>
+    <div style="flex:1">
       <div style="font-size:13px;color:var(--muted)">${p.lk_str||p.lkStr||''} · Jg. ${p.year||'—'}</div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${teams.map(t=>`<span style="font-size:11px;background:#1a2a1a;border:1px solid var(--red)33;color:var(--court);padding:2px 8px;border-radius:10px">${t.name}</span>`).join('')}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+        ${teams.map(t=>{const isActive=activeTeamFilter===null||activeTeamFilter===t.id;
+          return`<span onclick="toggleTeamFilter('${t.id}')" style="font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;
+            background:${isActive?'rgba(116,198,157,.2)':'#1a1a1a'};border:1px solid ${isActive?'var(--court)':'#333'};color:${isActive?'var(--court)':'#555'}">${t.name}</span>`;
+        }).join('')}
+        ${activeTeamFilter!==null?`<span onclick="toggleTeamFilter(null)" style="font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;background:#1a1a1a;border:1px solid #333;color:#555">✕ Alle</span>`:''}
+      </div>
     </div>
   </div>`;
-  const myMatches=[...state.matches].filter(m=>teamIds.includes(m.team_id)).sort((a,b)=>a.date.localeCompare(b.date));
+  const filterIds=activeTeamFilter?[activeTeamFilter]:teamIds;
+  const myMatches=[...state.matches].filter(m=>filterIds.includes(m.team_id)).sort((a,b)=>a.date.localeCompare(b.date));
   const el=document.getElementById('match-list');
   if(!myMatches.length){el.innerHTML=`<div class="empty">${tr('noMatches')}</div>`;return;}
   el.innerHTML=myMatches.map(m=>{
