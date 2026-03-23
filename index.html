@@ -442,6 +442,23 @@ async function quickAvail(matchId,status,event){
   event.stopPropagation();
   if(!selectedPlayer)return;
   const pid=selectedPlayer.id;
+
+  // If saying "yes" but already "yes" elsewhere at same date+time → force "maybe"
+  if(status==='yes'){
+    const thisMatch=state.matches.find(m=>m.id===matchId);
+    if(thisMatch){
+      const conflicts=state.matches.filter(m=>
+        m.id!==matchId&&m.date===thisMatch.date&&m.time===thisMatch.time&&
+        state.availability[m.id]?.[pid]==='yes'
+      );
+      if(conflicts.length>0){
+        const names=conflicts.map(m=>{const t=teamById(m.team_id);return`${t?.name||'?'} vs ${m.opponent}`;}).join(', ');
+        alert(`⚠️ Konflikt!\n\nDu hast bereits Ja gesagt für:\n${names}\n\nDieses Spiel wird als "Vielleicht" eingetragen. Bitte entscheide, welches du spielen kannst.`);
+        status='maybe';
+      }
+    }
+  }
+
   if(!state.availability[matchId])state.availability[matchId]={};
   state.availability[matchId][pid]=status;
   try{
