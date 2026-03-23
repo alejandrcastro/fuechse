@@ -268,7 +268,7 @@ const T={
 
 let lang='de';
 let state={players:[],teams:[],matches:[],availability:{},matchCounts:{},playerTeams:[],rankByTeam:{}};
-let activeTeamFilter=null;
+let activeTeamFilters=new Set();
 let selectedPlayer=null,selectedMatch=null;
 
 function tr(k){return T[lang][k]||T.de[k]||k}
