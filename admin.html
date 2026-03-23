@@ -374,6 +374,11 @@ select option{background:#1b2926}
     </div>
     <button class="btn btn-primary" onclick="addTeam()" data-i18n="addTeamBtn"></button>
   </div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <select id="teams-filter-team" onchange="renderTeams()" style="width:auto;font-size:12px;padding:5px 9px">
+      <option value="" data-i18n="allTeams"></option>
+    </select>
+  </div>
   <div id="team-list"></div>
 </div>
 
@@ -733,7 +738,10 @@ function blockReasonForTeam(playerId,teamId){
 }
 
 // ── LOAD ──
+let _loadAllRunning=false;
 async function loadAll(){
+  if(_loadAllRunning)return;
+  _loadAllRunning=true;
   setSync('ing',tr('syncIng'));
   try{
     const[teams,players,matches,avRows,lineupRows,countRows]=await Promise.all([
@@ -753,7 +761,14 @@ async function loadAll(){
     for(const r of lineupRows)state.lineups[r.match_id]=r.slots;
     state.matchCounts={};
     for(const r of countRows){if(!state.matchCounts[r.player_id])state.matchCounts[r.player_id]={};state.matchCounts[r.player_id][r.team_id]=r.matches_played;}
-    const ptRows=await sbGet('player_teams','');
+    // Load ALL player_teams — Supabase default limit is 1000, paginate to get all
+    let ptRows=[], ptOffset=0;
+    while(true){
+      const batch=await sbGet('player_teams',`limit=1000&offset=${ptOffset}`);
+      ptRows=ptRows.concat(batch);
+      if(batch.length<1000)break;
+      ptOffset+=1000;
+    }
     state.rankByTeam={};
     for(const r of ptRows){
       const p=state.players.find(x=>x.id===r.player_id);
@@ -783,19 +798,26 @@ async function loadAll(){
         for(const t of catTeams){
           if(teamNumber(t)<=skNum&&!p.teamIds.includes(t.id)){
             p.teamIds.push(t.id);
-            const rankForTeam=Object.values(state.rankByTeam[p.id]||{}).filter(v=>v!=null)[0]||null;
+            // Use rank from any team in this category
+            const catRanks=catTeams.map(ct=>state.rankByTeam[p.id]?.[ct.id]).filter(v=>v!=null);
+            const rankForTeam=catRanks.length?Math.min(...catRanks):null;
+            // Also update rankByTeam in memory so sort works immediately
+            if(rankForTeam!=null){if(!state.rankByTeam[p.id])state.rankByTeam[p.id]={};state.rankByTeam[p.id][t.id]=rankForTeam;}
             ptToAdd.push({player_id:p.id,team_id:t.id,rank:rankForTeam});
           }
         }
       }
     }
-    // Persist new assignments to DB silently
+    // Persist new assignments to DB
     if(ptToAdd.length){
-      for(let i=0;i<ptToAdd.length;i+=100)sbUpsert('player_teams',ptToAdd.slice(i,i+100)).catch(()=>{});
+      try{
+        for(let i=0;i<ptToAdd.length;i+=100)await sbUpsert('player_teams',ptToAdd.slice(i,i+100));
+      }catch(e){console.error('[Expand] Write FAILED:',e);}
     }
     setSync('ok',tr('syncOk'));
     renderAll();
   }catch(e){setSync('err',tr('syncErr'));console.error(e);}
+  finally{_loadAllRunning=false;}
 }
 
 // ── LANG ──
@@ -1018,14 +1040,25 @@ async function addTeam(){
 function renderTeams(){
   const el=document.getElementById('team-list');
   if(!state.teams.length){el.innerHTML=`<div class="empty">${tr('noTeam')}</div>`;return;}
+  // Populate filter select
+  const filterSel=document.getElementById('teams-filter-team');
+  if(filterSel){
+    const cur=filterSel.value;
+    filterSel.innerHTML=`<option value="">${tr('allTeams')}</option>`+
+      [...state.teams].sort((a,b)=>a.name.localeCompare(b.name)).map(t=>`<option value="${t.id}"${cur===t.id?' selected':''}>${t.name}</option>`).join('');
+    filterSel.value=cur;
+  }
+  const filterTeamId=filterSel?filterSel.value:'';
+  const teamsToShow=filterTeamId?state.teams.filter(t=>t.id===filterTeamId):state.teams;
   const byCat={};
-  for(const t of state.teams){const c=t.category||'Herren';if(!byCat[c])byCat[c]=[];byCat[c].push(t);}
+  for(const t of teamsToShow){const c=t.category||'Herren';if(!byCat[c])byCat[c]=[];byCat[c].push(t);}
+  if(!Object.keys(byCat).length){el.innerHTML=`<div class="empty">${tr('noTeam')}</div>`;return;}
   let html='';
   for(const[cat,teams]of Object.entries(byCat)){
     const sorted=teams.sort((a,b)=>teamNumber(a)-teamNumber(b));
     html+=`<div style="margin-bottom:6px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${cat}</div>`;
     for(const t of sorted){
-      const players=[...state.players.filter(p=>p.teamIds.includes(t.id))].sort((a,b)=>(state.rankByTeam[a.id]?.[t.id]??999)-(state.rankByTeam[b.id]?.[t.id]??999)||a.lk-b.lk);
+      const players=[...state.players.filter(p=>p.teamIds.includes(t.id))].sort((a,b)=>playerRankInTeam(a.id,t.id)-playerRankInTeam(b.id,t.id)||a.lk-b.lk);
       html+=`<div class="card" style="margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
           <div>
@@ -1321,7 +1354,8 @@ function renderAvail(){
 function renderBlocking(){
   const cats=[...new Set(state.teams.map(t=>t.category))].sort();
   const catSel=document.getElementById('block-cat-filter');
-  const curCat=catSel?.value||'';
+  const defaultCat=cats.includes('Herren')?'Herren':'';
+  const curCat=catSel?.value||defaultCat;
   if(catSel){catSel.innerHTML=`<option value="">${tr('allCategories')}</option>`+cats.map(c=>`<option value="${c}" ${curCat===c?'selected':''}>${c}</option>`).join('');catSel.value=curCat;}
   const el=document.getElementById('blocking-content');
   const filterCat=catSel?.value||'';
@@ -1445,29 +1479,39 @@ function renderLineup(){
   const match=state.matches.find(m=>m.id===matchId);if(!match){el.innerHTML='';return;}
   const team=teamById(match.teamId);
   const size=teamSize(team);
-  const dc=size===6?3:2;
   const avail=state.availability[matchId]||{};
   const allTp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
   const _catTeams=(()=>{const cat=team?.category;return cat?state.teams.filter(t=>t.category===cat).sort((x,y)=>teamNumber(x)-teamNumber(y)):[];})();
   const lineup=state.lineups[matchId]||[];
   const warnings=[];
-  for(let i=0;i<size-1;i++){const p1=lineup[i]?playerById(lineup[i]):null;const p2=lineup[i+1]?playerById(lineup[i+1]):null;if(p1&&p2&&playerRankInTeam(p1.id,match.teamId)<playerRankInTeam(p2.id,match.teamId))warnings.push(T[lang].lkViolation(i+1,p1.lkStr,i+2,p2.lkStr));}
-  const blockedWarnings=lineup.filter(Boolean).map(pid=>{const p=playerById(pid);if(!p)return null;if(isPlayerBlockedForTeam(pid,match.teamId))return T[lang].blockedInLineup(p.name,teamById(match.teamId)?.name);return null;}).filter(Boolean);
-  let dHtml='';
-  for(let d=0;d<dc;d++){const p1=lineup[d*2]?playerById(lineup[d*2]):null;const p2=lineup[d*2+1]?playerById(lineup[d*2+1]):null;dHtml+=`<div class="lineup-slot"><div class="lineup-pos">D${d+1}</div><div style="font-size:12px">${p1&&p2?`${p1.name} / ${p2.name}`:`<span style="color:var(--muted);font-style:italic">—</span>`}</div></div>`;}
+  for(let i=0;i<size-1;i++){
+    const p1=lineup[i]?playerById(lineup[i]):null;
+    const p2=lineup[i+1]?playerById(lineup[i+1]):null;
+    if(p1&&p2&&playerRankInTeam(p1.id,match.teamId)<playerRankInTeam(p2.id,match.teamId))
+      warnings.push(T[lang].lkViolation(i+1,p1.lkStr,i+2,p2.lkStr));
+  }
+  const blockedWarnings=lineup.filter(Boolean).map(pid=>{
+    const p=playerById(pid);if(!p)return null;
+    if(isPlayerBlockedForTeam(pid,match.teamId))return T[lang].blockedInLineup(p.name,team?.name||'?');
+    return null;
+  }).filter(Boolean);
   el.innerHTML=`<div class="card">
     <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--court);margin-bottom:2px">${team?.name||'?'} vs ${match.opponent}</div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${fmtDate(match.date)} · ${match.time}</div>
     ${blockedWarnings.length?`<div class="rule-box danger">${blockedWarnings.map(w=>`<div>${w}</div>`).join('')}</div>`:''}
-    ${warnings.length?`<div style="background:#3d1a1a;border:1px solid var(--danger)44;border-radius:8px;padding:8px 12px;margin-bottom:9px">${warnings.map(w=>`<div style="font-size:12px;color:var(--danger)">${w}</div>`).join('')}</div>`:lineup.filter(Boolean).length>=size&&!blockedWarnings.length?`<div style="background:#1a2d22;border:1px solid var(--court)33;border-radius:8px;padding:6px 12px;margin-bottom:9px;font-size:12px;color:var(--court)">${tr('lineupValid')}</div>`:''}
-    <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${tr('singles')}</div>
+    ${warnings.length
+      ?`<div style="background:#3d1a1a;border:1px solid var(--danger)44;border-radius:8px;padding:8px 12px;margin-bottom:9px">${warnings.map(w=>`<div style="font-size:12px;color:var(--danger)">${w}</div>`).join('')}</div>`
+      :lineup.filter(Boolean).length>=size&&!blockedWarnings.length
+        ?`<div style="background:#1a2d22;border:1px solid var(--court)33;border-radius:8px;padding:6px 12px;margin-bottom:9px;font-size:12px;color:var(--court)">${tr('lineupValid')}</div>`
+        :''}
+    <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${tr('singles')} (${size})</div>
     <div class="lineup-grid">
       ${Array.from({length:size},(_,i)=>{
         const pid=lineup[i]||'';const p=pid?playerById(pid):null;
         const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
-        const lkOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
+        const rankOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
         const isBlocked=pid?isPlayerBlockedForTeam(pid,match.teamId):false;
-        return`<div class="lineup-slot ${p?(isBlocked?'blocked-slot':lkOk?'ok':'warning'):''}">
+        return`<div class="lineup-slot ${p?(isBlocked?'blocked-slot':rankOk?'ok':'warning'):''}">
           <div class="lineup-pos">${i+1}</div>
           <select style="flex:1;background:#181818;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:4px 8px;font-size:11px;font-family:'DM Sans',sans-serif" onchange="setLineupPlayer('${matchId}',${i},this.value)">
             <option value="">—</option>
@@ -1477,9 +1521,7 @@ function renderLineup(){
                 const ao=_ao2[avail[a.id]||'']??2;
                 const bo=_ao2[avail[b.id]||'']??2;
                 if(ao!==bo)return ao-bo;
-                const ra=Math.min(..._catTeams.map(t=>state.rankByTeam[a.id]?.[t.id]??999));
-                const rb=Math.min(..._catTeams.map(t=>state.rankByTeam[b.id]?.[t.id]??999));
-                return ra-rb;
+                return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);
               });
               let _lg2=undefined;
               const _gl2={yes:'── ✓ Ja',maybe:'── ? Vielleicht',no:'── ✗ Nein','':'── ?'};
@@ -1494,11 +1536,9 @@ function renderLineup(){
         </div>`;
       }).join('')}
     </div>
-    <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 6px">${tr('doubles')}</div>
-    <div class="lineup-grid">${dHtml}</div>
-    <div class="rule-box" style="margin-top:10px">${tr('lineupNote')}</div>
   </div>`;
 }
+
 
 // ── PLAYER VIEW ──
 let pvMatchId=null,pvPlayerId=null;
