@@ -697,7 +697,7 @@ function getPlayerBlockStatus(playerId, catGroup){
   }
 
   const allBlockedIds=new Set([...stammkaderBlocked.map(t=>t.id),...stammmannschaftBlocked.map(t=>t.id)]);
-  return{stammkaderTeam,stammkaderTeamNum,stammkaderBlocked,stammmannschaftBlocked,stammmannschaftWarned,stammmannschaftSource,highestBlockTeamNum,blocked:catTeams.filter(t=>allBlockedIds.has(t.id)),warned:stammmannschaftWarned};
+  return{stammkaderTeam,stammkaderTeamNum,stammkaderBlocked,stammmannschaftBlocked,stammmannschaftWarned,stammmannschaftSource,blocked:catTeams.filter(t=>allBlockedIds.has(t.id)),warned:stammmannschaftWarned};
 }
 
 function isPlayerBlockedForTeam(playerId,teamId){
