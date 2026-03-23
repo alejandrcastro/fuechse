@@ -418,7 +418,7 @@ function makeICS(m,team){
   const endHH=String(hh+3).padStart(2,'0');
   const dtEnd=dt+'T'+endHH+mm+'00';
   const dtStart=dt+'T'+tm;
-  const summary=`${team?.name||'?'} vs ${m.opponent}`;
+  const summary=m.home==='Heim'?`${team?.name||'?'} vs ${m.opponent}`:`${m.opponent} vs ${team?.name||'?'}`;
   const loc=m.venue||'';
   const uid2=`${m.id}@fuchseberlin`;
   const ics=[
