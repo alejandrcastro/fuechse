@@ -1850,11 +1850,10 @@ window.addEventListener('DOMContentLoaded',()=>{
   setupDrop('pdf-drop','pdf-input',f=>{document.getElementById('pdf-input').files;const dt=new DataTransfer();dt.items.add(f);document.getElementById('pdf-input').files=dt.files;document.getElementById('pdf-input').dispatchEvent(new Event('change'));});
   setupDrop('teams-pdf-drop','teams-pdf-input',f=>{const dt=new DataTransfer();dt.items.add(f);document.getElementById('teams-pdf-input').files=dt.files;document.getElementById('teams-pdf-input').dispatchEvent(new Event('change'));});
   setupDrop('matches-pdf-drop','matches-pdf-input',f=>{const dt=new DataTransfer();dt.items.add(f);document.getElementById('matches-pdf-input').files=dt.files;document.getElementById('matches-pdf-input').dispatchEvent(new Event('change'));});
+  loadAll();
 });
 
 setLang('de');
-// loadAll() is called by the auth module after session check.
-// Only call it here if the overlay is already hidden (session restored from storage).
 </script>
 </body>
 </html>
