@@ -380,6 +380,47 @@ function showStep(name){
 function goFind(){selectedPlayer=null;showStep('find');}
 function goMatches(){if(!selectedPlayer)return showStep('find');renderMatchList();showStep('matches');}
 
+function makeICS(m,team){
+  const dt=m.date.replace(/-/g,'');
+  const tm=(m.time||'10:00').replace(':','')+'00';
+  // Estimate end time +3 hours
+  const hh=parseInt((m.time||'10:00').split(':')[0]);
+  const mm=(m.time||'10:00').split(':')[1];
+  const endHH=String(hh+3).padStart(2,'0');
+  const dtEnd=dt+'T'+endHH+mm+'00';
+  const dtStart=dt+'T'+tm;
+  const summary=`${team?.name||'?'} vs ${m.opponent}`;
+  const loc=m.venue||'';
+  const uid2=`${m.id}@fuchseberlin`;
+  const ics=[
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Füchse Berlin//Club Manager//DE',
+    'BEGIN:VEVENT',
+    `DTSTART:${dtStart}`,`DTEND:${dtEnd}`,
+    `SUMMARY:${summary}`,
+    `LOCATION:${loc}`,
+    `DESCRIPTION:${m.home} · ${m.time}`,
+    `UID:${uid2}`,
+    'END:VEVENT','END:VCALENDAR'
+  ].join('\r\n');
+  const blob=new Blob([ics],{type:'text/calendar'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`${summary.replace(/[^a-zA-Z0-9]/g,'_')}.ics`;
+  a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+async function quickAvail(matchId,status,event){
+  event.stopPropagation();
+  if(!selectedPlayer)return;
+  const pid=selectedPlayer.id;
+  if(!state.availability[matchId])state.availability[matchId]={};
+  state.availability[matchId][pid]=status;
+  try{
+    await sbUpsert('availability',[{match_id:matchId,player_id:pid,status}]);
+    renderMatchList();
+  }catch(e){console.error(e);}
+}
+
 function renderMatchList(){
   const p=selectedPlayer;
   const teamIds=getPlayerTeamIds(p.id);
@@ -389,7 +430,7 @@ function renderMatchList(){
     <div class="avatar" style="width:44px;height:44px;font-size:15px">${initials(p.name)}</div>
     <div>
       <div style="font-size:13px;color:var(--muted)">${p.lk_str||p.lkStr||''} · Jg. ${p.year||'—'}</div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${teams.map(t=>`<span style="font-size:11px;background:#2a1010;border:1px solid var(--red)33;color:var(--red);padding:2px 8px;border-radius:10px">${t.name}</span>`).join('')}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${teams.map(t=>`<span style="font-size:11px;background:#1a2a1a;border:1px solid var(--red)33;color:var(--court);padding:2px 8px;border-radius:10px">${t.name}</span>`).join('')}</div>
     </div>
   </div>`;
   const myMatches=[...state.matches].filter(m=>teamIds.includes(m.team_id)).sort((a,b)=>a.date.localeCompare(b.date));
@@ -400,21 +441,36 @@ function renderMatchList(){
     const avail=state.availability[m.id]?.[p.id]||'';
     const d=fmtDate(m.date);
     const blocked=isBlocked(p.id,m.team_id);
-    let avBadge='';
-    if(avail==='yes')avBadge=`<span class="match-avail av-yes">${tr('yesBtn')}</span>`;
-    else if(avail==='no')avBadge=`<span class="match-avail av-no">${tr('noBtn')}</span>`;
-    else if(avail==='maybe')avBadge=`<span class="match-avail av-maybe">${tr('maybeBtn')}</span>`;
-    else avBadge=`<span class="match-avail av-open">?</span>`;
-    return`<div class="match-item" onclick="selectMatch('${m.id}')">
-      <div style="text-align:center;min-width:40px">
-        <div class="match-date">${d.day}</div>
-        <div class="match-month">${d.month}</div>
+    const yes=avail==='yes',no=avail==='no',maybe=avail==='maybe';
+    return`<div class="match-item" style="flex-direction:column;gap:10px;cursor:default">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="text-align:center;min-width:40px">
+          <div class="match-date">${d.day}</div>
+          <div class="match-month">${d.month}</div>
+        </div>
+        <div class="match-info" style="flex:1">
+          <div class="match-teams">${team?.name||'?'} vs ${(m.opponent||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+          <div class="match-meta">${m.time} · ${m.home}${blocked?' · ⛔':''}</div>
+        </div>
+        <button onclick="makeICS(state.matches.find(x=>x.id==='${m.id}'),teamById('${m.team_id}'))"
+          style="background:none;border:1px solid #333;border-radius:8px;color:var(--muted);padding:4px 8px;font-size:11px;cursor:pointer;white-space:nowrap">
+          📅 .ics
+        </button>
       </div>
-      <div class="match-info">
-        <div class="match-teams">${team?.name||'?'} vs ${m.opponent}</div>
-        <div class="match-meta">${m.time} · ${m.home}${blocked?' · ⛔':''}</div>
+      <div style="display:flex;gap:7px">
+        <button onclick="quickAvail('${m.id}','yes',event)"
+          class="avail-btn ${yes?'active-yes':''}"
+          style="flex:1;padding:9px 4px;border-radius:8px;border:1px solid ${yes?'var(--court)':'#2e4a42'};background:${yes?'var(--court)':'transparent'};color:${yes?'#0d1a10':'var(--court)'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
+          ✓ ${tr('yesBtn').replace('✓ ','')}</button>
+        <button onclick="quickAvail('${m.id}','maybe',event)"
+          class="avail-btn ${maybe?'active-maybe':''}"
+          style="flex:1;padding:9px 4px;border-radius:8px;border:1px solid ${maybe?'var(--warn)':'#333'};background:${maybe?'rgba(244,162,97,.15)':'transparent'};color:var(--warn);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
+          ? ${tr('maybeBtn').replace('? ','')}</button>
+        <button onclick="quickAvail('${m.id}','no',event)"
+          class="avail-btn ${no?'active-no':''}"
+          style="flex:1;padding:9px 4px;border-radius:8px;border:1px solid ${no?'var(--red)':'#3a2020'};background:${no?'rgba(230,57,70,.15)':'transparent'};color:var(--red);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
+          ✗ ${tr('noBtn').replace('✗ ','')}</button>
       </div>
-      ${avBadge}
     </div>`;
   }).join('');
 }
