@@ -166,44 +166,55 @@ select option{background:#1b2926}
     <div id="login-error" style="margin-top:12px;font-size:.8rem;color:#e63946;text-align:center;min-height:18px;font-weight:500"></div>
   </div>
 </div>
-<script type="module">
-import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
-const _sb=createClient('https://kepbpcttbvkbcckqoecv.supabase.co','sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n');
-window._sbAuth=_sb;
+<script>
+// Supabase Auth — loaded via CDN
+(function(){
+  // Load Supabase JS SDK
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  s.onload=function(){
+    const _sb=window.supabase.createClient(
+      'https://kepbpcttbvkbcckqoecv.supabase.co',
+      'sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n'
+    );
+    window._sbAuth=_sb;
 
-// Check existing session
-const {data:{session}}=await _sb.auth.getSession();
-if(session){
-  window._sbAuth._session=session;
-  document.getElementById('login-overlay').style.display='none';
-  if(typeof loadAll==='function')loadAll();
-}
+    // Check existing session
+    _sb.auth.getSession().then(({data:{session}})=>{
+      if(session){
+        window._sbAuth._session=session;
+        document.getElementById('login-overlay').style.display='none';
+        if(typeof loadAll==='function')loadAll();
+      }
+    });
 
-window.doLogin=async function(){
-  const email=document.getElementById('login-user').value.trim();
-  const pass=document.getElementById('login-pass').value;
-  const err=document.getElementById('login-error');
-  const btn=document.getElementById('login-btn');
-  err.textContent='';btn.textContent='...';btn.disabled=true;
-  const {data:loginData,error}=await _sb.auth.signInWithPassword({email,password:pass});
-  if(loginData?.session)window._sbAuth._session=loginData.session;
-  btn.textContent='Einloggen';btn.disabled=false;
-  if(error){
-    err.textContent='Falscher Benutzer oder Passwort';
-    document.getElementById('login-pass').value='';
-    setTimeout(()=>err.textContent='',3000);
-  } else {
-    const o=document.getElementById('login-overlay');
-    o.style.opacity='0';o.style.transition='opacity .3s';
-    setTimeout(()=>o.style.display='none',300);
-    if(typeof loadAll==='function')loadAll();
-  }
-};
+    window.doLogin=async function(){
+      const email=document.getElementById('login-user').value.trim();
+      const pass=document.getElementById('login-pass').value;
+      const err=document.getElementById('login-error');
+      const btn=document.getElementById('login-btn');
+      err.textContent='';btn.textContent='...';btn.disabled=true;
+      const {data,error}=await _sb.auth.signInWithPassword({email,password:pass});
+      if(data?.session)window._sbAuth._session=data.session;
+      btn.textContent='Einloggen';btn.disabled=false;
+      if(error){
+        err.textContent='Falscher Benutzer oder Passwort';
+        document.getElementById('login-pass').value='';
+        setTimeout(()=>err.textContent='',3000);
+      } else {
+        const o=document.getElementById('login-overlay');
+        o.style.opacity='0';o.style.transition='opacity .3s';
+        setTimeout(()=>{o.style.display='none';if(typeof loadAll==='function')loadAll();},300);
+      }
+    };
 
-_sb.auth.onAuthStateChange((event,session)=>{
-  window._sbAuth._session=session||null;
-  if(event==='SIGNED_OUT')location.reload();
-});
+    _sb.auth.onAuthStateChange((event,session)=>{
+      window._sbAuth._session=session||null;
+      if(event==='SIGNED_OUT')location.reload();
+    });
+  };
+  document.head.appendChild(s);
+})();
 </script>
 
 <header>
@@ -1844,11 +1855,6 @@ window.addEventListener('DOMContentLoaded',()=>{
 setLang('de');
 // loadAll() is called by the auth module after session check.
 // Only call it here if the overlay is already hidden (session restored from storage).
-setTimeout(()=>{
-  const overlay=document.getElementById('login-overlay');
-  if(overlay&&overlay.style.display==='none')loadAll();
-  else if(!overlay)loadAll();
-},200);
 </script>
 </body>
 </html>
