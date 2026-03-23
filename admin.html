@@ -153,7 +153,7 @@ select option{background:#1b2926}
       <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#666;display:block;margin-bottom:5px">Email</label>
       <input id="login-user" type="email" autocomplete="email"
         style="width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none"
-        placeholder="admin@fuchseberlin.de"
+        placeholder="sportwart@fuechse-berlin-reinickendorf.de"
         onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
     </div>
     <div style="margin-bottom:20px">
@@ -174,6 +174,7 @@ window._sbAuth=_sb;
 // Check existing session
 const {data:{session}}=await _sb.auth.getSession();
 if(session){
+  window._sbAuth._session=session;
   document.getElementById('login-overlay').style.display='none';
   if(typeof loadAll==='function')loadAll();
 }
@@ -184,7 +185,8 @@ window.doLogin=async function(){
   const err=document.getElementById('login-error');
   const btn=document.getElementById('login-btn');
   err.textContent='';btn.textContent='...';btn.disabled=true;
-  const {error}=await _sb.auth.signInWithPassword({email,password:pass});
+  const {data:loginData,error}=await _sb.auth.signInWithPassword({email,password:pass});
+  if(loginData?.session)window._sbAuth._session=loginData.session;
   btn.textContent='Einloggen';btn.disabled=false;
   if(error){
     err.textContent='Falscher Benutzer oder Passwort';
@@ -198,7 +200,8 @@ window.doLogin=async function(){
   }
 };
 
-_sb.auth.onAuthStateChange((event)=>{
+_sb.auth.onAuthStateChange((event,session)=>{
+  window._sbAuth._session=session||null;
   if(event==='SIGNED_OUT')location.reload();
 });
 </script>
@@ -406,8 +409,17 @@ _sb.auth.onAuthStateChange((event)=>{
   <div class="section-title" data-i18n="lineupTitle"></div>
   <div class="section-sub" data-i18n="lineupSub"></div>
   <div class="card">
-    <div class="form-group" style="margin-bottom:0"><label data-i18n="selectMatch"></label>
-      <select id="lineup-match" onchange="renderLineup()"></select>
+    <div class="form-row" style="gap:8px;margin-bottom:0">
+      <div class="form-group" style="min-width:140px;margin-bottom:0">
+        <label data-i18n="category"></label>
+        <select id="lineup-cat-filter" onchange="populateMatchSel('lineup-match');renderLineup()" style="font-size:12px;padding:5px 9px">
+          <option value="" data-i18n="allCategories"></option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1;margin-bottom:0">
+        <label data-i18n="selectMatch"></label>
+        <select id="lineup-match" onchange="renderLineup()"></select>
+      </div>
     </div>
   </div>
   <div id="lineup-content"></div>
@@ -468,10 +480,16 @@ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/p
 const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
 const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
 const HDR={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+function getHDR(){
+  // Use session JWT if available, otherwise fall back to publishable key
+  const session=window._sbAuth?._session||null;
+  const token=session?.access_token||SB_KEY;
+  return{'apikey':SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json'};
+}
 
-async function sbGet(t,p=''){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{headers:{...HDR,'Prefer':''}});if(!r.ok)throw new Error(await r.text());return r.json();}
-async function sbUpsert(t,d){const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...HDR,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(Array.isArray(d)?d:[d])});if(!r.ok)throw new Error(await r.text());}
-async function sbDelete(t,f){const r=await fetch(`${SB_URL}/rest/v1/${t}?${f}`,{method:'DELETE',headers:HDR});if(!r.ok)throw new Error(await r.text());}
+async function sbGet(t,p=''){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{headers:{...getHDR(),'Prefer':''}});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function sbUpsert(t,d){const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...getHDR(),'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(Array.isArray(d)?d:[d])});if(!r.ok)throw new Error(await r.text());}
+async function sbDelete(t,f){const r=await fetch(`${SB_URL}/rest/v1/${t}?${f}`,{method:'DELETE',headers:getHDR()});if(!r.ok)throw new Error(await r.text());}
 
 function setSync(s,m){const b=document.getElementById('sync-badge');b.className='sync-badge sync-'+s;b.textContent=m;}
 
@@ -861,7 +879,7 @@ async function confirmImport(){
     const teamsToInsert=data.teams.filter(t=>!state.teams.find(x=>x.name===t.name));
     if(teamsToInsert.length)await sbUpsert('teams',teamsToInsert.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category,team_number:t.team_number,gender:t.gender})));
     // Update is_4er for existing teams detected as (4er) in PDF
-    for(const t of data.teams.filter(x=>x.is_4er)){const ex=state.teams.find(x=>x.name===t.name);if(ex&&!ex.is_4er)await fetch(`${SB_URL}/rest/v1/teams?id=eq.${ex.id}`,{method:'PATCH',headers:HDR,body:JSON.stringify({is_4er:true})});}
+    for(const t of data.teams.filter(x=>x.is_4er)){const ex=state.teams.find(x=>x.name===t.name);if(ex&&!ex.is_4er)await fetch(`${SB_URL}/rest/v1/teams?id=eq.${ex.id}`,{method:'PATCH',headers:getHDR(),body:JSON.stringify({is_4er:true})});}
 
     const freshTeams=await sbGet('teams','');
     state.teams=freshTeams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
@@ -895,7 +913,7 @@ async function confirmImport(){
     if(playersToInsert.length){for(let i=0;i<playersToInsert.length;i+=100)await sbUpsert('players',playersToInsert.slice(i,i+100));}
     // Update LK for existing players individually
     for(const upd of playersToUpdate){
-      await fetch(`${SB_URL}/rest/v1/players?id=eq.${upd.id}`,{method:'PATCH',headers:HDR,body:JSON.stringify({lk:upd.lk,lk_str:upd.lk_str})});
+      await fetch(`${SB_URL}/rest/v1/players?id=eq.${upd.id}`,{method:'PATCH',headers:getHDR(),body:JSON.stringify({lk:upd.lk,lk_str:upd.lk_str})});
     }
     // Add new team assignments without removing existing ones
     if(ptInsert.length){for(let i=0;i<ptInsert.length;i+=100)await sbUpsert('player_teams',ptInsert.slice(i,i+100));}
@@ -1009,7 +1027,7 @@ async function editTeamSize(teamId){
   const new4er=!t.is_4er;
   if(!confirm(`Change to ${new4er?'4er (4 players)':'standard (6 players)'}?`))return;
   try{
-    await fetch(`${SB_URL}/rest/v1/teams?id=eq.${teamId}`,{method:'PATCH',headers:HDR,body:JSON.stringify({is_4er:new4er})});
+    await fetch(`${SB_URL}/rest/v1/teams?id=eq.${teamId}`,{method:'PATCH',headers:getHDR(),body:JSON.stringify({is_4er:new4er})});
     t.is_4er=new4er;
     renderTeams();
   }catch(e){console.error(e);}
@@ -1142,8 +1160,26 @@ function renderMatches(){
 function populateMatchSel(selId){
   const sel=document.getElementById(selId);if(!sel)return;
   const cur=sel.value;
-  sel.innerHTML=[...state.matches].sort((a,b)=>a.date.localeCompare(b.date)).map(m=>{const t=teamById(m.teamId);return`<option value="${m.id}">${fmtDate(m.date)} · ${t?.name||'?'} vs ${m.opponent}</option>`;}).join('');
-  if(cur)sel.value=cur;
+  // If this is the lineup match selector, filter by category
+  let matches=[...state.matches].sort((a,b)=>a.date.localeCompare(b.date));
+  if(selId==='lineup-match'){
+    const catFilter=document.getElementById('lineup-cat-filter')?.value||'';
+    // Populate category filter options
+    const catSel=document.getElementById('lineup-cat-filter');
+    if(catSel){
+      const cats=[...new Set(state.teams.map(t=>t.category))].sort();
+      const curCat=catSel.value;
+      catSel.innerHTML=`<option value="">Alle Kategorien</option>`+cats.map(c=>`<option value="${c}" ${curCat===c?'selected':''}>${c}</option>`).join('');
+      catSel.value=curCat;
+    }
+    if(catFilter){
+      const catTeamIds=state.teams.filter(t=>t.category===catFilter).map(t=>t.id);
+      matches=matches.filter(m=>catTeamIds.includes(m.teamId));
+    }
+  }
+  sel.innerHTML=matches.map(m=>{const t=teamById(m.teamId);return`<option value="${m.id}">${fmtDate(m.date)} · ${t?.name||'?'} vs ${m.opponent}</option>`;}).join('');
+  if(cur&&matches.find(m=>m.id===cur))sel.value=cur;
+  else if(matches.length)sel.value=matches[0].id;
 }
 
 function openMatchAvail(matchId){
