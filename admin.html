@@ -583,7 +583,7 @@ const T={
 };
 
 let lang='de';
-let state={players:[],teams:[],matches:[],availability:{},lineups:{},matchCounts:{}};
+let state={players:[],teams:[],matches:[],availability:{},lineups:{},matchCounts:{},rankByTeam:{}};
 
 function tr(k){return T[lang][k]??T.de[k]??k}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
@@ -605,14 +605,14 @@ function teamSize(t){return t&&(t.is_4er||t.season==='Winter')?4:6}
 function getStammkaderTeam(playerId, catGroup){
   const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
   if(!catTeams.length)return null;
-  const groupSize=teamSize(catTeams[0]);
-  const catPlayers=state.players
-    .filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid)))
-    .sort((a,b)=>a.lk-b.lk);
-  const posInCat=catPlayers.findIndex(p=>p.id===playerId);
-  if(posInCat<0)return null;
-  const teamIndex=Math.floor(posInCat/groupSize);
-  return catTeams[teamIndex]||catTeams[catTeams.length-1];
+  const playerRanks=state.rankByTeam[playerId]||{};
+  let rankInCat=null;
+  for(const t of catTeams){if(playerRanks[t.id]!=null){rankInCat=playerRanks[t.id];break;}}
+  if(rankInCat==null){const p=playerById(playerId);rankInCat=p?.rank||null;}
+  if(rankInCat==null)return null;
+  let remaining=rankInCat;
+  for(const t of catTeams){const gs=teamSize(t);if(remaining<=gs)return t;remaining-=gs;}
+  return catTeams[catTeams.length-1];
 }
 
 function getPlayerBlockStatus(playerId, catGroup){
@@ -674,7 +674,12 @@ async function loadAll(){
     state.matchCounts={};
     for(const r of countRows){if(!state.matchCounts[r.player_id])state.matchCounts[r.player_id]={};state.matchCounts[r.player_id][r.team_id]=r.matches_played;}
     const ptRows=await sbGet('player_teams','');
-    for(const r of ptRows){const p=state.players.find(x=>x.id===r.player_id);if(p&&!p.teamIds.includes(r.team_id))p.teamIds.push(r.team_id);}
+    state.rankByTeam={};
+    for(const r of ptRows){
+      const p=state.players.find(x=>x.id===r.player_id);
+      if(p&&!p.teamIds.includes(r.team_id))p.teamIds.push(r.team_id);
+      if(r.rank!=null){if(!state.rankByTeam[r.player_id])state.rankByTeam[r.player_id]={};state.rankByTeam[r.player_id][r.team_id]=r.rank;}
+    }
     setSync('ok',tr('syncOk'));
     renderAll();
   }catch(e){setSync('err',tr('syncErr'));console.error(e);}
@@ -753,8 +758,10 @@ function extractPlayers(text){
   while((m=pPat.exec(text))!==null){
     const rank=parseInt(m[1]),name=m[2].trim(),year=m[3],idnr=m[4];
     const lkStr=m[5],lk=parseFloat(lkStr.replace('LK','').replace(',','.'));
-    const idx=Math.min(Math.floor((rank-1)/6),teamArr.length-1);
-    const t=teamArr[idx]||null;
+    // Walk teams in order to find which team this rank belongs to
+    let _rem=rank,_t=null;
+    for(const _team of teamArr){const _gs=(_team.is_4er||_team.season==='Winter')?4:6;if(_rem<=_gs){_t=_team;break;}_rem-=_gs;}
+    const t=_t||teamArr[teamArr.length-1]||null;
     const gender=t?catGender(t.category):'M';
     players.push({rank,name,year,idnr,lkStr,lk,teamId:t?.id||null,teamName:t?.name||'?',teamCategory:t?.category||'Herren',gender});
   }
@@ -814,7 +821,7 @@ async function confirmImport(){
       // Always add team assignment (upsert handles duplicates)
       if(teamId){
         const pid=existing?.id||playersToInsert.find(x=>x.idnr===p.idnr)?.id;
-        if(pid)ptInsert.push({player_id:pid,team_id:teamId});
+        if(pid)ptInsert.push({player_id:pid,team_id:teamId,rank:p.rank||null});
       }
     }
     if(playersToInsert.length){for(let i=0;i<playersToInsert.length;i+=100)await sbUpsert('players',playersToInsert.slice(i,i+100));}
@@ -1152,7 +1159,11 @@ function renderBlocking(){
     const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
     if(!catTeams.length)continue;
     const groupSize=teamSize(catTeams[0]);
-    const catPlayers=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>a.lk-b.lk);
+    const catPlayers=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>{
+      const rankA=Math.min(...catTeams.map(t=>state.rankByTeam[a.id]?.[t.id]??999));
+      const rankB=Math.min(...catTeams.map(t=>state.rankByTeam[b.id]?.[t.id]??999));
+      return rankA-rankB;
+    });
     if(!catPlayers.length)continue;
     anyEntry=true;
     html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court);letter-spacing:1px;margin:14px 0 8px">${cat}</div>`;
@@ -1168,8 +1179,10 @@ function renderBlocking(){
       const p=catPlayers[i];
       const status=getPlayerBlockStatus(p.id,cat);
       const counts=state.matchCounts[p.id]||{};
-      const skIdx=Math.floor(i/groupSize);
-      const skTeam=catTeams[skIdx]||catTeams[catTeams.length-1];
+      const _rankInCat2=Math.min(...catTeams.map(t=>state.rankByTeam[catPlayers[i].id]?.[t.id]??999));
+      let _r2=_rankInCat2<999?_rankInCat2:(i+1),_skTeam=catTeams[catTeams.length-1];
+      for(const _t2 of catTeams){const _gs2=teamSize(_t2);if(_r2<=_gs2){_skTeam=_t2;break;}_r2-=_gs2;}
+      const skTeam=_skTeam;
       const cells=catTeams.map(t=>{
         const c=counts[t.id]||0;
         const isSkTeam=t.id===skTeam.id;
@@ -1607,77 +1620,55 @@ document.getElementById('matches-pdf-input').addEventListener('change',async e=>
 });
 
 function parseBegegnungenItems(allItems){
-  // Group by page+Y (tolerance ±5px), sort rows top→bottom, items left→right
-  const rows=[];
+  const X_LIGA=105,X_HEIM=177,X_GAST=334,X_STATUS=490;
+  const ROMAN={'II':2,'III':3,'IV':4,'V':5,'VI':6,'VII':7,'VIII':8};
+  const JUVENILE=/^(U\d+|Mid\b|Midcourt)/i;
+  function colOf(x){if(x<X_LIGA)return'date';if(x<X_HEIM)return'liga';if(x<X_GAST)return'heim';if(x<X_STATUS)return'gast';return'status';}
+  // Support both .s and .str property names
+  function txt(item){return item.s||item.str||'';}
+  const rowMap={};
   for(const item of allItems){
-    const ex=rows.find(r=>r.page===item.page&&Math.abs(r.y-item.y)<=5);
-    if(ex)ex.items.push(item);
-    else rows.push({page:item.page,y:item.y,items:[item]});
+    const key=`${item.page}_${Math.round(item.y/4)*4}`;
+    rowMap[key]=rowMap[key]||[];
+    rowMap[key].push(item);
   }
-  rows.sort((a,b)=>a.page!==b.page?a.page-b.page:a.y-b.y);
-  for(const r of rows)r.items.sort((a,b)=>a.x-b.x);
-  const lines=rows.map(r=>r.items.map(i=>i.str).join(' ').replace(/\s+/g,' ').trim());
-
-  const matches=[];
+  const rows=Object.values(rowMap)
+    .map(items=>items.sort((a,b)=>a.x-b.x))
+    .sort((a,b)=>a[0].page!==b[0].page?a[0].page-b[0].page:a[0].y-b[0].y);
+  const matches=[],seen=new Set();
   let curDate='',curTime='';
-  // Club regex with matchAll — finds ALL occurrences including II/III/IV/V suffix
-  const CLUB_RE=new RegExp(
-    CLUB_NAME.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:\\s+(VIII|VII|VI|IV|V|III|II))?',
-    'g'
-  );
-
-  for(const line of lines){
-    if(!line)continue;
-    const dateM=line.match(/(?:Mo|Di|Mi|Do|Fr|Sa|So)\.\s+(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}:\d{2})/);
-    if(dateM){curDate=`${dateM[3]}-${dateM[2]}-${dateM[1]}`;curTime=dateM[4];}
-    if(!curDate)continue;
-    let rest=line
-      .replace(/(?:Mo|Di|Mi|Do|Fr|Sa|So)\.\s+\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}\s*/,'')
-      .replace(/\[Routenplan\]/g,'')
-      .replace(/\s+(?:offen|zurückgezogen)(\s.*)?$/,'')
-      .replace(/\s+\d+:\d+\s+\d+:\d+.*$/,'')
-      .replace(/\s+/g,' ').trim();
-    if(!rest||!rest.includes('Füchse'))continue;
-    if(JUVENILE_RE.test(rest))continue;
-    // Liga prefix
-    const ligaM=rest.match(/^((?:H\d{0,2}|D\d{0,2}|M\d+OL?)(?:\s+(?:Verband(?:s)?(?:oberliga|liga)|Bezirk(?:s)?(?:oberliga|liga|klasse)\s*(?:I{0,3})?|Meisterklasse|Verbandsoberliga))?)/i);
-    if(!ligaM||!ligaM[1].trim())continue;
-    const liga=ligaM[1].trim();
-    const category=ligaToCategory(liga);
-    if(!category)continue;
-    const afterLiga=rest.slice(liga.length).trim();
-    // matchAll: find ALL club occurrences
-    CLUB_RE.lastIndex=0;
-    const clubOccurrences=[...afterLiga.matchAll(CLUB_RE)];
-    if(!clubOccurrences.length)continue;
-    const firstClub=clubOccurrences[0];
-    const beforeClub=afterLiga.slice(0,firstClub.index).trim();
-    const afterClub=afterLiga.slice(firstClub.index+firstClub[0].length).trim();
-    let isHome,opponent;
-    if(!beforeClub){
-      isHome=true;
-      CLUB_RE.lastIndex=0;
-      opponent=afterClub.replace(CLUB_RE,'').replace(/\s+/g,' ').trim();
-    }else{
-      isHome=false;
-      opponent=beforeClub;
-    }
-    CLUB_RE.lastIndex=0;
-    opponent=opponent.replace(/^[-·,\s]+/,'').replace(/[-·,\s]+$/,'').replace(CLUB_RE,'').trim();
+  for(const row of rows){
+    const cols={date:[],liga:[],heim:[],gast:[],status:[]};
+    for(const item of row)cols[colOf(item.x)].push(txt(item));
+    const dateText=cols.date.join(' ');
+    const ligaText=cols.liga.join(' ').trim();
+    const heimText=cols.heim.join(' ').replace('[Routenplan]','').trim();
+    const gastText=cols.gast.join(' ').replace('[Routenplan]','').trim();
+    const statusText=cols.status.join(' ');
+    const dm=dateText.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}:\d{2})/);
+    if(dm){curDate=`${dm[3]}-${dm[2]}-${dm[1]}`;curTime=dm[4];}
+    if(!curDate||!ligaText)continue;
+    if(JUVENILE.test(ligaText))continue;
+    if(!heimText.includes('Reinickendorf')&&!gastText.includes('Reinickendorf'))continue;
+    if(statusText.includes('zurückgezogen'))continue;
+    const isHome=heimText.includes('Reinickendorf');
+    const clubText=isHome?heimText:gastText;
+    const opponent=(isHome?gastText:heimText).replace('[Routenplan]','').trim();
     if(!opponent)continue;
-    const ourNum=firstClub[1]?ROMAN_MATCH[firstClub[1]]:1;
+    const sm=clubText.match(/e\.V\.\s+(VIII|VII|VI|IV|V|III|II)\s*$/);
+    const roman=sm?sm[1]:null;
+    const tnum=roman?ROMAN[roman]:1;
+    const category=ligaToCategory(ligaText);
+    if(!category)continue;
     const catTeams=state.teams.filter(t=>t.category===category).sort((a,b)=>teamNumber(a)-teamNumber(b));
-    const matchingTeam=catTeams[ourNum-1]||null;
-    matches.push({id:uid(),teamId:matchingTeam?.id||null,teamCategory:category,teamNum:ourNum,opponent,date:curDate,time:curTime,home:isHome?'Heim':'Auswärts',venue:'',liga,_teamFound:!!matchingTeam});
+    const matchingTeam=catTeams[tnum-1]||null;
+    const dedupKey=`${curDate}_${curTime}_${category}_${tnum}_${opponent}`;
+    if(seen.has(dedupKey))continue;
+    seen.add(dedupKey);
+    matches.push({id:uid(),teamId:matchingTeam?.id||null,teamCategory:category,teamNum:tnum,opponent,date:curDate,time:curTime,home:isHome?'Heim':'Auswärts',venue:'',liga:ligaText,_teamFound:!!matchingTeam});
   }
-  // Deduplicate
-  const seen=new Set();
-  return matches.filter(m=>{
-    const k=`${m.date}_${m.time}_${m.teamCategory}_${m.teamNum}_${m.opponent}`;
-    if(seen.has(k))return false;seen.add(k);return true;
-  });
+  return matches;
 }
-
 function showMatchesPreview(matches){
   const sec=document.getElementById('matches-preview-section');
   const list=document.getElementById('matches-preview-list');
