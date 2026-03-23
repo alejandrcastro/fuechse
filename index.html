@@ -230,6 +230,7 @@ const T={
     noPlayers:'Keine Spieler gefunden.',
     conflictMsg:(n)=>`⚠️ Konflikt!\n\nDu hast bereits Ja gesagt für:\n${n}\n\nDieses Spiel wird als "Vielleicht" eingetragen.`,
     sameDayMsg:(n)=>`ℹ️ Du hast am selben Tag auch zugesagt für:\n${n}\n\nTrotzdem zusagen?`,
+    filterHint:'Tippe auf ein Team, um nur dessen Spiele zu sehen. Du siehst alle Teams, für die du spielberechtigt bist.',
   },
   es:{
     headerSub:'Disponibilidad de jugadores',
@@ -245,6 +246,7 @@ const T={
     noPlayers:'No se encontraron jugadores.',
     conflictMsg:(n)=>`⚠️ ¡Conflicto!\n\nYa dijiste Sí para:\n${n}\n\nEste partido se marcará como "Quizás". Por favor decidí cuál podés jugar.`,
     sameDayMsg:(n)=>`ℹ️ También dijiste Sí el mismo día para:\n${n}\n\n¿Igual querés confirmar?`,
+    filterHint:'Tocá un equipo para ver solo sus partidos. Ves todos los equipos en los que tenés Spielberechtigung.',
   },
   en:{
     headerSub:'Player availability',
@@ -260,6 +262,7 @@ const T={
     noPlayers:'No players found.',
     conflictMsg:(n)=>`⚠️ Conflict!\n\nYou already said Yes to:\n${n}\n\nThis match will be set to "Maybe". Please decide which one you can play.`,
     sameDayMsg:(n)=>`ℹ️ You also said Yes on the same day to:\n${n}\n\nConfirm anyway?`,
+    filterHint:'Tap a team to filter matches. You see all teams you are eligible to play for (Spielberechtigt).',
   }
 };
 
@@ -420,7 +423,7 @@ function showStep(name){
 }
 
 function goFind(){selectedPlayer=null;showStep('find');}
-function goMatches(){if(!selectedPlayer)return showStep('find');activeTeamFilter=null;renderMatchList();showStep('matches');}
+function goMatches(){if(!selectedPlayer)return showStep('find');activeTeamFilters.clear();renderMatchList();showStep('matches');}
 
 function makeICS(m,team){
   const dt=m.date.replace(/-/g,'');
@@ -484,7 +487,9 @@ async function quickAvail(matchId,status,event){
 }
 
 function toggleTeamFilter(teamId){
-  activeTeamFilter=teamId;
+  if(teamId===null){activeTeamFilters.clear();}
+  else if(activeTeamFilters.has(teamId)){activeTeamFilters.delete(teamId);}
+  else{activeTeamFilters.add(teamId);}
   renderMatchList();
 }
 
@@ -498,15 +503,16 @@ function renderMatchList(){
     <div style="flex:1">
       <div style="font-size:13px;color:var(--muted)">${p.lk_str||p.lkStr||''} · Jg. ${p.year||'—'}</div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
-        ${teams.map(t=>{const isActive=activeTeamFilter===null||activeTeamFilter===t.id;
+        ${teams.map(t=>{const isActive=activeTeamFilters.size===0||activeTeamFilters.has(t.id);
           return`<span onclick="toggleTeamFilter('${t.id}')" style="font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;
             background:${isActive?'rgba(116,198,157,.2)':'#1a1a1a'};border:1px solid ${isActive?'var(--court)':'#333'};color:${isActive?'var(--court)':'#555'}">${t.name}</span>`;
         }).join('')}
-        ${activeTeamFilter!==null?`<span onclick="toggleTeamFilter(null)" style="font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;background:#1a1a1a;border:1px solid #333;color:#555">✕ Alle</span>`:''}
+        ${activeTeamFilters.size>0?`<span onclick="toggleTeamFilter(null)" style="font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;background:#1a1a1a;border:1px solid #333;color:#555">✕ Alle</span>`:''}
       </div>
+      <div style="font-size:11px;color:#555;margin-top:6px">${tr('filterHint')}</div>
     </div>
   </div>`;
-  const filterIds=activeTeamFilter?[activeTeamFilter]:teamIds;
+  const filterIds=activeTeamFilters.size>0?teamIds.filter(id=>activeTeamFilters.has(id)):teamIds;
   const myMatches=[...state.matches].filter(m=>filterIds.includes(m.team_id)).sort((a,b)=>a.date.localeCompare(b.date));
   const el=document.getElementById('match-list');
   if(!myMatches.length){el.innerHTML=`<div class="empty">${tr('noMatches')}</div>`;return;}
