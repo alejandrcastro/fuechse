@@ -357,21 +357,27 @@ async function loadAll(){
       }
     }
     // Expand: assign each player to all teams they can play in within their category.
-    // A player with Stammkader team #N can play in teams #1 through #N.
+    // Use rankByTeam to find ALL categories the player has a rank in (not just existing assignments).
     for(const p of state.players){
-      const myTeamIds=ptRows.filter(r=>r.player_id===p.id).map(r=>r.team_id);
-      const cats=[...new Set(myTeamIds.map(tid=>state.teams.find(t=>t.id===tid)?.category).filter(Boolean))];
+      const myRanks=state.rankByTeam[p.id]||{};
+      // Get all team IDs where this player has a rank stored
+      const rankedTeamIds=Object.keys(myRanks);
+      // Also include teams already in player_teams
+      const existingTeamIds=ptRows.filter(r=>r.player_id===p.id).map(r=>r.team_id);
+      const allKnownTeamIds=[...new Set([...rankedTeamIds,...existingTeamIds])];
+      // Get all categories
+      const cats=[...new Set(allKnownTeamIds.map(tid=>state.teams.find(t=>t.id===tid)?.category).filter(Boolean))];
       for(const cat of cats){
         const catTeams=[...state.teams.filter(t=>t.category===cat)].sort((a,b)=>teamNumber(a)-teamNumber(b));
-        if(catTeams.length<=1)continue;
-        // Find Stammkader team: the highest-numbered team already assigned
-        const myInCat=catTeams.filter(t=>myTeamIds.includes(t.id));
-        if(!myInCat.length)continue;
-        const skNum=Math.max(...myInCat.map(t=>teamNumber(t)));
-        // Add all teams with number <= skNum to playerTeams (in memory only)
+        if(!catTeams.length)continue;
+        // Find Stammkader team: highest-numbered team the player has a rank in
+        const rankedInCat=catTeams.filter(t=>myRanks[t.id]!=null||existingTeamIds.includes(t.id));
+        if(!rankedInCat.length)continue;
+        const skNum=Math.max(...rankedInCat.map(t=>teamNumber(t)));
+        // Assign to all teams with number <= skNum
         for(const t of catTeams){
           if(teamNumber(t)<=skNum&&!state.playerTeams.find(r=>r.player_id===p.id&&r.team_id===t.id)){
-            state.playerTeams.push({player_id:p.id,team_id:t.id,rank:state.rankByTeam[p.id]?.[myInCat[0]?.id]||null});
+            state.playerTeams.push({player_id:p.id,team_id:t.id,rank:myRanks[rankedInCat[0]?.id]||null});
           }
         }
       }
