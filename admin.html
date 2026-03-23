@@ -760,30 +760,36 @@ async function loadAll(){
       if(p&&!p.teamIds.includes(r.team_id))p.teamIds.push(r.team_id);
       if(r.rank!=null){if(!state.rankByTeam[r.player_id])state.rankByTeam[r.player_id]={};state.rankByTeam[r.player_id][r.team_id]=r.rank;}
     }
-    // Ensure players are assigned to all teams they can play in (Stammkader + all higher).
-    // For each player, find their Stammkader team in each category and add them to all
-    // teams with equal or lower number in that category.
+    // Ensure players are assigned to all teams they can play in.
+    // A player with rank R in a category belongs to Stammkader team SK (calculated from R).
+    // They can play in ALL teams from #1 up to and including #SK.
+    // We discover categories from both existing teamIds AND rankByTeam entries.
     const ptToAdd=[];
+    const allCats=[...new Set(state.teams.map(t=>t.category))];
     for(const p of state.players){
-      // Group assigned teams by category
-      const cats=[...new Set(p.teamIds.map(tid=>teamById(tid)?.category).filter(Boolean))];
+      // Find all categories this player has any rank data in
+      const rankedTeamIds=Object.keys(state.rankByTeam[p.id]||{});
+      const catsFromRank=[...new Set(rankedTeamIds.map(tid=>teamById(tid)?.category).filter(Boolean))];
+      const catsFromTeams=[...new Set(p.teamIds.map(tid=>teamById(tid)?.category).filter(Boolean))];
+      const cats=[...new Set([...catsFromRank,...catsFromTeams])];
       for(const cat of cats){
         const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
-        if(catTeams.length<=1)continue;
+        if(!catTeams.length)continue;
         // Find Stammkader team via rank
         const skTeam=getStammkaderTeam(p.id,cat);
         if(!skTeam)continue;
         const skNum=teamNumber(skTeam);
-        // Assign to all teams with number <= skNum (can play up, not down)
+        // Assign to ALL teams from #1 up to #skNum
         for(const t of catTeams){
           if(teamNumber(t)<=skNum&&!p.teamIds.includes(t.id)){
             p.teamIds.push(t.id);
-            ptToAdd.push({player_id:p.id,team_id:t.id,rank:state.rankByTeam[p.id]?.[skTeam.id]||null});
+            const rankForTeam=Object.values(state.rankByTeam[p.id]||{}).filter(v=>v!=null)[0]||null;
+            ptToAdd.push({player_id:p.id,team_id:t.id,rank:rankForTeam});
           }
         }
       }
     }
-    // Persist any new assignments to DB
+    // Persist new assignments to DB silently
     if(ptToAdd.length){
       for(let i=0;i<ptToAdd.length;i+=100)sbUpsert('player_teams',ptToAdd.slice(i,i+100)).catch(()=>{});
     }
@@ -1019,7 +1025,7 @@ function renderTeams(){
     const sorted=teams.sort((a,b)=>teamNumber(a)-teamNumber(b));
     html+=`<div style="margin-bottom:6px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${cat}</div>`;
     for(const t of sorted){
-      const players=[...state.players.filter(p=>p.teamIds.includes(t.id))].sort((a,b)=>a.lk-b.lk);
+      const players=[...state.players.filter(p=>p.teamIds.includes(t.id))].sort((a,b)=>(state.rankByTeam[a.id]?.[t.id]??999)-(state.rankByTeam[b.id]?.[t.id]??999)||a.lk-b.lk);
       html+=`<div class="card" style="margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
           <div>
@@ -1035,7 +1041,7 @@ function renderTeams(){
             </div>
         </div>
         ${players.length?players.map((p,i)=>`<div class="player-row" style="padding:6px 10px;margin-bottom:4px">
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--court);min-width:18px">${i+1}</span>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--court);min-width:18px">${state.rankByTeam[p.id]?.[t.id]??i+1}</span>
           <div class="player-avatar" style="width:24px;height:24px;font-size:9px">${initials(p.name)}</div>
           <span class="player-name" style="font-size:12px">${p.name}</span>
           <span class="year-badge">${p.year||'—'}</span>
@@ -1261,8 +1267,8 @@ function renderAvail(){
     const ao=_availOrder[_avail0[a.id]||'']??2;
     const bo=_availOrder[_avail0[b.id]||'']??2;
     if(ao!==bo)return ao-bo;
-    const ra=Math.min(..._catTeams.map(t=>state.rankByTeam[a.id]?.[t.id]??999));
-    const rb=Math.min(..._catTeams.map(t=>state.rankByTeam[b.id]?.[t.id]??999));
+    const ra=playerRankInTeam(a.id,match.teamId);
+    const rb=playerRankInTeam(b.id,match.teamId);
     return ra-rb;
   });
   if(!tp.length){el.innerHTML=`<div class="empty">${tr('noTeamPlayers')}</div>`;return;}
@@ -1291,7 +1297,7 @@ function renderAvail(){
           if(s!==_lg){_lg=s;hdr=`<tr><td colspan="5" style="padding:5px 12px 2px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${_gc[s]};border-top:1px solid #2e4a4233">${_gl[s]}</td></tr>`;}
           const blocked=isPlayerBlockedForTeam(p.id,match.teamId);
           const row=`<tr style="${blocked?'background:#2d151544':''}">
-            <td style="color:var(--muted)">${i+1}</td>
+            <td style="color:var(--muted)">${playerRankInTeam(p.id,match.teamId)<999?playerRankInTeam(p.id,match.teamId):i+1}</td>
             <td><strong>${p.name}</strong>${blocked?` <span class="blocked-badge">⛔</span>`:''}</td>
             <td><span class="lk-badge">${p.lkStr}</span></td>
             <td style="color:var(--muted)">${p.year||'—'}</td>
@@ -1425,6 +1431,13 @@ async function setLineupPlayer(matchId,pos,playerId){
   renderLineup();
 }
 
+function playerRankInTeam(playerId, teamId){
+  const team=teamById(teamId);if(!team)return 999;
+  const cat=team.category;
+  const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  const ranks=catTeams.map(t=>state.rankByTeam[playerId]?.[t.id]).filter(v=>v!=null);
+  return ranks.length?Math.min(...ranks):999;
+}
 function renderLineup(){
   const matchId=document.getElementById('lineup-match')?.value;
   const el=document.getElementById('lineup-content');
@@ -1434,11 +1447,11 @@ function renderLineup(){
   const size=teamSize(team);
   const dc=size===6?3:2;
   const avail=state.availability[matchId]||{};
-  const allTp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>a.lk-b.lk);
+  const allTp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
   const _catTeams=(()=>{const cat=team?.category;return cat?state.teams.filter(t=>t.category===cat).sort((x,y)=>teamNumber(x)-teamNumber(y)):[];})();
   const lineup=state.lineups[matchId]||[];
   const warnings=[];
-  for(let i=0;i<size-1;i++){const p1=lineup[i]?playerById(lineup[i]):null;const p2=lineup[i+1]?playerById(lineup[i+1]):null;if(p1&&p2&&lkVal(p1.lk)>lkVal(p2.lk))warnings.push(T[lang].lkViolation(i+1,p1.lkStr,i+2,p2.lkStr));}
+  for(let i=0;i<size-1;i++){const p1=lineup[i]?playerById(lineup[i]):null;const p2=lineup[i+1]?playerById(lineup[i+1]):null;if(p1&&p2&&playerRankInTeam(p1.id,match.teamId)<playerRankInTeam(p2.id,match.teamId))warnings.push(T[lang].lkViolation(i+1,p1.lkStr,i+2,p2.lkStr));}
   const blockedWarnings=lineup.filter(Boolean).map(pid=>{const p=playerById(pid);if(!p)return null;if(isPlayerBlockedForTeam(pid,match.teamId))return T[lang].blockedInLineup(p.name,teamById(match.teamId)?.name);return null;}).filter(Boolean);
   let dHtml='';
   for(let d=0;d<dc;d++){const p1=lineup[d*2]?playerById(lineup[d*2]):null;const p2=lineup[d*2+1]?playerById(lineup[d*2+1]):null;dHtml+=`<div class="lineup-slot"><div class="lineup-pos">D${d+1}</div><div style="font-size:12px">${p1&&p2?`${p1.name} / ${p2.name}`:`<span style="color:var(--muted);font-style:italic">—</span>`}</div></div>`;}
@@ -1452,7 +1465,7 @@ function renderLineup(){
       ${Array.from({length:size},(_,i)=>{
         const pid=lineup[i]||'';const p=pid?playerById(pid):null;
         const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
-        const lkOk=!p||!prev||lkVal(p.lk)>=lkVal(prev.lk);
+        const lkOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
         const isBlocked=pid?isPlayerBlockedForTeam(pid,match.teamId):false;
         return`<div class="lineup-slot ${p?(isBlocked?'blocked-slot':lkOk?'ok':'warning'):''}">
           <div class="lineup-pos">${i+1}</div>
