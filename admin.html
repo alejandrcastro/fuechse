@@ -1253,7 +1253,18 @@ function renderAvail(){
   if(!matchId||!state.matches.find(m=>m.id===matchId)){el.innerHTML=`<div class="empty">${tr('noMatchSel')}</div>`;return;}
   const match=state.matches.find(m=>m.id===matchId);
   const avail=state.availability[matchId]||{};
-  const tp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>a.lk-b.lk);
+  const _availOrder={yes:0,maybe:1,'':2,no:3};
+  const _avail0=state.availability[matchId]||{};
+  const _cat=teamById(match.teamId)?.category;
+  const _catTeams=_cat?state.teams.filter(t=>t.category===_cat).sort((x,y)=>teamNumber(x)-teamNumber(y)):[];
+  const tp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>{
+    const ao=_availOrder[_avail0[a.id]||'']??2;
+    const bo=_availOrder[_avail0[b.id]||'']??2;
+    if(ao!==bo)return ao-bo;
+    const ra=Math.min(..._catTeams.map(t=>state.rankByTeam[a.id]?.[t.id]??999));
+    const rb=Math.min(..._catTeams.map(t=>state.rankByTeam[b.id]?.[t.id]??999));
+    return ra-rb;
+  });
   if(!tp.length){el.innerHTML=`<div class="empty">${tr('noTeamPlayers')}</div>`;return;}
   const yesCount=tp.filter(p=>avail[p.id]==='yes').length;
   el.innerHTML=`<div class="card">
@@ -1270,10 +1281,16 @@ function renderAvail(){
     <table class="avail-table">
       <thead><tr><th>#</th><th>${tr('players')}</th><th>LK</th><th>Jg.</th><th></th></tr></thead>
       <tbody>
-        ${tp.map((p,i)=>{
+        ${(()=>{
+          let _lg=undefined;
+          const _gl={yes:'✓ Ja / Yes',maybe:'? Vielleicht / Maybe',no:'✗ Nein / No','':'— Keine Angabe'};
+          const _gc={yes:'var(--court)',maybe:'var(--warn)',no:'var(--danger)','':'var(--muted)'};
+          return tp.map((p,i)=>{
           const s=avail[p.id]||'';
+          let hdr='';
+          if(s!==_lg){_lg=s;hdr=`<tr><td colspan="5" style="padding:5px 12px 2px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${_gc[s]};border-top:1px solid #2e4a4233">${_gl[s]}</td></tr>`;}
           const blocked=isPlayerBlockedForTeam(p.id,match.teamId);
-          return`<tr style="${blocked?'background:#2d151544':''}">
+          const row=`<tr style="${blocked?'background:#2d151544':''}">
             <td style="color:var(--muted)">${i+1}</td>
             <td><strong>${p.name}</strong>${blocked?` <span class="blocked-badge">⛔</span>`:''}</td>
             <td><span class="lk-badge">${p.lkStr}</span></td>
@@ -1284,7 +1301,7 @@ function renderAvail(){
               <button class="avail-btn no ${s==='no'?'active':''}" onclick="setAvail('${matchId}','${p.id}','no')">${tr('noBtn')}</button>
             </div></td>
           </tr>`;
-        }).join('')}
+          return hdr+row;}).join('');})()}
       </tbody>
     </table>
     ${yesCount>0?`<div style="display:flex;gap:9px;margin-top:11px">
@@ -1418,6 +1435,7 @@ function renderLineup(){
   const dc=size===6?3:2;
   const avail=state.availability[matchId]||{};
   const allTp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>a.lk-b.lk);
+  const _catTeams=(()=>{const cat=team?.category;return cat?state.teams.filter(t=>t.category===cat).sort((x,y)=>teamNumber(x)-teamNumber(y)):[];})();
   const lineup=state.lineups[matchId]||[];
   const warnings=[];
   for(let i=0;i<size-1;i++){const p1=lineup[i]?playerById(lineup[i]):null;const p2=lineup[i+1]?playerById(lineup[i+1]):null;if(p1&&p2&&lkVal(p1.lk)>lkVal(p2.lk))warnings.push(T[lang].lkViolation(i+1,p1.lkStr,i+2,p2.lkStr));}
@@ -1440,7 +1458,25 @@ function renderLineup(){
           <div class="lineup-pos">${i+1}</div>
           <select style="flex:1;background:#181818;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:4px 8px;font-size:11px;font-family:'DM Sans',sans-serif" onchange="setLineupPlayer('${matchId}',${i},this.value)">
             <option value="">—</option>
-            ${allTp.map(tp=>{const bl=isPlayerBlockedForTeam(tp.id,match.teamId);return`<option value="${tp.id}" ${pid===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;}).join('')}
+            ${(()=>{
+              const _ao2={yes:0,maybe:1,'':2,no:3};
+              const sorted=[...allTp].sort((a,b)=>{
+                const ao=_ao2[avail[a.id]||'']??2;
+                const bo=_ao2[avail[b.id]||'']??2;
+                if(ao!==bo)return ao-bo;
+                const ra=Math.min(..._catTeams.map(t=>state.rankByTeam[a.id]?.[t.id]??999));
+                const rb=Math.min(..._catTeams.map(t=>state.rankByTeam[b.id]?.[t.id]??999));
+                return ra-rb;
+              });
+              let _lg2=undefined;
+              const _gl2={yes:'── ✓ Ja',maybe:'── ? Vielleicht',no:'── ✗ Nein','':'── ?'};
+              return sorted.map(tp=>{
+                const bl=isPlayerBlockedForTeam(tp.id,match.teamId);
+                const grp=avail[tp.id]||'';
+                let sep='';if(grp!==_lg2){_lg2=grp;sep=`<option disabled style="color:var(--muted);font-size:10px">${_gl2[grp]}</option>`;}
+                return sep+`<option value="${tp.id}" ${pid===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;
+              }).join('');
+            })()}
           </select>
         </div>`;
       }).join('')}
