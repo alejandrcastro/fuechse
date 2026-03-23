@@ -228,6 +228,7 @@ const T={
     blockedWarn:'⛔ Du bist für dieses Spiel gesperrt (Stammkader / Stammmannschaft).',
     noMatches:'Keine Spiele für deine Mannschaft gefunden.',
     noPlayers:'Keine Spieler gefunden.',
+    conflictMsg:(n)=>`⚠️ Konflikt!\n\nDu hast bereits Ja gesagt für:\n${n}\n\nDieses Spiel wird als "Vielleicht" eingetragen.`,
   },
   es:{
     headerSub:'Disponibilidad de jugadores',
@@ -241,6 +242,7 @@ const T={
     blockedWarn:'⛔ Estás bloqueado para este partido (Stammkader / Stammmannschaft).',
     noMatches:'No hay partidos para tu equipo.',
     noPlayers:'No se encontraron jugadores.',
+    conflictMsg:(n)=>`⚠️ ¡Conflicto!\n\nYa dijiste Sí para:\n${n}\n\nEste partido se marcará como "Quizás". Por favor decidí cuál podés jugar.`,
   },
   en:{
     headerSub:'Player availability',
@@ -254,6 +256,7 @@ const T={
     blockedWarn:'⛔ You are blocked for this match (Stammkader / Stammmannschaft).',
     noMatches:'No matches found for your team.',
     noPlayers:'No players found.',
+    conflictMsg:(n)=>`⚠️ Conflict!\n\nYou already said Yes to:\n${n}\n\nThis match will be set to "Maybe". Please decide which one you can play.`,
   }
 };
 
@@ -453,7 +456,7 @@ async function quickAvail(matchId,status,event){
       );
       if(conflicts.length>0){
         const names=conflicts.map(m=>{const t=teamById(m.team_id);return`${t?.name||'?'} vs ${m.opponent}`;}).join(', ');
-        alert(`⚠️ Konflikt!\n\nDu hast bereits Ja gesagt für:\n${names}\n\nDieses Spiel wird als "Vielleicht" eingetragen. Bitte entscheide, welches du spielen kannst.`);
+        alert(T[lang].conflictMsg(names));
         status='maybe';
       }
     }
