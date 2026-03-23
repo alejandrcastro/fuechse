@@ -150,37 +150,57 @@ select option{background:#1b2926}
       <div style="font-size:.7rem;color:#666;letter-spacing:.1em;text-transform:uppercase;margin-top:2px">Club Manager · Admin</div>
     </div>
     <div style="margin-bottom:12px">
-      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#666;display:block;margin-bottom:5px">Benutzer</label>
-      <input id="login-user" type="text" autocomplete="username" style="width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none" placeholder="admin" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#666;display:block;margin-bottom:5px">Email</label>
+      <input id="login-user" type="email" autocomplete="email"
+        style="width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none"
+        placeholder="admin@fuchseberlin.de"
+        onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
     </div>
     <div style="margin-bottom:20px">
       <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#666;display:block;margin-bottom:5px">Passwort</label>
-      <input id="login-pass" type="password" autocomplete="current-password" style="width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <input id="login-pass" type="password" autocomplete="current-password"
+        style="width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none"
+        placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
-    <button onclick="doLogin()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer">Einloggen</button>
+    <button id="login-btn" onclick="doLogin()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer">Einloggen</button>
     <div id="login-error" style="margin-top:12px;font-size:.8rem;color:#e63946;text-align:center;min-height:18px;font-weight:500"></div>
   </div>
 </div>
-<script>
-(function(){
-  const CREDS={admin:'argentina'};const KEY='fcb_admin_auth';
-  if(sessionStorage.getItem(KEY)==='ok'){document.getElementById('login-overlay').style.display='none';}
-  window.doLogin=function(){
-    const user=document.getElementById('login-user').value.trim();
-    const pass=document.getElementById('login-pass').value;
-    const err=document.getElementById('login-error');
-    if(CREDS[user]&&CREDS[user]===pass){
-      sessionStorage.setItem(KEY,'ok');
-      const o=document.getElementById('login-overlay');
-      o.style.opacity='0';o.style.transition='opacity .3s';
-      setTimeout(()=>o.style.display='none',300);
-    }else{
-      err.textContent='Falscher Benutzer oder Passwort';
-      document.getElementById('login-pass').value='';
-      setTimeout(()=>err.textContent='',2000);
-    }
-  };
-})();
+<script type="module">
+import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
+const _sb=createClient('https://kepbpcttbvkbcckqoecv.supabase.co','sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n');
+window._sbAuth=_sb;
+
+// Check existing session
+const {data:{session}}=await _sb.auth.getSession();
+if(session){
+  document.getElementById('login-overlay').style.display='none';
+  if(typeof loadAll==='function')loadAll();
+}
+
+window.doLogin=async function(){
+  const email=document.getElementById('login-user').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const err=document.getElementById('login-error');
+  const btn=document.getElementById('login-btn');
+  err.textContent='';btn.textContent='...';btn.disabled=true;
+  const {error}=await _sb.auth.signInWithPassword({email,password:pass});
+  btn.textContent='Einloggen';btn.disabled=false;
+  if(error){
+    err.textContent='Falscher Benutzer oder Passwort';
+    document.getElementById('login-pass').value='';
+    setTimeout(()=>err.textContent='',3000);
+  } else {
+    const o=document.getElementById('login-overlay');
+    o.style.opacity='0';o.style.transition='opacity .3s';
+    setTimeout(()=>o.style.display='none',300);
+    if(typeof loadAll==='function')loadAll();
+  }
+};
+
+_sb.auth.onAuthStateChange((event)=>{
+  if(event==='SIGNED_OUT')location.reload();
+});
 </script>
 
 <header>
@@ -627,13 +647,25 @@ function getPlayerBlockStatus(playerId, catGroup){
   const stammkaderBlocked=stammkaderTeamNum!==null?catTeams.filter(t=>teamNumber(t)>stammkaderTeamNum):[];
 
   // Rule 2: Stammmannschaft
-  let highestBlockTeamNum=null,stammmannschaftSource='';
+  // For each team X, sum all matches played in teams with LOWER number (higher rank) than X.
+  // If that sum >= 2 → gesperrt in X. If sum == 1 → warned in X.
+  const stammmannschaftBlocked=[];
+  const stammmannschaftWarned=[];
+  let stammmannschaftSource='';
   for(const t of catTeams){
-    const c=counts[t.id]||0;
-    if(c>=2){const num=teamNumber(t);if(highestBlockTeamNum===null||num<highestBlockTeamNum){highestBlockTeamNum=num;stammmannschaftSource=t.name;}}
+    const tNum=teamNumber(t);
+    // Sum matches played in all teams superior to t (lower team number)
+    const superiorMatches=catTeams
+      .filter(s=>teamNumber(s)<tNum)
+      .reduce((sum,s)=>sum+(counts[s.id]||0),0);
+    if(superiorMatches>=2){
+      stammmannschaftBlocked.push(t);
+      // For display: list the superior teams that contributed
+      if(!stammmannschaftSource)stammmannschaftSource=catTeams.filter(s=>teamNumber(s)<tNum&&(counts[s.id]||0)>0).map(s=>s.name).join('+');
+    } else if(superiorMatches===1){
+      stammmannschaftWarned.push(t);
+    }
   }
-  const stammmannschaftBlocked=highestBlockTeamNum!==null?catTeams.filter(t=>teamNumber(t)>highestBlockTeamNum):[];
-  const stammmannschaftWarned=catTeams.filter(t=>{const c=counts[t.id]||0;return c===1&&(highestBlockTeamNum===null||teamNumber(t)<=highestBlockTeamNum);});
 
   const allBlockedIds=new Set([...stammkaderBlocked.map(t=>t.id),...stammmannschaftBlocked.map(t=>t.id)]);
   return{stammkaderTeam,stammkaderTeamNum,stammkaderBlocked,stammmannschaftBlocked,stammmannschaftWarned,stammmannschaftSource,highestBlockTeamNum,blocked:catTeams.filter(t=>allBlockedIds.has(t.id)),warned:stammmannschaftWarned};
@@ -681,6 +713,33 @@ async function loadAll(){
       const p=state.players.find(x=>x.id===r.player_id);
       if(p&&!p.teamIds.includes(r.team_id))p.teamIds.push(r.team_id);
       if(r.rank!=null){if(!state.rankByTeam[r.player_id])state.rankByTeam[r.player_id]={};state.rankByTeam[r.player_id][r.team_id]=r.rank;}
+    }
+    // Ensure players are assigned to all teams they can play in (Stammkader + all higher).
+    // For each player, find their Stammkader team in each category and add them to all
+    // teams with equal or lower number in that category.
+    const ptToAdd=[];
+    for(const p of state.players){
+      // Group assigned teams by category
+      const cats=[...new Set(p.teamIds.map(tid=>teamById(tid)?.category).filter(Boolean))];
+      for(const cat of cats){
+        const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+        if(catTeams.length<=1)continue;
+        // Find Stammkader team via rank
+        const skTeam=getStammkaderTeam(p.id,cat);
+        if(!skTeam)continue;
+        const skNum=teamNumber(skTeam);
+        // Assign to all teams with number <= skNum (can play up, not down)
+        for(const t of catTeams){
+          if(teamNumber(t)<=skNum&&!p.teamIds.includes(t.id)){
+            p.teamIds.push(t.id);
+            ptToAdd.push({player_id:p.id,team_id:t.id,rank:state.rankByTeam[p.id]?.[skTeam.id]||null});
+          }
+        }
+      }
+    }
+    // Persist any new assignments to DB
+    if(ptToAdd.length){
+      for(let i=0;i<ptToAdd.length;i+=100)sbUpsert('player_teams',ptToAdd.slice(i,i+100)).catch(()=>{});
     }
     setSync('ok',tr('syncOk'));
     renderAll();
@@ -1202,9 +1261,13 @@ function renderBlocking(){
         let bg='',txt='',label='',title='';
         if(isSkTeam){bg='background:#1a2d3d';txt='color:var(--info)';label='SK';title='Stammkader';}
         if(isSmBlocked&&isSkBlocked){bg='background:#3d1a1a';txt='color:var(--danger)';label=`⛔${c>0?` (${c})`:''}`;title='SK + SM';}
-        else if(isSmBlocked){bg='background:#2d1a1a';txt='color:var(--danger)';label=`SM${c>0?` (${c})`:''}`;title=`2× ${status.stammmannschaftSource}`;}
+        else if(isSmBlocked){
+          const supSum=catTeams.filter(s=>teamNumber(s)<teamNumber(t)).reduce((a,s)=>(state.matchCounts[p.id]?.[s.id]||0)+a,0);
+          bg='background:#2d1a1a';txt='color:var(--danger)';label=`SM (${supSum})`;title=`${supSum}× in oberen Mannschaften`;}
         else if(isSkBlocked){bg='background:#1a1a2d';txt='color:#a78bfa';label='SK⛔';title='Stammkader gesperrt';}
-        else if(isSmWarned){bg='background:#2d2215';txt='color:var(--warn)';label=`⚠ ${c}/2`;title='1 Spiel';}
+        else if(isSmWarned){
+          const supSum=catTeams.filter(s=>teamNumber(s)<teamNumber(t)).reduce((a,s)=>(state.matchCounts[p.id]?.[s.id]||0)+a,0);
+          bg='background:#2d2215';txt='color:var(--warn)';label=`⚠ ${supSum}/2`;title=`${supSum}× in oberen Mannschaften`;}
         else if(c>0){txt='color:var(--court)';label=`${c}×`;}
         else if(isAssigned){txt='color:var(--muted)';label='—';}
         else{txt='color:#2e4a42';label='·';}
@@ -1743,7 +1806,13 @@ window.addEventListener('DOMContentLoaded',()=>{
 });
 
 setLang('de');
-loadAll();
+// loadAll() is called by the auth module after session check.
+// Only call it here if the overlay is already hidden (session restored from storage).
+setTimeout(()=>{
+  const overlay=document.getElementById('login-overlay');
+  if(overlay&&overlay.style.display==='none')loadAll();
+  else if(!overlay)loadAll();
+},200);
 </script>
 </body>
 </html>
