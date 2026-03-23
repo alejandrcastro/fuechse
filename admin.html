@@ -1074,7 +1074,7 @@ function renderTeams(){
             </div>
         </div>
         ${players.length?players.map((p,i)=>`<div class="player-row" style="padding:6px 10px;margin-bottom:4px">
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--court);min-width:18px">${state.rankByTeam[p.id]?.[t.id]??i+1}</span>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--court);min-width:18px">${p.rank??i+1}</span>
           <div class="player-avatar" style="width:24px;height:24px;font-size:9px">${initials(p.name)}</div>
           <span class="player-name" style="font-size:12px">${p.name}</span>
           <span class="year-badge">${p.year||'—'}</span>
@@ -1093,11 +1093,14 @@ async function editTeamSize(teamId){
   if(t.season==='Winter'){alert('Winter teams are always 4 players.');return;}
   const new4er=!t.is_4er;
   if(!confirm(`Change to ${new4er?'4er (4 players)':'standard (6 players)'}?`))return;
+  setSync('ing',tr('syncIng'));
   try{
-    await fetch(`${SB_URL}/rest/v1/teams?id=eq.${teamId}`,{method:'PATCH',headers:getHDR(),body:JSON.stringify({is_4er:new4er})});
+    const r=await fetch(`${SB_URL}/rest/v1/teams?id=eq.${teamId}`,{method:'PATCH',headers:getHDR(),body:JSON.stringify({is_4er:new4er})});
+    if(!r.ok)throw new Error(await r.text());
     t.is_4er=new4er;
+    setSync('ok',tr('syncOk'));
     renderTeams();
-  }catch(e){console.error(e);}
+  }catch(e){setSync('err',tr('syncErr'));console.error(e);alert('Error al guardar: '+e.message);}
 }
 
 async function removeTeam(id){
@@ -1469,8 +1472,11 @@ function playerRankInTeam(playerId, teamId){
   const team=teamById(teamId);if(!team)return 999;
   const cat=team.category;
   const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
-  const ranks=catTeams.map(t=>state.rankByTeam[playerId]?.[t.id]).filter(v=>v!=null);
-  return ranks.length?Math.min(...ranks):999;
+  // Use the rank from the first team in the category where the player has a rank entry
+  // This is the player's global position in the Namentliche Mannschaftsmeldung for this category
+  const playerRanks=state.rankByTeam[playerId]||{};
+  for(const t of catTeams){const r=playerRanks[t.id];if(r!=null)return r;}
+  return playerById(playerId)?.rank||999;
 }
 function renderLineup(){
   const matchId=document.getElementById('lineup-match')?.value;
@@ -1487,7 +1493,7 @@ function renderLineup(){
   for(let i=0;i<size-1;i++){
     const p1=lineup[i]?playerById(lineup[i]):null;
     const p2=lineup[i+1]?playerById(lineup[i+1]):null;
-    if(p1&&p2&&playerRankInTeam(p1.id,match.teamId)<playerRankInTeam(p2.id,match.teamId))
+    if(p1&&p2&&(p1.rank||999)>(p2.rank||999))
       warnings.push(T[lang].lkViolation(i+1,p1.lkStr,i+2,p2.lkStr));
   }
   const blockedWarnings=lineup.filter(Boolean).map(pid=>{
@@ -1509,7 +1515,7 @@ function renderLineup(){
       ${Array.from({length:size},(_,i)=>{
         const pid=lineup[i]||'';const p=pid?playerById(pid):null;
         const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
-        const rankOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
+        const rankOk=!p||!prev||(p.rank||999)>=(prev.rank||999);
         const isBlocked=pid?isPlayerBlockedForTeam(pid,match.teamId):false;
         return`<div class="lineup-slot ${p?(isBlocked?'blocked-slot':rankOk?'ok':'warning'):''}">
           <div class="lineup-pos">${i+1}</div>
