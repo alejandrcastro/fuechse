@@ -296,10 +296,12 @@ function playerById(id){return state.players.find(p=>p.id===id)}
 function getPlayerTeamIds(playerId){return state.playerTeams.filter(r=>r.player_id===playerId).map(r=>r.team_id);}
 function teamSize(t){return t&&t.season==='Winter'?4:6}
 function teamNumber(team){
-  if(team.team_number)return parseInt(team.team_number);
+  const n=parseInt(team.teamNumber||team.team_number||0);
+  if(n>0&&n<10)return n;
   const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
-  const r=team.name.match(/\b(VIII|VII|VI|IV|V|III|II|I)\b/);if(r)return roman[r[1]]||1;
-  const n=team.name.match(/(\d+)$/);return n?parseInt(n[1]):1;
+  const r=team.name.match(/\b(VIII|VII|VI|IV|V|III|II)\b/);
+  if(r)return roman[r[1]]||1;
+  return 1;
 }
 
 // ── BLOCKING LOGIC ──
@@ -344,6 +346,33 @@ async function loadAll(){
     state.matchCounts={};
     for(const r of countRows){if(!state.matchCounts[r.player_id])state.matchCounts[r.player_id]={};state.matchCounts[r.player_id][r.team_id]=r.matches_played;}
     state.playerTeams=ptRows;
+    state.rankByTeam={};
+    for(const r of ptRows){
+      if(r.rank!=null){
+        if(!state.rankByTeam[r.player_id])state.rankByTeam[r.player_id]={};
+        state.rankByTeam[r.player_id][r.team_id]=r.rank;
+      }
+    }
+    // Expand: assign each player to all teams they can play in within their category.
+    // A player with Stammkader team #N can play in teams #1 through #N.
+    for(const p of state.players){
+      const myTeamIds=ptRows.filter(r=>r.player_id===p.id).map(r=>r.team_id);
+      const cats=[...new Set(myTeamIds.map(tid=>state.teams.find(t=>t.id===tid)?.category).filter(Boolean))];
+      for(const cat of cats){
+        const catTeams=[...state.teams.filter(t=>t.category===cat)].sort((a,b)=>teamNumber(a)-teamNumber(b));
+        if(catTeams.length<=1)continue;
+        // Find Stammkader team: the highest-numbered team already assigned
+        const myInCat=catTeams.filter(t=>myTeamIds.includes(t.id));
+        if(!myInCat.length)continue;
+        const skNum=Math.max(...myInCat.map(t=>teamNumber(t)));
+        // Add all teams with number <= skNum to playerTeams (in memory only)
+        for(const t of catTeams){
+          if(teamNumber(t)<=skNum&&!state.playerTeams.find(r=>r.player_id===p.id&&r.team_id===t.id)){
+            state.playerTeams.push({player_id:p.id,team_id:t.id,rank:state.rankByTeam[p.id]?.[myInCat[0]?.id]||null});
+          }
+        }
+      }
+    }
     document.getElementById('find-status').textContent='';
   }catch(e){document.getElementById('find-status').textContent='Verbindungsfehler. Bitte Seite neu laden.';console.error(e);}
 }
