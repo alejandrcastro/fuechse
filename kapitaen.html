@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kapitän – Füchse Berlin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#2d6a4f;--green-light:#40916c;--court:#74c69d;
+  --white:#f0f2f1;--dark:#161616;--card:#1e1e1e;--muted:#7a8a85;
+  --warn:#f4a261;--danger:#c0392b;--info:#4ea8de;--red:#c0392b;
+  --border:#252525;--border2:#333
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);min-height:100vh}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--dark)}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+
+/* LOGIN */
+#login-overlay{position:fixed;inset:0;background:#0d1a10;display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:#1e1e1e;border:1px solid #333;border-radius:14px;padding:36px 32px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.login-brand{text-align:center;margin-bottom:28px}
+.login-brand .name{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:.1em;color:var(--court)}
+.login-brand .sub{font-size:.7rem;color:#666;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.login-field{margin-bottom:12px}
+.login-field label{font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#666;display:block;margin-bottom:5px}
+.login-field input{width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none}
+.login-field input:focus{border-color:var(--court)}
+.login-btn{width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:background .15s}
+.login-btn:hover{background:var(--green-light)}
+.login-err{margin-top:12px;font-size:.8rem;color:var(--danger);text-align:center;min-height:18px;font-weight:500}
+
+/* HEADER */
+header{background:#111;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:8px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo h1{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px}
+.logo span{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block}
+.header-right{display:flex;align-items:center;gap:8px}
+.sync-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;transition:all .3s}
+.sync-ok{background:#1a2a1a;border:1px solid var(--court)55;color:var(--court)}
+.sync-err{background:#3d1a1a;border:1px solid var(--danger)55;color:var(--danger)}
+.sync-ing{background:#2e2a1a;border:1px solid var(--warn)55;color:var(--warn)}
+.logout-btn{padding:4px 12px;font-size:11px;font-weight:600;border:1px solid var(--border2);border-radius:6px;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif}
+.logout-btn:hover{color:var(--white);border-color:#555}
+
+/* LAYOUT */
+main{padding:22px;max-width:1080px;margin:0 auto;display:grid;grid-template-columns:240px 1fr;gap:18px;min-height:calc(100vh - 60px)}
+@media(max-width:700px){main{grid-template-columns:1fr}}
+
+/* SIDEBAR */
+.sidebar{display:flex;flex-direction:column;gap:10px}
+.sidebar-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px}
+.sidebar-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.team-btn{width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.team-btn:hover{background:#252525;color:var(--white)}
+.team-btn.active{background:#1a2e26;border-color:var(--court)55;color:var(--court)}
+.team-dot{width:7px;height:7px;border-radius:50%;background:var(--court);flex-shrink:0;opacity:.5}
+.team-btn.active .team-dot{opacity:1}
+
+/* MAIN CONTENT */
+.content{min-width:0}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--court);margin-bottom:4px}
+.section-sub{color:var(--muted);font-size:12px;margin-bottom:16px}
+
+/* MATCH LIST */
+.match-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 16px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.match-card:hover{border-color:var(--court)44}
+.match-card.active{border-color:var(--court);background:#1a2e26}
+.match-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.match-title{font-weight:600;font-size:14px}
+.match-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.match-status{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
+.status-ready{background:#1a2e26;color:var(--court)}
+.status-open{background:#2e2a1a;color:var(--warn)}
+.prog-bar{height:4px;background:#252525;border-radius:2px;overflow:hidden;margin-top:8px}
+.prog-fill{height:100%;background:var(--court);border-radius:2px;transition:width .3s}
+
+/* AVAILABILITY PANEL */
+.avail-panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-top:14px}
+.avail-panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.avail-panel-title{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court)}
+.auto-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--court)55;background:#1a2e26;color:var(--court);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.auto-btn:hover{background:var(--green);border-color:var(--green);color:#fff}
+.avail-group-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 0 3px;border-top:1px solid var(--border);margin-top:4px;color:var(--muted)}
+.avail-group-label:first-child{border-top:none;margin-top:0}
+.avail-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)22}
+.avail-row:last-child{border-bottom:none}
+.avail-avatar{width:30px;height:30px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.avail-name{flex:1;font-size:13px;font-weight:500}
+.avail-meta{font-size:11px;color:var(--muted)}
+.avail-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
+.av-yes{background:#1a2e26;color:var(--court)}
+.av-maybe{background:#2e2a1a;color:var(--warn)}
+.av-no{background:#2d1a1a;color:var(--danger)}
+.av-open{background:#252525;color:var(--muted)}
+
+/* LINEUP */
+.lineup-section{margin-top:18px}
+.lineup-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.lineup-slot{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);margin-bottom:6px;background:#181818}
+.lineup-slot.ok{border-color:var(--court)33}
+.lineup-slot.warning{border-color:var(--danger)55;background:#2d151522}
+.lineup-slot.blocked-slot{border-color:var(--danger);background:#2d1a1a}
+.lineup-pos{font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--court);min-width:20px;text-align:center}
+.lineup-slot select{flex:1;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none}
+.lineup-slot select:focus{border-color:var(--court)}
+.save-indicator{font-size:11px;color:var(--court);text-align:right;margin-top:4px;min-height:16px}
+.blocked-badge{font-size:10px;background:#2d1a1a;border:1px solid var(--danger)44;color:var(--danger);padding:2px 7px;border-radius:10px}
+.warn-banner{background:#3d1a1a;border:1px solid var(--danger)44;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--danger)}
+.ok-banner{background:#1a2d22;border:1px solid var(--court)33;border-radius:8px;padding:6px 12px;margin-bottom:10px;font-size:12px;color:var(--court)}
+.empty{color:var(--muted);font-size:13px;text-align:center;padding:30px}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--court)44;border-top-color:var(--court);border-radius:50%;animation:spin .6s linear infinite;margin-right:6px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+input,select{background:#111;border:1px solid var(--border2);border-radius:7px;color:var(--white);padding:7px 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;width:100%}
+input:focus,select:focus{border-color:var(--court)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="name">FÜCHSE BERLIN</div>
+      <div class="sub">Kapitän-App</div>
+    </div>
+    <div class="login-field">
+      <label>Email</label>
+      <input id="login-email" type="email" autocomplete="email" placeholder="kapitaen@fuechse-berlin.de"
+        onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+    </div>
+    <div class="login-field" style="margin-bottom:20px">
+      <label>Passwort</label>
+      <input id="login-pass" type="password" autocomplete="current-password" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Einloggen</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div>
+      <h1>FÜCHSE BERLIN</h1>
+      <span>Kapitän-App</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="sync-badge sync-ing" id="sync-badge">⟳</span>
+    <button class="logout-btn" onclick="doLogout()">Abmelden</button>
+  </div>
+</header>
+
+<!-- TABS -->
+<div style="display:flex;padding:0 22px;background:#111;border-bottom:1px solid var(--border2);overflow-x:auto">
+  <button id="tab-spiele" onclick="showKapTab('spiele')" style="padding:11px 18px;font-size:13px;font-weight:500;color:var(--court);cursor:pointer;border-bottom:3px solid var(--court);border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif;white-space:nowrap">Spiele &amp; Aufstellung</button>
+  <button id="tab-sperren" onclick="showKapTab('sperren')" style="padding:11px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif;white-space:nowrap">Sperren</button>
+</div>
+
+<!-- MAIN -->
+<main>
+  <!-- SIDEBAR: Team list -->
+  <div class="sidebar" id="main-sidebar">
+    <div class="sidebar-card">
+      <div class="sidebar-title">Mannschaften</div>
+      <div id="team-list-sidebar"><div class="empty" style="padding:10px">Laden...</div></div>
+    </div>
+  </div>
+
+  <!-- CONTENT WRAPPER (single grid cell, tabs switch between views inside) -->
+  <div style="min-width:0" id="main-content-wrapper">
+    <!-- CONTENT: Spiele & Aufstellung -->
+    <div id="view-spiele">
+    <div id="no-team-selected" class="empty" style="margin-top:60px">
+      &#8592; Mannschaft auswählen
+    </div>
+    <div id="team-content" style="display:none">
+      <div class="section-title" id="content-team-name"></div>
+      <div class="section-sub" id="content-team-meta"></div>
+
+      <!-- Match list -->
+      <div id="match-list"></div>
+
+      <!-- Availability + Lineup panel -->
+      <div id="avail-panel" style="display:none" class="avail-panel">
+        <div class="avail-panel-header">
+          <div>
+            <div class="avail-panel-title" id="panel-match-title"></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px" id="panel-match-meta"></div>
+          </div>
+          <button class="auto-btn" id="auto-btn" onclick="runAutoLineup()">&#9889; Auto-Aufstellung</button>
+        </div>
+
+        <!-- Lineup FIRST (above availability) -->
+        <div class="lineup-section" style="margin-top:0;margin-bottom:18px">
+          <div class="lineup-title" id="lineup-label">Aufstellung</div>
+          <div id="lineup-warnings"></div>
+          <div id="lineup-slots"></div>
+          <div class="save-indicator" id="save-indicator"></div>
+        </div>
+
+        <!-- Divider -->
+        <div style="border-top:1px solid var(--border);margin-bottom:14px"></div>
+
+        <!-- Availability table BELOW -->
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Verfügbarkeit</div>
+        <div id="avail-list"></div>
+      </div>
+    </div>
+    </div>
+
+    <!-- CONTENT: Sperren (read-only) -->
+    <div id="view-sperren" style="display:none">
+      <div class="section-title">Sperren</div>
+      <div class="section-sub">Übersicht der gesperrten Spieler nach Stammkader- und Stammmannschaftsregel</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <select id="block-cat-filter" onchange="renderBlocking()" style="width:auto;font-size:12px;padding:5px 9px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;outline:none"></select>
+      </div>
+      <div id="blocking-content"><div class="empty">Laden...</div></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
+const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
+
+let _sbClient=null;
+let _session=null;
+
+// ── AUTH ──
+(function(){
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  s.onload=async function(){
+    _sbClient=window.supabase.createClient(SB_URL,SB_KEY);
+    const {data:{session}}=await _sbClient.auth.getSession();
+    if(session){
+      _session=session;
+      document.getElementById('login-overlay').style.display='none';
+      loadAll();
+    }
+    _sbClient.auth.onAuthStateChange((event,session)=>{
+      _session=session;
+      if(event==='SIGNED_OUT'){location.reload();}
+    });
+  };
+  document.head.appendChild(s);
+})();
+
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const err=document.getElementById('login-err');
+  const btn=document.getElementById('login-btn');
+  err.textContent='';btn.textContent='...';btn.disabled=true;
+  const {data,error}=await _sbClient.auth.signInWithPassword({email,password:pass});
+  btn.textContent='Einloggen';btn.disabled=false;
+  if(error){
+    err.textContent='Falscher Benutzer oder Passwort';
+    document.getElementById('login-pass').value='';
+    setTimeout(()=>err.textContent='',3000);
+  } else {
+    _session=data.session;
+    document.getElementById('login-overlay').style.display='none';
+    loadAll();
+  }
+}
+
+async function doLogout(){
+  await _sbClient.auth.signOut();
+}
+
+// ── API ──
+function getHDR(){
+  const token=_session?.access_token||SB_KEY;
+  return{'apikey':SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json'};
+}
+async function sbGet(t,p=''){
+  const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{headers:{...getHDR(),'Prefer':''}});
+  if(!r.ok)throw new Error(await r.text());
+  return r.json();
+}
+async function sbUpsert(t,d){
+  const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...getHDR(),'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(Array.isArray(d)?d:[d])});
+  if(!r.ok)throw new Error(await r.text());
+}
+
+// ── HELPERS ──
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+function initials(n){return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
+function fmtDate(d){if(!d)return'';const[y,m,day]=d.split('-');return`${day}.${m}.${y}`}
+function teamById(id){return state.teams.find(t=>t.id===id)}
+function playerById(id){return state.players.find(p=>p.id===id)}
+function teamSize(t){return t&&(t.is_4er||t.season==='Winter')?4:6}
+function catGender(cat){if(!cat)return'M';return cat.toLowerCase().startsWith('damen')?'F':'M'}
+function teamNumber(team){
+  const n=parseInt(team.teamNumber||team.team_number||0);
+  if(n>0&&n<10)return n;
+  const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
+  const r=team.name.match(/\b(VIII|VII|VI|IV|V|III|II)\b/);
+  if(r)return roman[r[1]]||1;
+  return 1;
+}
+function playerRankInTeam(playerId,teamId){
+  const team=teamById(teamId);if(!team)return 999;
+  const cat=team.category;
+  const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  const ranks=catTeams.map(t=>state.rankByTeam[playerId]?.[t.id]).filter(v=>v!=null);
+  return ranks.length?Math.min(...ranks):999;
+}
+function isPlayerBlockedForTeam(playerId,teamId){
+  const team=teamById(teamId);if(!team)return false;
+  const status=getPlayerBlockStatus(playerId,team.category);
+  return status.blocked.some(b=>b.id===teamId);
+}
+function getStammkaderTeam(playerId,catGroup){
+  const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  if(!catTeams.length)return null;
+  const firstTeam=catTeams[0];
+  const rankInCat=state.rankByTeam[playerId]?.[firstTeam.id]??playerById(playerId)?.rank??null;
+  if(rankInCat==null)return null;
+  let remaining=rankInCat;
+  for(const t of catTeams){const gs=teamSize(t);if(remaining<=gs)return t;remaining-=gs;}
+  return catTeams[catTeams.length-1];
+}
+function getPlayerBlockStatus(playerId,catGroup){
+  const counts=state.matchCounts[playerId]||{};
+  const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  const stammkaderTeam=getStammkaderTeam(playerId,catGroup);
+  const stammkaderTeamNum=stammkaderTeam?teamNumber(stammkaderTeam):null;
+  const stammkaderBlocked=stammkaderTeamNum!==null?catTeams.filter(t=>teamNumber(t)>stammkaderTeamNum):[];
+  const stammmannschaftBlocked=[],stammmannschaftWarned=[];
+  for(const t of catTeams){
+    const tNum=teamNumber(t);
+    const sup=catTeams.filter(s=>teamNumber(s)<tNum).reduce((sum,s)=>sum+(counts[s.id]||0),0);
+    if(sup>=2)stammmannschaftBlocked.push(t);
+    else if(sup===1)stammmannschaftWarned.push(t);
+  }
+  const allBlockedIds=new Set([...stammkaderBlocked.map(t=>t.id),...stammmannschaftBlocked.map(t=>t.id)]);
+  return{stammkaderTeam,stammkaderBlocked,stammmannschaftBlocked,stammmannschaftWarned,blocked:catTeams.filter(t=>allBlockedIds.has(t.id)),warned:stammmannschaftWarned};
+}
+
+function setSync(s,m){const b=document.getElementById('sync-badge');b.className='sync-badge sync-'+s;b.textContent=m;}
+
+// ── STATE ──
+let state={teams:[],players:[],matches:[],availability:{},lineups:{},matchCounts:{},rankByTeam:{}};
+let selectedTeamId=null;
+let selectedMatchId=null;
+
+// ── LOAD ──
+async function loadAll(){
+  setSync('ing','⟳');
+  try{
+    const[teams,players,matches,avRows,lineupRows,countRows]=await Promise.all([
+      sbGet('teams','order=category,team_number'),
+      sbGet('players','order=lk'),
+      sbGet('matches','order=date'),
+      sbGet('availability',''),
+      sbGet('lineups',''),
+      sbGet('player_match_counts','')
+    ]);
+    state.teams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
+    state.players=players.map(p=>({id:p.id,name:p.name,idnr:p.idnr,lk:p.lk,lkStr:p.lk_str,year:p.year,teamIds:[],gender:p.gender||'M',rank:p.rank}));
+    state.matches=matches.map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue}));
+    state.availability={};
+    for(const r of avRows){if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
+    state.lineups={};
+    for(const r of lineupRows)state.lineups[r.match_id]=r.slots;
+    state.matchCounts={};
+    for(const r of countRows){if(!state.matchCounts[r.player_id])state.matchCounts[r.player_id]={};state.matchCounts[r.player_id][r.team_id]=r.matches_played;}
+    // Load player_teams paginated
+    let ptRows=[],ptOffset=0;
+    while(true){
+      const batch=await sbGet('player_teams',`limit=1000&offset=${ptOffset}`);
+      ptRows=ptRows.concat(batch);
+      if(batch.length<1000)break;
+      ptOffset+=1000;
+    }
+    state.rankByTeam={};
+    for(const r of ptRows){
+      const p=state.players.find(x=>x.id===r.player_id);
+      if(p&&!p.teamIds.includes(r.team_id))p.teamIds.push(r.team_id);
+      if(r.rank!=null){if(!state.rankByTeam[r.player_id])state.rankByTeam[r.player_id]={};state.rankByTeam[r.player_id][r.team_id]=r.rank;}
+    }
+    setSync('ok','● sync');
+    renderTeamSidebar();
+    if(selectedTeamId)renderTeamContent();
+    if(selectedMatchId)renderAvailPanel();
+  }catch(e){setSync('err','✕ offline');console.error(e);}
+}
+
+// ── SIDEBAR ──
+function renderTeamSidebar(){
+  const byCat={};
+  for(const t of state.teams){
+    const c=t.category||'Herren';
+    if(!byCat[c])byCat[c]=[];
+    byCat[c].push(t);
+  }
+  let html='';
+  for(const[cat,teams] of Object.entries(byCat)){
+    html+=`<div style="font-size:10px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;padding-left:4px">${cat}</div>`;
+    for(const t of teams.sort((a,b)=>teamNumber(a)-teamNumber(b))){
+      const matches=state.matches.filter(m=>m.teamId===t.id);
+      const active=selectedTeamId===t.id?'active':'';
+      html+=`<button class="team-btn ${active}" onclick="selectTeam('${t.id}')">
+        <span class="team-dot"></span>
+        <span style="flex:1">${t.name}</span>
+        <span style="font-size:10px;color:#444">${matches.length}</span>
+      </button>`;
+    }
+  }
+  document.getElementById('team-list-sidebar').innerHTML=html||'<div class="empty" style="padding:10px">Keine Teams</div>';
+}
+
+// ── TEAM SELECTION ──
+function selectTeam(teamId){
+  selectedTeamId=teamId;
+  selectedMatchId=null;
+  document.getElementById('no-team-selected').style.display='none';
+  document.getElementById('team-content').style.display='block';
+  document.getElementById('avail-panel').style.display='none';
+  renderTeamSidebar();
+  renderTeamContent();
+}
+
+function renderTeamContent(){
+  const team=teamById(selectedTeamId);if(!team)return;
+  document.getElementById('content-team-name').textContent=team.name;
+  document.getElementById('content-team-meta').textContent=`${team.liga} · ${team.season} · ${teamSize(team)} Spieler`;
+  const matches=[...state.matches.filter(m=>m.teamId===selectedTeamId)].sort((a,b)=>a.date.localeCompare(b.date));
+  if(!matches.length){
+    document.getElementById('match-list').innerHTML='<div class="empty">Keine Spiele für diese Mannschaft</div>';
+    return;
+  }
+  document.getElementById('match-list').innerHTML=matches.map(m=>{
+    const avail=state.availability[m.id]||{};
+    const tp=state.players.filter(p=>p.teamIds.includes(m.teamId));
+    const yes=tp.filter(p=>avail[p.id]==='yes').length;
+    const pct=tp.length>0?Math.round(yes/tp.length*100):0;
+    const hasLineup=state.lineups[m.id]?.some(Boolean);
+    const isActive=selectedMatchId===m.id;
+    return`<div class="match-card ${isActive?'active':''}" onclick="selectMatch('${m.id}')">
+      <div class="match-header">
+        <div>
+          <div class="match-title">${team.name} vs ${(m.opponent||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+          <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${m.home}</div>
+        </div>
+        <span class="match-status ${hasLineup?'status-ready':'status-open'}">${hasLineup?'✓ Aufstellung':'⏳ offen'}</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${yes}/${tp.length} verfügbar</div>
+    </div>`;
+  }).join('');
+}
+
+// ── MATCH SELECTION ──
+function selectMatch(matchId){
+  selectedMatchId=matchId;
+  renderTeamContent(); // re-render to highlight active match
+  renderAvailPanel();
+  document.getElementById('avail-panel').style.display='block';
+  document.getElementById('avail-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ── AVAILABILITY PANEL ──
+function renderAvailPanel(){
+  const match=state.matches.find(m=>m.id===selectedMatchId);if(!match)return;
+  const team=teamById(match.teamId);
+  document.getElementById('panel-match-title').textContent=`${team?.name||'?'} vs ${match.opponent}`;
+  document.getElementById('panel-match-meta').textContent=`${fmtDate(match.date)} · ${match.time} · ${match.home}`;
+  document.getElementById('lineup-label').textContent=`Aufstellung (${teamSize(team)} Einzel)`;
+
+  const avail=state.availability[selectedMatchId]||{};
+  const tp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>{
+    const order={yes:0,maybe:1,'':2,no:3};
+    const ao=order[avail[a.id]||'']??2, bo=order[avail[b.id]||'']??2;
+    if(ao!==bo)return ao-bo;
+    return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);
+  });
+
+  const groupLabel={yes:'✓ Ja',maybe:'? Vielleicht',no:'✗ Nein','':'— Keine Angabe'};
+  const groupColor={yes:'var(--court)',maybe:'var(--warn)',no:'var(--danger)','':'var(--muted)'};
+  let lastGroup=undefined;
+  let html='';
+  for(const p of tp){
+    const s=avail[p.id]||'';
+    const blocked=isPlayerBlockedForTeam(p.id,match.teamId);
+    if(s!==lastGroup){
+      lastGroup=s;
+      html+=`<div class="avail-group-label" style="color:${groupColor[s]}">${groupLabel[s]}</div>`;
+    }
+    html+=`<div class="avail-row">
+      <div class="avail-avatar">${initials(p.name)}</div>
+      <div style="flex:1">
+        <div class="avail-name">${p.name}${blocked?` <span class="blocked-badge">⛔</span>`:''}</div>
+        <div class="avail-meta">${p.lkStr||''} · Jg. ${p.year||'—'} · Rang ${playerRankInTeam(p.id,match.teamId)<999?playerRankInTeam(p.id,match.teamId):'—'}</div>
+      </div>
+      <span class="avail-badge ${s==='yes'?'av-yes':s==='no'?'av-no':s==='maybe'?'av-maybe':'av-open'}">${s==='yes'?'Ja':s==='no'?'Nein':s==='maybe'?'Vielleicht':'—'}</span>
+    </div>`;
+  }
+  document.getElementById('avail-list').innerHTML=html;
+  renderLineupSlots();
+}
+
+// ── LINEUP ──
+function renderLineupSlots(){
+  const match=state.matches.find(m=>m.id===selectedMatchId);if(!match)return;
+  const team=teamById(match.teamId);
+  const size=teamSize(team);
+  const avail=state.availability[selectedMatchId]||{};
+  const lineup=state.lineups[selectedMatchId]||[];
+  const allTp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
+
+  // Warnings
+  const warnings=[];
+  const blockedWarnings=[];
+  for(let i=0;i<size-1;i++){
+    const p1=lineup[i]?playerById(lineup[i]):null;
+    const p2=lineup[i+1]?playerById(lineup[i+1]):null;
+    if(p1&&p2&&playerRankInTeam(p1.id,match.teamId)<playerRankInTeam(p2.id,match.teamId))
+      warnings.push(`⚠️ Pos. ${i+1} (Rang ${playerRankInTeam(p1.id,match.teamId)}) schlechter als Pos. ${i+2} (Rang ${playerRankInTeam(p2.id,match.teamId)})`);
+  }
+  for(const pid of lineup.filter(Boolean)){
+    if(isPlayerBlockedForTeam(pid,match.teamId)){
+      const p=playerById(pid);
+      if(p)blockedWarnings.push(`⛔ ${p.name} ist gesperrt für ${team?.name||'?'}`);
+    }
+  }
+
+  let warnHtml='';
+  if(blockedWarnings.length)warnHtml+=`<div class="warn-banner">${blockedWarnings.join('<br>')}</div>`;
+  if(warnings.length)warnHtml+=`<div class="warn-banner">${warnings.join('<br>')}</div>`;
+  if(!warnings.length&&!blockedWarnings.length&&lineup.filter(Boolean).length>=size)
+    warnHtml=`<div class="ok-banner">✓ Aufstellung regelkonform</div>`;
+  document.getElementById('lineup-warnings').innerHTML=warnHtml;
+
+  // Slots
+  const _ao={yes:0,maybe:1,'':2,no:3};
+  const sorted=[...allTp].sort((a,b)=>{
+    const ao=_ao[avail[a.id]||'']??2, bo=_ao[avail[b.id]||'']??2;
+    if(ao!==bo)return ao-bo;
+    return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);
+  });
+
+  let slotsHtml='';
+  for(let i=0;i<size;i++){
+    const pid=lineup[i]||'';
+    const p=pid?playerById(pid):null;
+    const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
+    const rankOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
+    const isBlocked=pid?isPlayerBlockedForTeam(pid,match.teamId):false;
+    const cls=p?(isBlocked?'blocked-slot':rankOk?'ok':'warning'):'';
+
+    let opts='<option value="">—</option>';
+    let lastGrp=undefined;
+    const grpLabels={yes:'── ✓ Ja',maybe:'── ? Vielleicht',no:'── ✗ Nein','':'── ?'};
+    for(const tp of sorted){
+      const grp=avail[tp.id]||'';
+      if(grp!==lastGrp){lastGrp=grp;opts+=`<option disabled style="color:#555;font-size:10px">${grpLabels[grp]}</option>`;}
+      const bl=isPlayerBlockedForTeam(tp.id,match.teamId);
+      opts+=`<option value="${tp.id}" ${pid===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;
+    }
+    slotsHtml+=`<div class="lineup-slot ${cls}">
+      <div class="lineup-pos">${i+1}</div>
+      <select onchange="setSlot(${i},this.value)">${opts}</select>
+    </div>`;
+  }
+  document.getElementById('lineup-slots').innerHTML=slotsHtml;
+}
+
+async function setSlot(pos,playerId){
+  if(!selectedMatchId)return;
+  if(!state.lineups[selectedMatchId])state.lineups[selectedMatchId]=[];
+  state.lineups[selectedMatchId][pos]=playerId||null;
+  document.getElementById('save-indicator').innerHTML='<span class="spinner"></span>Speichern...';
+  try{
+    await sbUpsert('lineups',[{match_id:selectedMatchId,slots:state.lineups[selectedMatchId]}]);
+    document.getElementById('save-indicator').textContent='✓ Gespeichert';
+    setTimeout(()=>document.getElementById('save-indicator').textContent='',2000);
+  }catch(e){
+    document.getElementById('save-indicator').textContent='Fehler beim Speichern';
+    console.error(e);
+  }
+  renderLineupSlots();
+  renderTeamContent();
+}
+
+// ── TAB SWITCHING ──
+function showKapTab(tab){
+  document.getElementById('view-spiele').style.display=tab==='spiele'?'block':'none';
+  document.getElementById('view-sperren').style.display=tab==='sperren'?'block':'none';
+  const btnSpiele=document.getElementById('tab-spiele');
+  const btnSperren=document.getElementById('tab-sperren');
+  btnSpiele.style.color=tab==='spiele'?'var(--court)':'var(--muted)';
+  btnSpiele.style.borderBottomColor=tab==='spiele'?'var(--court)':'transparent';
+  btnSperren.style.color=tab==='sperren'?'var(--court)':'var(--muted)';
+  btnSperren.style.borderBottomColor=tab==='sperren'?'var(--court)':'transparent';
+  // Hide sidebar and let content span full width on Sperren tab
+  const sidebar=document.getElementById('main-sidebar');
+  const wrapper=document.getElementById('main-content-wrapper');
+  if(tab==='sperren'){
+    sidebar.style.display='none';
+    wrapper.style.gridColumn='1/-1';
+    renderBlocking();
+  } else {
+    sidebar.style.display='';
+    wrapper.style.gridColumn='';
+  }
+}
+
+// ── BLOCKING VIEW (read-only) ──
+function renderBlocking(){
+  const cats=[...new Set(state.teams.map(t=>t.category))].sort();
+  const catSel=document.getElementById('block-cat-filter');
+  const defaultCat=cats.includes('Herren')?'Herren':'';
+  const curCat=catSel?.value||defaultCat;
+  if(catSel){catSel.innerHTML=`<option value="">Alle Kategorien</option>`+cats.map(c=>`<option value="${c}" ${curCat===c?'selected':''}>${c}</option>`).join('');catSel.value=curCat;}
+  const el=document.getElementById('blocking-content');
+  const filterCat=catSel?.value||'';
+  const catsToShow=filterCat?[filterCat]:cats;
+  let html=`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <div style="background:#181818;border-left:3px solid var(--court);border-radius:0 8px 8px 0;padding:8px 12px;margin:9px 0;font-size:12px;color:var(--muted);line-height:1.6;flex:1"><strong style="color:var(--white)">Stammkader:</strong> Pos. 1–6 (Sommer) / 1–4 (Winter) → Mannschaft 1, usw. Spieler dürfen nicht in niedrigere Mannschaft der Kategorie.</div>
+    <div style="background:#181818;border-left:3px solid var(--warn);border-radius:0 8px 8px 0;padding:8px 12px;margin:9px 0;font-size:12px;color:var(--muted);line-height:1.6;flex:1"><strong style="color:var(--white)">Stammmannschaft:</strong> 2 Spiele in einer Mannschaft → gesperrt für alle niedrigeren in dieser Kategorie.</div>
+  </div>`;
+  let anyEntry=false;
+  for(const cat of catsToShow){
+    const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+    if(!catTeams.length)continue;
+    const catPlayers=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>{
+      const rankA=Math.min(...catTeams.map(t=>state.rankByTeam[a.id]?.[t.id]??999));
+      const rankB=Math.min(...catTeams.map(t=>state.rankByTeam[b.id]?.[t.id]??999));
+      return rankA-rankB;
+    });
+    if(!catPlayers.length)continue;
+    anyEntry=true;
+    html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court);letter-spacing:1px;margin:14px 0 8px">${cat}</div>`;
+    html+=`<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0;overflow:hidden;overflow-x:auto;margin-bottom:10px">`;
+    html+=`<table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="border-bottom:1px solid #2e4a42">
+        <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);min-width:140px">Spieler</th>
+        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:10px">LK</th>
+        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:10px">Jg.</th>
+        ${catTeams.map(t=>`<th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--court);font-size:11px;white-space:nowrap">${t.name}${t.is_4er?' <span style="font-size:9px;color:var(--warn)">(4er)</span>':''}</th>`).join('')}
+      </tr></thead><tbody>`;
+    for(let i=0;i<catPlayers.length;i++){
+      const p=catPlayers[i];
+      const status=getPlayerBlockStatus(p.id,cat);
+      const counts=state.matchCounts[p.id]||{};
+      const _rankInCat=Math.min(...catTeams.map(t=>state.rankByTeam[p.id]?.[t.id]??999));
+      let _r=_rankInCat<999?_rankInCat:(i+1),_skTeam=catTeams[catTeams.length-1];
+      for(const _t of catTeams){const _gs=teamSize(_t);if(_r<=_gs){_skTeam=_t;break;}_r-=_gs;}
+      const skTeam=_skTeam;
+      const cells=catTeams.map(t=>{
+        const c=counts[t.id]||0;
+        const isSkTeam=t.id===skTeam.id;
+        const isSkBlocked=status.stammkaderBlocked.some(x=>x.id===t.id);
+        const isSmBlocked=status.stammmannschaftBlocked.some(x=>x.id===t.id);
+        const isSmWarned=status.stammmannschaftWarned.some(x=>x.id===t.id);
+        const isAssigned=p.teamIds.includes(t.id);
+        let bg='',txt='',label='',title='';
+        if(isSkTeam){bg='background:#1a2d3d';txt='color:var(--info)';label='SK';title='Stammkader';}
+        if(isSmBlocked&&isSkBlocked){bg='background:#3d1a1a';txt='color:var(--danger)';label=`&#9940;${c>0?` (${c})`:''}`;title='SK + SM';}
+        else if(isSmBlocked){
+          const supSum=catTeams.filter(s=>teamNumber(s)<teamNumber(t)).reduce((a,s)=>(state.matchCounts[p.id]?.[s.id]||0)+a,0);
+          bg='background:#2d1a1a';txt='color:var(--danger)';label=`SM (${supSum})`;title=`${supSum}x in oberen Mannschaften`;}
+        else if(isSkBlocked){bg='background:#1a1a2d';txt='color:#a78bfa';label='SK&#9940;';title='Stammkader gesperrt';}
+        else if(isSmWarned){
+          const supSum=catTeams.filter(s=>teamNumber(s)<teamNumber(t)).reduce((a,s)=>(state.matchCounts[p.id]?.[s.id]||0)+a,0);
+          bg='background:#2d2215';txt='color:var(--warn)';label=`&#9888; ${supSum}/2`;title=`${supSum}x in oberen Mannschaften`;}
+        else if(c>0){txt='color:var(--court)';label=`${c}x`;}
+        else if(isAssigned){txt='color:var(--muted)';label='—';}
+        else{txt='color:#2e4a42';label='·';}
+        return`<td style="padding:7px 8px;text-align:center;border-left:1px solid #2e4a4222;${bg}" title="${title}"><span style="font-size:11px;font-weight:600;${txt}">${label}</span></td>`;
+      }).join('');
+      html+=`<tr style="border-bottom:1px solid #2e4a4222">
+        <td style="padding:7px 12px;white-space:nowrap"><div style="font-weight:600;font-size:12px">${p.name}</div></td>
+        <td style="padding:7px 8px;text-align:center"><span style="background:#1a2e26;color:var(--court);border:1px solid var(--court)33;font-size:10px;font-weight:700;padding:2px 5px;border-radius:5px">${p.lkStr||'?'}</span></td>
+        <td style="padding:7px 8px;text-align:center;font-size:11px;color:var(--muted)">${p.year||'—'}</td>
+        ${cells}
+      </tr>`;
+    }
+    html+=`</tbody></table>
+      <div style="padding:8px 12px;display:flex;gap:10px;flex-wrap:wrap;border-top:1px solid #2e4a42">
+        <span style="font-size:10px;color:var(--info)">&#9632; SK = Stammkader</span>
+        <span style="font-size:10px;color:#a78bfa">&#9632; SK&#9940; = Stammkader gesperrt</span>
+        <span style="font-size:10px;color:var(--danger)">&#9632; SM = Stammmannschaft gesperrt</span>
+        <span style="font-size:10px;color:var(--warn)">&#9632; &#9888; = 1 Spiel</span>
+        <span style="font-size:10px;color:var(--court)">&#9632; Zahl = Spiele</span>
+      </div></div>`;
+  }
+  if(!anyEntry)html+=`<div class="empty">Keine Sperren</div>`;
+  el.innerHTML=html;
+}
+
+async function runAutoLineup(){
+  const match=state.matches.find(m=>m.id===selectedMatchId);if(!match)return;
+  const team=teamById(match.teamId);
+  const size=teamSize(team);
+  const avail=state.availability[selectedMatchId]||{};
+  const available=[...state.players.filter(p=>
+    p.teamIds.includes(match.teamId)&&
+    avail[p.id]==='yes'&&
+    !isPlayerBlockedForTeam(p.id,match.teamId)
+  )].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
+  const slots=Array.from({length:size},(_,i)=>available[i]?.id||null);
+  state.lineups[selectedMatchId]=slots;
+  document.getElementById('save-indicator').innerHTML='<span class="spinner"></span>Speichern...';
+  try{
+    await sbUpsert('lineups',[{match_id:selectedMatchId,slots}]);
+    document.getElementById('save-indicator').textContent='✓ Auto-Aufstellung gespeichert';
+    setTimeout(()=>document.getElementById('save-indicator').textContent='',2500);
+  }catch(e){
+    document.getElementById('save-indicator').textContent='Fehler beim Speichern';
+    console.error(e);
+  }
+  renderLineupSlots();
+  renderTeamContent();
+}
+</script>
+</body>
+</html>

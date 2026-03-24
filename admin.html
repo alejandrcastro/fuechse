@@ -670,18 +670,10 @@ function teamSize(t){return t&&(t.is_4er||t.season==='Winter')?4:6}
 function getStammkaderTeam(playerId, catGroup){
   const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
   if(!catTeams.length)return null;
-  // Find rank for THIS category only — each category has its own independent rank list.
-  // The rank stored in player_teams for any team in this category is the player's
-  // position within that category's Namentliche Mannschaftsmeldung.
-  // All teams in the same category share the same rank list, so we take the first found.
-  const playerRanks=state.rankByTeam[playerId]||{};
-  let rankInCat=null;
-  for(const t of catTeams){
-    const r=playerRanks[t.id];
-    if(r!=null){rankInCat=r;break;}
-  }
-  // Fallback to p.rank only if single category (may be wrong for multi-category players)
-  if(rankInCat==null&&catTeams.length){const p=playerById(playerId);rankInCat=p?.rank||null;}
+  // All players are stored with their rank against team_number=1 (the first team).
+  // Use that rank to calculate which Stammkader team they belong to.
+  const firstTeam=catTeams[0];
+  const rankInCat=state.rankByTeam[playerId]?.[firstTeam.id]??playerById(playerId)?.rank??null;
   if(rankInCat==null)return null;
   let remaining=rankInCat;
   for(const t of catTeams){const gs=teamSize(t);if(remaining<=gs)return t;remaining-=gs;}
@@ -798,12 +790,11 @@ async function loadAll(){
         for(const t of catTeams){
           if(teamNumber(t)<=skNum&&!p.teamIds.includes(t.id)){
             p.teamIds.push(t.id);
-            // Use rank from any team in this category
-            const catRanks=catTeams.map(ct=>state.rankByTeam[p.id]?.[ct.id]).filter(v=>v!=null);
-            const rankForTeam=catRanks.length?Math.min(...catRanks):null;
-            // Also update rankByTeam in memory so sort works immediately
-            if(rankForTeam!=null){if(!state.rankByTeam[p.id])state.rankByTeam[p.id]={};state.rankByTeam[p.id][t.id]=rankForTeam;}
-            ptToAdd.push({player_id:p.id,team_id:t.id,rank:rankForTeam});
+            // Use the global rank already stored (it was calculated correctly at import time)
+            // propagate it to teams that are missing the rank entry
+            const globalRank=Object.values(state.rankByTeam[p.id]||{}).find(v=>v!=null)??null;
+            if(globalRank!=null){if(!state.rankByTeam[p.id])state.rankByTeam[p.id]={};state.rankByTeam[p.id][t.id]=globalRank;}
+            ptToAdd.push({player_id:p.id,team_id:t.id,rank:globalRank});
           }
         }
       }
@@ -960,9 +951,17 @@ async function confirmImport(){
         const catTeams=state.teams.filter(t=>t.category===p.teamCategory)
           .sort((a,b)=>teamNumber(a)-teamNumber(b));
         const stammIdx=catTeams.findIndex(t=>t.id===teamId);
+        // Calculate GLOBAL rank within the category (sum of all team sizes before this team + local rank)
+        // e.g. if Herren I=6, Herren II=6, and player is rank 3 in Herren III -> global rank = 6+6+3 = 15
+        let globalRank=p.rank||null;
+        if(globalRank!=null&&stammIdx>0){
+          for(let si=0;si<stammIdx;si++){
+            globalRank+=teamSize(catTeams[si]);
+          }
+        }
         const assignTo=stammIdx>=0?catTeams.slice(0,stammIdx+1):[{id:teamId}];
         for(const at of assignTo){
-          ptInsert.push({player_id:pid2,team_id:at.id,rank:p.rank||null});
+          ptInsert.push({player_id:pid2,team_id:at.id,rank:globalRank});
         }
       }
     }
@@ -1351,6 +1350,64 @@ function renderAvail(){
       <button class="btn btn-outline" onclick="goToLineup('${matchId}')">${tr('goAvail')}</button>
     </div>`:''}
   </div>`;
+}
+
+// ── RECALCULATE GLOBAL RANKS ──
+// Fixes player_teams ranks that were stored as local (within-team) rank instead of global (category-wide) rank.
+// Run once after upgrade if Sperren were calculated incorrectly.
+async function recalcAllRanks(){
+  const statusEl=document.getElementById('recalc-status');
+  statusEl.textContent='Berechne...';
+  setSync('ing',tr('syncIng'));
+  try{
+    const allCats=[...new Set(state.teams.map(t=>t.category))];
+    const updates=[];
+    for(const cat of allCats){
+      const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+      if(catTeams.length<2)continue;
+      // For each player, find which team they appear in as Stammkader by scanning player_teams
+      // We use the raw rankByTeam data: find the team where the rank was originally set
+      // (i.e., the lowest rank value, which corresponds to local rank in Stammkader team)
+      for(const p of state.players){
+        const catRanks=catTeams.map(t=>({team:t,rank:state.rankByTeam[p.id]?.[t.id]})).filter(x=>x.rank!=null);
+        if(!catRanks.length)continue;
+        // The minimum rank stored is the local rank in the Stammkader team
+        // BUT: if ranks were already global, the min rank across all teams of the category
+        // should equal the rank in the first team. We detect by checking consistency:
+        // For a correctly stored global rank, all team entries for this player in this cat should have the SAME value.
+        const rankValues=[...new Set(catRanks.map(x=>x.rank))];
+        if(rankValues.length===1){
+          // All same — already consistent (global rank). Nothing to do.
+          continue;
+        }
+        // Different values stored — legacy local ranks. Recalculate.
+        // Find the team with the minimum rank (that's the Stammkader team, local rank = min)
+        const minEntry=catRanks.reduce((a,b)=>a.rank<=b.rank?a:b);
+        const skTeamIdx=catTeams.findIndex(t=>t.id===minEntry.team.id);
+        // Global rank = sum of sizes of all teams before Stammkader team + local rank
+        let offset=0;
+        for(let i=0;i<skTeamIdx;i++)offset+=teamSize(catTeams[i]);
+        const globalRank=minEntry.rank+offset;
+        // Update all entries for this player in this category
+        for(const ct of catRanks){
+          if(ct.rank!==globalRank){
+            updates.push({player_id:p.id,team_id:ct.team.id,rank:globalRank});
+            if(!state.rankByTeam[p.id])state.rankByTeam[p.id]={};
+            state.rankByTeam[p.id][ct.team.id]=globalRank;
+          }
+        }
+      }
+    }
+    if(updates.length){
+      for(let i=0;i<updates.length;i+=100)await sbUpsert('player_teams',updates.slice(i,i+100));
+      statusEl.textContent=`✓ ${updates.length} Einträge korrigiert`;
+    } else {
+      statusEl.textContent='✓ Alles korrekt — keine Änderungen nötig';
+    }
+    setSync('ok',tr('syncOk'));
+    renderBlocking();
+  }catch(e){setSync('err',tr('syncErr'));statusEl.textContent='Fehler: '+e.message;console.error(e);}
+  setTimeout(()=>{if(statusEl)statusEl.textContent='';},5000);
 }
 
 // ── BLOCKING VIEW ──
