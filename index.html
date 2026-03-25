@@ -111,7 +111,7 @@ input::placeholder{color:var(--muted)}
     </div>
     <div style="margin-bottom:20px">
       <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#4a9970;display:block;margin-bottom:5px">Passwort</label>
-      <input id="sp-pw" type="password" autocomplete="current-password"
+      <input id="sp-pw" type="password" autocomplete="off"
         style="width:100%;background:#111;border:1px solid #2d6a4f;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none"
         placeholder="••••••••" onkeydown="if(event.key==='Enter')spLogin()">
     </div>
@@ -304,7 +304,7 @@ function fmtDate(d){
 function teamById(id){return state.teams.find(t=>t.id===id)}
 function playerById(id){return state.players.find(p=>p.id===id)}
 function getPlayerTeamIds(playerId){return state.playerTeams.filter(r=>r.player_id===playerId).map(r=>r.team_id);}
-function teamSize(t){return t&&t.season==='Winter'?4:6}
+function teamSize(t){return t&&(t.is_4er||t.season==='Winter')?4:6}
 function teamNumber(team){
   const n=parseInt(team.teamNumber||team.team_number||0);
   if(n>0&&n<10)return n;
@@ -313,6 +313,28 @@ function teamNumber(team){
   if(r)return roman[r[1]]||1;
   return 1;
 }
+function teamSortKey(t){
+  const g=t.category.startsWith('Damen')?1:0;
+  const age=parseInt(t.category.replace(/^(Herren|Damen)\s*/,''))||0;
+  return[g,age,teamNumber(t)];
+}
+function teamSortCmp(a,b){
+  const ka=teamSortKey(a),kb=teamSortKey(b);
+  for(let i=0;i<ka.length;i++)if(ka[i]!==kb[i])return ka[i]-kb[i];
+  return 0;
+}
+
+function getStammkaderTeam(playerId, catGroup){
+  const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  if(!catTeams.length)return null;
+  const firstTeam=catTeams[0];
+  const rankInCat=state.rankByTeam[playerId]?.[firstTeam.id]??playerById(playerId)?.rank??null;
+  if(rankInCat==null)return null;
+  let remaining=rankInCat;
+  for(const t of catTeams){const gs=teamSize(t);if(remaining<=gs)return t;remaining-=gs;}
+  return catTeams[catTeams.length-1];
+}
+
 
 // ── BLOCKING LOGIC ──
 // Same dual-rule system as admin:
@@ -324,69 +346,51 @@ function isBlocked(playerId,teamId){
   const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
   const counts=state.matchCounts[playerId]||{};
   const thisNum=teamNumber(team);
-  // Rule 2: Stammmannschaft
+  // Rule 2: Stammmannschaft — 2+ matches in a higher team → blocked here
   for(const t of catTeams){const c=counts[t.id]||0;if(c>=2&&teamNumber(t)<thisNum)return true;}
-  // Rule 1: Stammkader
-  const catPlayers=state.players.filter(p=>{const tids=getPlayerTeamIds(p.id);return tids.some(tid=>catTeams.find(t=>t.id===tid));}).sort((a,b)=>a.lk-b.lk);
-  const posInCat=catPlayers.findIndex(p=>p.id===playerId);
-  if(posInCat<0)return false;
-  const groupSize=teamSize(catTeams[0]||team);
-  const stammTeamIdx=Math.floor(posInCat/groupSize);
-  const stammTeam=catTeams[stammTeamIdx]||catTeams[catTeams.length-1];
-  if(stammTeam&&teamNumber(stammTeam)<thisNum)return true;
+  // Rule 1: Stammkader — derive SK team from rank stored against first team
+  const firstTeam=catTeams[0];if(!firstTeam)return false;
+  const rankInCat=state.rankByTeam[playerId]?.[firstTeam.id]??null;
+  if(rankInCat==null)return false;
+  let remaining=rankInCat;
+  let skTeam=catTeams[catTeams.length-1];
+  for(const t of catTeams){const gs=teamSize(t);if(remaining<=gs){skTeam=t;break;}remaining-=gs;}
+  if(teamNumber(skTeam)<thisNum)return true;
   return false;
 }
 
 async function loadAll(){
   document.getElementById('find-status').textContent=tr('findStatus');
   try{
-    const[teams,players,matches,avRows,countRows,ptRows]=await Promise.all([
+    const[teams,players,matches,avRows,countRows]=await Promise.all([
       sbGet('teams','order=category,team_number'),
       sbGet('players','order=lk'),
       sbGet('matches','order=date'),
       sbGet('availability',''),
-      sbGet('player_match_counts',''),
-      sbGet('player_teams','')
+      sbGet('player_match_counts','')
     ]);
-    state.teams=teams;
+    // Map teams same as admin — camelCase teamNumber so teamNumber() works correctly
+    state.teams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender}));
     state.players=players.map(p=>({...p,lkStr:p.lk_str,rawName:p.raw_name,year:p.year}));
     state.matches=matches.map(m=>({...m,teamId:m.team_id}));
     state.availability={};
     for(const r of avRows){if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
     state.matchCounts={};
     for(const r of countRows){if(!state.matchCounts[r.player_id])state.matchCounts[r.player_id]={};state.matchCounts[r.player_id][r.team_id]=r.matches_played;}
+    // Paginate player_teams — there are >1000 rows
+    let ptRows=[],ptOffset=0;
+    while(true){
+      const batch=await sbGet('player_teams',`limit=1000&offset=${ptOffset}`);
+      ptRows=ptRows.concat(batch);
+      if(batch.length<1000)break;
+      ptOffset+=1000;
+    }
     state.playerTeams=ptRows;
     state.rankByTeam={};
     for(const r of ptRows){
       if(r.rank!=null){
         if(!state.rankByTeam[r.player_id])state.rankByTeam[r.player_id]={};
         state.rankByTeam[r.player_id][r.team_id]=r.rank;
-      }
-    }
-    // Expand: assign each player to all teams they can play in within their category.
-    // Use rankByTeam to find ALL categories the player has a rank in (not just existing assignments).
-    for(const p of state.players){
-      const myRanks=state.rankByTeam[p.id]||{};
-      // Get all team IDs where this player has a rank stored
-      const rankedTeamIds=Object.keys(myRanks);
-      // Also include teams already in player_teams
-      const existingTeamIds=ptRows.filter(r=>r.player_id===p.id).map(r=>r.team_id);
-      const allKnownTeamIds=[...new Set([...rankedTeamIds,...existingTeamIds])];
-      // Get all categories
-      const cats=[...new Set(allKnownTeamIds.map(tid=>state.teams.find(t=>t.id===tid)?.category).filter(Boolean))];
-      for(const cat of cats){
-        const catTeams=[...state.teams.filter(t=>t.category===cat)].sort((a,b)=>teamNumber(a)-teamNumber(b));
-        if(!catTeams.length)continue;
-        // Find Stammkader team: highest-numbered team the player has a rank in
-        const rankedInCat=catTeams.filter(t=>myRanks[t.id]!=null||existingTeamIds.includes(t.id));
-        if(!rankedInCat.length)continue;
-        const skNum=Math.max(...rankedInCat.map(t=>teamNumber(t)));
-        // Assign to all teams with number <= skNum
-        for(const t of catTeams){
-          if(teamNumber(t)<=skNum&&!state.playerTeams.find(r=>r.player_id===p.id&&r.team_id===t.id)){
-            state.playerTeams.push({player_id:p.id,team_id:t.id,rank:myRanks[rankedInCat[0]?.id]||null});
-          }
-        }
       }
     }
     document.getElementById('find-status').textContent='';
@@ -497,7 +501,16 @@ function renderMatchList(){
   const p=selectedPlayer;
   const teamIds=getPlayerTeamIds(p.id);
   document.getElementById('selected-player-name').textContent=p.name;
-  const teams=teamIds.map(tid=>teamById(tid)).filter(Boolean);
+  const teams=teamIds.map(tid=>teamById(tid)).filter(Boolean).sort((a,b)=>{
+    // Gender first (Herren before Damen), then age group (0,30,40...), then team number (1,2,3...)
+    const gA=a.category.startsWith('Damen')?1:0;
+    const gB=b.category.startsWith('Damen')?1:0;
+    if(gA!==gB)return gA-gB;
+    const ageA=parseInt(a.category.replace(/^(Herren|Damen)\s*/,''))||0;
+    const ageB=parseInt(b.category.replace(/^(Herren|Damen)\s*/,''))||0;
+    if(ageA!==ageB)return ageA-ageB;
+    return teamNumber(a)-teamNumber(b);
+  });
   document.getElementById('player-info-card').innerHTML=`<div class="player-card">
     <div class="avatar" style="width:44px;height:44px;font-size:15px">${initials(p.name)}</div>
     <div style="flex:1">
