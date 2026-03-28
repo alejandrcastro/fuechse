@@ -127,7 +127,7 @@ input:focus,select:focus{border-color:var(--court)}
     </div>
     <div class="login-field">
       <label>Email</label>
-      <input id="login-email" type="email" autocomplete="email" placeholder="kapitaen@fuechse-berlin-reinickendorf.de"
+      <input id="login-email" type="email" autocomplete="email" placeholder="kapitaen@fuechse-berlin.de"
         onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
     </div>
     <div class="login-field" style="margin-bottom:20px">
@@ -251,19 +251,46 @@ let _session=null;
   document.head.appendChild(s);
 })();
 
+
+// ── LOGIN RATE LIMITING ──
+const _rl={attempts:0,lockedUntil:0};
+function _rlCheck(errEl){
+  const now=Date.now();
+  if(_rl.lockedUntil>now){
+    const secs=Math.ceil((_rl.lockedUntil-now)/1000);
+    errEl.textContent=`Zu viele Versuche. Bitte ${secs}s warten.`;
+    return false;
+  }
+  return true;
+}
+function _rlFail(errEl){
+  _rl.attempts++;
+  const timeout=_rl.attempts>=5?5*60*1000*(_rl.attempts-4):0;
+  if(timeout>0){
+    _rl.lockedUntil=Date.now()+timeout;
+    const mins=Math.ceil(timeout/60000);
+    errEl.textContent=`Zu viele Versuche. ${mins} Minute${mins>1?'n':''} gesperrt.`;
+  } else {
+    errEl.textContent='Falscher Benutzer oder Passwort';
+  }
+  setTimeout(()=>{if(Date.now()>=_rl.lockedUntil)errEl.textContent='';},3500);
+}
+function _rlSuccess(){_rl.attempts=0;_rl.lockedUntil=0;}
+
 async function doLogin(){
   const email=document.getElementById('login-email').value.trim();
   const pass=document.getElementById('login-pass').value;
   const err=document.getElementById('login-err');
   const btn=document.getElementById('login-btn');
+  if(!_rlCheck(err))return;
   err.textContent='';btn.textContent='...';btn.disabled=true;
   const {data,error}=await _sbClient.auth.signInWithPassword({email,password:pass});
   btn.textContent='Einloggen';btn.disabled=false;
   if(error){
-    err.textContent='Falscher Benutzer oder Passwort';
+    _rlFail(err);
     document.getElementById('login-pass').value='';
-    setTimeout(()=>err.textContent='',3000);
   } else {
+    _rlSuccess();
     _session=data.session;
     document.getElementById('login-overlay').style.display='none';
     loadAll();
@@ -309,10 +336,21 @@ function playerRankInTeam(playerId,teamId){
   const team=teamById(teamId);if(!team)return 999;
   const cat=team.category;
   const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
-  const ranks=catTeams.map(t=>state.rankByTeam[playerId]?.[t.id]).filter(v=>v!=null);
-  return ranks.length?Math.min(...ranks):999;
+  // Use the rank from the first team in the category where the player has a rank entry
+  // This is the player's global position in the Namentliche Mannschaftsmeldung for this category
+  const playerRanks=state.rankByTeam[playerId]||{};
+  for(const t of catTeams){const r=playerRanks[t.id];if(r!=null)return r;}
+  return playerById(playerId)?.rank||999;
+}
+function lkExceedsTeam(playerId,teamId){
+  // LK > 20 rule: in Herren category, players with LK > 20 can only play in team #3+
+  const team=teamById(teamId);if(!team)return false;
+  if(team.category!=='Herren')return false;
+  const p=playerById(playerId);if(!p)return false;
+  return(p.lk||0)>20&&teamNumber(team)<3;
 }
 function isPlayerBlockedForTeam(playerId,teamId){
+  if(lkExceedsTeam(playerId,teamId))return true;
   const team=teamById(teamId);if(!team)return false;
   const status=getPlayerBlockStatus(playerId,team.category);
   return status.blocked.some(b=>b.id===teamId);
@@ -442,7 +480,10 @@ function renderTeamContent(){
     const tp=state.players.filter(p=>p.teamIds.includes(m.teamId));
     const yes=tp.filter(p=>avail[p.id]==='yes').length;
     const pct=tp.length>0?Math.round(yes/tp.length*100):0;
-    const hasLineup=state.lineups[m.id]?.some(Boolean);
+    const _lineupTeam=teamById(m.teamId);
+    const _lineupSize=teamSize(_lineupTeam);
+    const _slots=state.lineups[m.id]||[];
+    const hasLineup=_slots.filter(Boolean).length>=_lineupSize;
     const isActive=selectedMatchId===m.id;
     return`<div class="match-card ${isActive?'active':''}" onclick="selectMatch('${m.id}')">
       <div class="match-header">
@@ -513,36 +554,41 @@ function renderLineupSlots(){
   const team=teamById(match.teamId);
   const size=teamSize(team);
   const avail=state.availability[selectedMatchId]||{};
-  const lineup=state.lineups[selectedMatchId]||[];
   const allTp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
+  const lineup=state.lineups[selectedMatchId]||[];
 
-  // Warnings
+  // LK-order warnings (same logic as admin renderLineup)
   const warnings=[];
-  const blockedWarnings=[];
   for(let i=0;i<size-1;i++){
     const p1=lineup[i]?playerById(lineup[i]):null;
     const p2=lineup[i+1]?playerById(lineup[i+1]):null;
-    if(p1&&p2&&playerRankInTeam(p1.id,match.teamId)<playerRankInTeam(p2.id,match.teamId))
-      warnings.push(`⚠️ Pos. ${i+1} (Rang ${playerRankInTeam(p1.id,match.teamId)}) schlechter als Pos. ${i+2} (Rang ${playerRankInTeam(p2.id,match.teamId)})`);
-  }
-  for(const pid of lineup.filter(Boolean)){
-    if(isPlayerBlockedForTeam(pid,match.teamId)){
-      const p=playerById(pid);
-      if(p)blockedWarnings.push(`⛔ ${p.name} ist gesperrt für ${team?.name||'?'}`);
-    }
-  }
+    if(p1&&p2&&playerRankInTeam(p1.id,match.teamId)>playerRankInTeam(p2.id,match.teamId))
+      warnings.push(`⚠️ Pos. ${i+1} (Rang ${playerRankInTeam(p1.id,match.teamId)}) vor Pos. ${i+2} (Rang ${playerRankInTeam(p2.id,match.teamId)})`);
 
+  }
+  const blockedWarnings=lineup.filter(Boolean).map(pid=>{
+    const p=playerById(pid);if(!p)return null;
+    if(isPlayerBlockedForTeam(pid,match.teamId))return`⛔ ${p.name} ist gesperrt für ${team?.name||'?'}`;
+    return null;
+  }).filter(Boolean);
+
+  const filledCount=lineup.filter(Boolean).length;
   let warnHtml='';
   if(blockedWarnings.length)warnHtml+=`<div class="warn-banner">${blockedWarnings.join('<br>')}</div>`;
-  if(warnings.length)warnHtml+=`<div class="warn-banner">${warnings.join('<br>')}</div>`;
-  if(!warnings.length&&!blockedWarnings.length&&lineup.filter(Boolean).length>=size)
-    warnHtml=`<div class="ok-banner">✓ Aufstellung regelkonform</div>`;
+  if(warnings.length)
+    warnHtml+=`<div class="warn-banner">${warnings.join('<br>')}</div>`;
+  if(!blockedWarnings.length&&!warnings.length){
+    if(filledCount>=size)
+      warnHtml=`<div class="ok-banner">✓ Aufstellung vollständig</div>`;
+    else if(filledCount>0)
+      warnHtml+=`<div style="background:#2d2215;border:1px solid var(--warn)44;border-radius:8px;padding:6px 12px;margin-bottom:10px;font-size:12px;color:var(--warn)">⏳ Aufstellung unvollständig (${filledCount}/${size})</div>`;
+  }
   document.getElementById('lineup-warnings').innerHTML=warnHtml;
 
-  // Slots
-  const _ao={yes:0,maybe:1,'':2,no:3};
+  // Slots — sorted by availability then rank, with group separators (same as admin)
+  const _ao2={yes:0,maybe:1,'':2,no:3};
   const sorted=[...allTp].sort((a,b)=>{
-    const ao=_ao[avail[a.id]||'']??2, bo=_ao[avail[b.id]||'']??2;
+    const ao=_ao2[avail[a.id]||'']??2, bo=_ao2[avail[b.id]||'']??2;
     if(ao!==bo)return ao-bo;
     return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);
   });
@@ -557,13 +603,13 @@ function renderLineupSlots(){
     const cls=p?(isBlocked?'blocked-slot':rankOk?'ok':'warning'):'';
 
     let opts='<option value="">—</option>';
-    let lastGrp=undefined;
-    const grpLabels={yes:'── ✓ Ja',maybe:'── ? Vielleicht',no:'── ✗ Nein','':'── ?'};
+    let _lg2=undefined;
+    const _gl2={yes:'── ✓ Ja',maybe:'── ? Vielleicht',no:'── ✗ Nein','':'── ?'};
     for(const tp of sorted){
-      const grp=avail[tp.id]||'';
-      if(grp!==lastGrp){lastGrp=grp;opts+=`<option disabled style="color:#555;font-size:10px">${grpLabels[grp]}</option>`;}
       const bl=isPlayerBlockedForTeam(tp.id,match.teamId);
-      opts+=`<option value="${tp.id}" ${pid===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;
+      const grp=avail[tp.id]||'';
+      let sep='';if(grp!==_lg2){_lg2=grp;sep=`<option disabled style="color:var(--muted);font-size:10px">${_gl2[grp]}</option>`;}
+      opts+=sep+`<option value="${tp.id}" ${pid===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;
     }
     slotsHtml+=`<div class="lineup-slot ${cls}">
       <div class="lineup-pos">${i+1}</div>
@@ -722,5 +768,8 @@ async function runAutoLineup(){
   renderTeamContent();
 }
 </script>
+<footer style="text-align:center;padding:18px;font-size:11px;color:#333;border-top:1px solid var(--border);margin-top:40px">
+  Füchse Berlin Reinickendorf e.V. · Kapitän-App · TVBB Berlin
+</footer>
 </body>
 </html>

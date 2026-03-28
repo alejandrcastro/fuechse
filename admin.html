@@ -750,7 +750,15 @@ function getPlayerBlockStatus(playerId, catGroup){
   return{stammkaderTeam,stammkaderTeamNum,stammkaderBlocked,stammmannschaftBlocked,stammmannschaftWarned,stammmannschaftSource,blocked:catTeams.filter(t=>allBlockedIds.has(t.id)),warned:stammmannschaftWarned};
 }
 
+function lkExceedsTeam(playerId,teamId){
+  // LK > 20 rule: in Herren category, players with LK > 20 can only play in team #3+
+  const team=teamById(teamId);if(!team)return false;
+  if(team.category!=='Herren')return false;
+  const p=playerById(playerId);if(!p)return false;
+  return(p.lk||0)>20&&teamNumber(team)<3;
+}
 function isPlayerBlockedForTeam(playerId,teamId){
+  if(lkExceedsTeam(playerId,teamId))return true;
   const team=teamById(teamId);if(!team)return false;
   const status=getPlayerBlockStatus(playerId,team.category);
   return status.blocked.some(b=>b.id===teamId);
@@ -995,7 +1003,10 @@ async function confirmImport(){
             globalRank+=teamSize(catTeams[si]);
           }
         }
-        const assignTo=stammIdx>=0?catTeams.slice(0,stammIdx+1):[{id:teamId}];
+        let assignTo=stammIdx>=0?catTeams.slice(0,stammIdx+1):[{id:teamId}];
+        if((p.lk||0)>20&&p.teamCategory==='Herren'){
+          assignTo=assignTo.filter(t=>teamNumber(t)>=3);
+        }
         for(const at of assignTo){
           ptInsert.push({player_id:pid2,team_id:at.id,rank:globalRank});
         }
@@ -1080,7 +1091,15 @@ function renderTeams(){
   if(filterSel){
     const cur=filterSel.value;
     filterSel.innerHTML=`<option value="">${tr('allTeams')}</option>`+
-      [...state.teams].sort((a,b)=>a.name.localeCompare(b.name)).map(t=>`<option value="${t.id}"${cur===t.id?' selected':''}>${t.name}</option>`).join('');
+      [...state.teams].sort((a,b)=>{
+        // Sort: gender (Herren before Damen), then age (0 = base category first, then 30, 40...), then team number
+        const ga=a.category.startsWith('Damen')?1:0,gb=b.category.startsWith('Damen')?1:0;
+        if(ga!==gb)return ga-gb;
+        const aa=parseInt(a.category.replace(/^(Herren|Damen)\s*/,''))||0;
+        const ab=parseInt(b.category.replace(/^(Herren|Damen)\s*/,''))||0;
+        if(aa!==ab)return aa-ab;
+        return teamNumber(a)-teamNumber(b);
+      }).map(t=>`<option value="${t.id}"${cur===t.id?' selected':''}>${t.name}</option>`).join('');
     filterSel.value=cur;
   }
   const filterTeamId=filterSel?filterSel.value:'';
@@ -1093,7 +1112,19 @@ function renderTeams(){
     const sorted=teams.sort((a,b)=>teamNumber(a)-teamNumber(b));
     html+=`<div style="margin-bottom:6px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${cat}</div>`;
     for(const t of sorted){
-      const players=[...state.players.filter(p=>p.teamIds.includes(t.id))].sort((a,b)=>playerRankInTeam(a.id,t.id)-playerRankInTeam(b.id,t.id)||a.lk-b.lk);
+      // Show players assigned to this team whose global rank >= this team's start rank
+      const catTeams4display=state.teams.filter(x=>x.category===t.category).sort((a,b)=>teamNumber(a)-teamNumber(b));
+      const tIdx4display=catTeams4display.findIndex(x=>x.id===t.id);
+      let rankStart4display=1;
+      for(let _i=0;_i<tIdx4display;_i++)rankStart4display+=teamSize(catTeams4display[_i]);
+      const players=[...state.players.filter(p=>{
+        if(!p.teamIds.includes(t.id))return false;
+        const r=playerRankInTeam(p.id,t.id);
+        if(r!==999&&r<rankStart4display)return false;
+        // LK > 20 cannot appear in Herren teams 1 or 2
+        if(t.category==='Herren'&&(p.lk||0)>20&&teamNumber(t)<=2)return false;
+        return true;
+      })].sort((a,b)=>playerRankInTeam(a.id,t.id)-playerRankInTeam(b.id,t.id)||a.lk-b.lk);
       html+=`<div class="card" style="margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
           <div>
@@ -1109,7 +1140,7 @@ function renderTeams(){
             </div>
         </div>
         ${players.length?players.map((p,i)=>`<div class="player-row" style="padding:6px 10px;margin-bottom:4px">
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--court);min-width:18px">${p.rank??i+1}</span>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--court);min-width:18px">${playerRankInTeam(p.id,t.id)<999?playerRankInTeam(p.id,t.id):i+1}</span>
           <div class="player-avatar" style="width:24px;height:24px;font-size:9px">${initials(p.name)}</div>
           <span class="player-name" style="font-size:12px">${p.name}</span>
           <span class="year-badge">${p.year||'—'}</span>
@@ -1538,7 +1569,7 @@ async function autoLineup(matchId){
   const team=teamById(match.teamId);
   const avail=state.availability[matchId]||{};
   const size=teamSize(team);
-  const available=[...state.players.filter(p=>p.teamIds.includes(match.teamId)&&avail[p.id]==='yes'&&!isPlayerBlockedForTeam(p.id,match.teamId))].sort((a,b)=>a.lk-b.lk);
+  const available=[...state.players.filter(p=>p.teamIds.includes(match.teamId)&&avail[p.id]==='yes'&&!isPlayerBlockedForTeam(p.id,match.teamId))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
   const slots=available.slice(0,size).map(p=>p.id);
   state.lineups[matchId]=slots;
   try{await sbUpsert('lineups',[{match_id:matchId,slots}]);}catch(e){console.error(e);}
@@ -1600,7 +1631,7 @@ function renderLineup(){
     ${blockedWarnings.length?`<div class="rule-box danger">${blockedWarnings.map(w=>`<div>${w}</div>`).join('')}</div>`:''}
     ${warnings.length
       ?`<div style="background:#3d1a1a;border:1px solid var(--danger)44;border-radius:8px;padding:8px 12px;margin-bottom:9px">${warnings.map(w=>`<div style="font-size:12px;color:var(--danger)">${w}</div>`).join('')}</div>`
-      :lineup.filter(Boolean).length>=size&&!blockedWarnings.length
+      :lineup.filter(Boolean).length>=size&&!blockedWarnings.length&&lineup.filter(Boolean).every(pid=>avail[pid]==='yes')
         ?`<div style="background:#1a2d22;border:1px solid var(--court)33;border-radius:8px;padding:6px 12px;margin-bottom:9px;font-size:12px;color:var(--court)">${tr('lineupValid')}</div>`
         :''}
     <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${tr('singles')} (${size})</div>
