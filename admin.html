@@ -706,10 +706,9 @@ function teamSize(t){return t&&(t.is_4er||t.season==='Winter')?4:6}
 function getStammkaderTeam(playerId, catGroup){
   const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
   if(!catTeams.length)return null;
-  // All players are stored with their rank against team_number=1 (the first team).
-  // Use that rank to calculate which Stammkader team they belong to.
-  const firstTeam=catTeams[0];
-  const rankInCat=state.rankByTeam[playerId]?.[firstTeam.id]??playerById(playerId)?.rank??null;
+  // p.rank is the global rank from the DB — source of truth, always use this first
+  const p=playerById(playerId);
+  const rankInCat=p?.rank??null;
   if(rankInCat==null)return null;
   let remaining=rankInCat;
   for(const t of catTeams){const gs=teamSize(t);if(remaining<=gs)return t;remaining-=gs;}
@@ -750,15 +749,7 @@ function getPlayerBlockStatus(playerId, catGroup){
   return{stammkaderTeam,stammkaderTeamNum,stammkaderBlocked,stammmannschaftBlocked,stammmannschaftWarned,stammmannschaftSource,blocked:catTeams.filter(t=>allBlockedIds.has(t.id)),warned:stammmannschaftWarned};
 }
 
-function lkExceedsTeam(playerId,teamId){
-  // LK > 20 rule: in Herren category, players with LK > 20 can only play in team #3+
-  const team=teamById(teamId);if(!team)return false;
-  if(team.category!=='Herren')return false;
-  const p=playerById(playerId);if(!p)return false;
-  return(p.lk||0)>20&&teamNumber(team)<3;
-}
 function isPlayerBlockedForTeam(playerId,teamId){
-  if(lkExceedsTeam(playerId,teamId))return true;
   const team=teamById(teamId);if(!team)return false;
   const status=getPlayerBlockStatus(playerId,team.category);
   return status.blocked.some(b=>b.id===teamId);
@@ -1004,9 +995,7 @@ async function confirmImport(){
           }
         }
         let assignTo=stammIdx>=0?catTeams.slice(0,stammIdx+1):[{id:teamId}];
-        if((p.lk||0)>20&&p.teamCategory==='Herren'){
-          assignTo=assignTo.filter(t=>teamNumber(t)>=3);
-        }
+
         for(const at of assignTo){
           ptInsert.push({player_id:pid2,team_id:at.id,rank:globalRank});
         }
@@ -1120,10 +1109,7 @@ function renderTeams(){
       const players=[...state.players.filter(p=>{
         if(!p.teamIds.includes(t.id))return false;
         const r=playerRankInTeam(p.id,t.id);
-        if(r!==999&&r<rankStart4display)return false;
-        // LK > 20 cannot appear in Herren teams 1 or 2
-        if(t.category==='Herren'&&(p.lk||0)>20&&teamNumber(t)<=2)return false;
-        return true;
+        return r===999||r>=rankStart4display;
       })].sort((a,b)=>playerRankInTeam(a.id,t.id)-playerRankInTeam(b.id,t.id)||a.lk-b.lk);
       html+=`<div class="card" style="margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
@@ -1564,6 +1550,36 @@ function renderBlocking(){
 }
 
 // ── LINEUP ──
+async function confirmMatchPlayed(matchId){
+  const match=state.matches.find(m=>m.id===matchId);if(!match)return;
+  const lineup=(state.lineups[matchId]||[]).filter(Boolean);
+  if(!lineup.length)return;
+  const btn=document.getElementById(`confirm-btn-${matchId}`);
+  const statusEl=document.getElementById(`confirm-status-${matchId}`);
+  if(btn){btn.disabled=true;btn.textContent='...';}
+  setSync('ing',tr('syncIng'));
+  try{
+    for(const playerId of lineup){
+      if(!state.matchCounts[playerId])state.matchCounts[playerId]={};
+      const cur=state.matchCounts[playerId][match.teamId]||0;
+      const next=cur+1;
+      state.matchCounts[playerId][match.teamId]=next;
+      await sbUpsert('player_match_counts',[{player_id:playerId,team_id:match.teamId,matches_played:next}]);
+    }
+    setSync('ok',tr('syncOk'));
+    if(statusEl)statusEl.textContent=`✓ ${lineup.length} Spieler +1`;
+    setTimeout(()=>{if(statusEl)statusEl.textContent='';},3000);
+    renderBlocking();
+    renderLineup();
+  }catch(e){
+    setSync('err',tr('syncErr'));
+    if(statusEl)statusEl.textContent='Fehler: '+e.message;
+    console.error(e);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='✔ Spiel bestätigen & Zähler +1';}
+  }
+}
+
 async function autoLineup(matchId){
   const match=state.matches.find(m=>m.id===matchId);if(!match)return;
   const team=teamById(match.teamId);
@@ -1666,6 +1682,12 @@ function renderLineup(){
         </div>`;
       }).join('')}
     </div>
+    ${lineup.filter(Boolean).length>=size
+      ?`<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;display:flex;align-items:center;gap:10px">
+          <button class="btn btn-primary" onclick="confirmMatchPlayed('${matchId}')" id="confirm-btn-${matchId}">✔ Spiel bestätigen &amp; Zähler +1</button>
+          <span id="confirm-status-${matchId}" style="font-size:11px;color:var(--muted)"></span>
+        </div>`
+      :''}
   </div>`;
 }
 

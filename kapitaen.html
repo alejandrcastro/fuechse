@@ -358,8 +358,8 @@ function isPlayerBlockedForTeam(playerId,teamId){
 function getStammkaderTeam(playerId,catGroup){
   const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
   if(!catTeams.length)return null;
-  const firstTeam=catTeams[0];
-  const rankInCat=state.rankByTeam[playerId]?.[firstTeam.id]??playerById(playerId)?.rank??null;
+  const p=playerById(playerId);
+  const rankInCat=p?.rank??null;
   if(rankInCat==null)return null;
   let remaining=rankInCat;
   for(const t of catTeams){const gs=teamSize(t);if(remaining<=gs)return t;remaining-=gs;}
