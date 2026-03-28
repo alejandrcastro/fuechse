@@ -802,44 +802,6 @@ async function loadAll(){
       if(p&&!p.teamIds.includes(r.team_id))p.teamIds.push(r.team_id);
       if(r.rank!=null){if(!state.rankByTeam[r.player_id])state.rankByTeam[r.player_id]={};state.rankByTeam[r.player_id][r.team_id]=r.rank;}
     }
-    // Ensure players are assigned to all teams they can play in.
-    // A player with rank R in a category belongs to Stammkader team SK (calculated from R).
-    // They can play in ALL teams from #1 up to and including #SK.
-    // We discover categories from both existing teamIds AND rankByTeam entries.
-    const ptToAdd=[];
-    const allCats=[...new Set(state.teams.map(t=>t.category))];
-    for(const p of state.players){
-      // Find all categories this player has any rank data in
-      const rankedTeamIds=Object.keys(state.rankByTeam[p.id]||{});
-      const catsFromRank=[...new Set(rankedTeamIds.map(tid=>teamById(tid)?.category).filter(Boolean))];
-      const catsFromTeams=[...new Set(p.teamIds.map(tid=>teamById(tid)?.category).filter(Boolean))];
-      const cats=[...new Set([...catsFromRank,...catsFromTeams])];
-      for(const cat of cats){
-        const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
-        if(!catTeams.length)continue;
-        // Find Stammkader team via rank
-        const skTeam=getStammkaderTeam(p.id,cat);
-        if(!skTeam)continue;
-        const skNum=teamNumber(skTeam);
-        // Assign to ALL teams from #1 up to #skNum
-        for(const t of catTeams){
-          if(teamNumber(t)<=skNum&&!p.teamIds.includes(t.id)){
-            p.teamIds.push(t.id);
-            // Use the global rank already stored (it was calculated correctly at import time)
-            // propagate it to teams that are missing the rank entry
-            const globalRank=Object.values(state.rankByTeam[p.id]||{}).find(v=>v!=null)??null;
-            if(globalRank!=null){if(!state.rankByTeam[p.id])state.rankByTeam[p.id]={};state.rankByTeam[p.id][t.id]=globalRank;}
-            ptToAdd.push({player_id:p.id,team_id:t.id,rank:globalRank});
-          }
-        }
-      }
-    }
-    // Persist new assignments to DB
-    if(ptToAdd.length){
-      try{
-        for(let i=0;i<ptToAdd.length;i+=100)await sbUpsert('player_teams',ptToAdd.slice(i,i+100));
-      }catch(e){console.error('[Expand] Write FAILED:',e);}
-    }
     setSync('ok',tr('syncOk'));
     renderAll();
   }catch(e){setSync('err',tr('syncErr'));console.error(e);}
@@ -1067,9 +1029,9 @@ async function addTeam(){
   const gender=catGender(category);
   if(!name)return;
   const newTeam={id:uid(),name,liga,season,is_4er,category,team_number:teamNum,gender};
-  try{await sbUpsert('teams',[newTeam]);state.teams.push({...newTeam,teamNumber:teamNum});}catch(e){console.error(e);}
+  try{await sbUpsert('teams',[newTeam]);}catch(e){console.error(e);}
   document.getElementById('t-name').value='';document.getElementById('t-liga').value='';
-  renderTeams();renderPlayers();
+  await loadAll();
 }
 
 function renderTeams(){
@@ -1157,9 +1119,7 @@ async function editTeamSize(teamId){
 
 async function removeTeam(id){
   try{await sbDelete('teams',`id=eq.${id}`);}catch(e){console.error(e);}
-  state.teams=state.teams.filter(t=>t.id!==id);
-  state.players.forEach(p=>{p.teamIds=p.teamIds.filter(tid=>tid!==id);});
-  renderTeams();
+  await loadAll();
 }
 
 function openAssignModal(playerId){
@@ -1224,8 +1184,7 @@ async function saveAssign(playerId){
   const toAdd=newTeamIds.filter(tid=>!p.teamIds.includes(tid));
   for(const tid of toRemove){try{await sbDelete('player_teams',`player_id=eq.${playerId}&team_id=eq.${tid}`);}catch(e){console.error(e);}}
   if(toAdd.length)await sbUpsert('player_teams',toAdd.map(tid=>({player_id:playerId,team_id:tid})));
-  p.teamIds=newTeamIds;
-  closeModal('assign-modal');renderPlayers();renderTeams();renderBlocking();
+  closeModal('assign-modal');await loadAll();
 }
 
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -1482,11 +1441,7 @@ function renderBlocking(){
     const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
     if(!catTeams.length)continue;
     const groupSize=teamSize(catTeams[0]);
-    const catPlayers=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>{
-      const rankA=Math.min(...catTeams.map(t=>state.rankByTeam[a.id]?.[t.id]??999));
-      const rankB=Math.min(...catTeams.map(t=>state.rankByTeam[b.id]?.[t.id]??999));
-      return rankA-rankB;
-    });
+    const catPlayers=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>(a.rank||999)-(b.rank||999));
     if(!catPlayers.length)continue;
     anyEntry=true;
     html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court);letter-spacing:1px;margin:14px 0 8px">${cat}</div>`;
@@ -1502,10 +1457,7 @@ function renderBlocking(){
       const p=catPlayers[i];
       const status=getPlayerBlockStatus(p.id,cat);
       const counts=state.matchCounts[p.id]||{};
-      const _rankInCat2=Math.min(...catTeams.map(t=>state.rankByTeam[catPlayers[i].id]?.[t.id]??999));
-      let _r2=_rankInCat2<999?_rankInCat2:(i+1),_skTeam=catTeams[catTeams.length-1];
-      for(const _t2 of catTeams){const _gs2=teamSize(_t2);if(_r2<=_gs2){_skTeam=_t2;break;}_r2-=_gs2;}
-      const skTeam=_skTeam;
+      const skTeam=getStammkaderTeam(p.id,cat)||catTeams[catTeams.length-1];
       const cells=catTeams.map(t=>{
         const c=counts[t.id]||0;
         const isSkTeam=t.id===skTeam.id;
