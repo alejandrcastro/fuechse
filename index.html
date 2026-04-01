@@ -196,7 +196,7 @@ input::placeholder{color:var(--muted)}
   <div class="step-sub" id="sub-step3"></div>
   <div class="avail-btns">
     <button class="avail-btn yes" id="btn-yes" onclick="setAvail('yes')" data-i18n="yesBtn"></button>
-    <button class="avail-btn maybe" id="btn-maybe" onclick="setAvail('maybe')" data-i18n="maybeBtn"></button>
+    <button class="avail-btn maybe" id="btn-notfall" onclick="setAvail('notfall')" data-i18n="notfallBtn"></button>
     <button class="avail-btn no" id="btn-no" onclick="setAvail('no')" data-i18n="noBtn"></button>
   </div>
   <div class="saved-msg" id="saved-msg"></div>
@@ -222,15 +222,15 @@ const T={
     step1Ph:'Namen eingeben...',findStatus:'Lade Spieler...',
     step2Label:'Schritt 2 von 2',step2Sub:'Tippe auf ein Spiel um deine Verfügbarkeit zu bestätigen.',
     step3Sub:'Kannst du spielen?',
-    yesBtn:'✓ Ja',maybeBtn:'? Vielleicht',noBtn:'✗ Nein',
+    yesBtn:'✓ Ja',conditionalBtn:'(Ja)',notfallBtn:'Im Notfall',noBtn:'✗ Nein',
     saved:'✓ Gespeichert',saving:'Speichern...',
     backMatches:'← Zurück zu den Spielen',
     blockedWarn:'⛔ Du bist für dieses Spiel gesperrt (Stammkader / Stammmannschaft).',
     noMatches:'Keine Spiele für deine Mannschaft gefunden.',
     noPlayers:'Keine Spieler gefunden.',
-    conflictMsg:(n)=>`⚠️ Konflikt!\n\nDu hast bereits Ja gesagt für:\n${n}\n\nDieses Spiel wird als "Vielleicht" eingetragen.`,
-    sameDayMsg:(n)=>`ℹ️ Du hast am selben Tag auch zugesagt für:\n${n}\n\nTrotzdem zusagen?`,
+    priorityTitle:'Welches Spiel ist dein Hauptspiel?',priorityHint:'Du hast an diesem Tag bereits zugesagt. Wähle dein Hauptspiel — das andere wird als (Ja) eingetragen.',
     filterHint:'Tippe auf ein Team, um nur dessen Spiele zu sehen. Du siehst alle Teams, für die du spielberechtigt bist.',
+    mainTeamHint:'★ = Stammmannschaft — dein empfohlenes Team.',
   },
   es:{
     headerSub:'Disponibilidad de jugadores',
@@ -238,15 +238,15 @@ const T={
     step1Ph:'Escribí tu nombre...',findStatus:'Cargando jugadores...',
     step2Label:'Paso 2 de 2',step2Sub:'Tocá un partido para confirmar tu disponibilidad.',
     step3Sub:'¿Podés jugar?',
-    yesBtn:'✓ Sí',maybeBtn:'? Quizás',noBtn:'✗ No',
+    yesBtn:'✓ Sí',conditionalBtn:'(Sí)',notfallBtn:'Si es necesario',noBtn:'✗ No',
     saved:'✓ Guardado',saving:'Guardando...',
     backMatches:'← Volver a los partidos',
     blockedWarn:'⛔ Estás bloqueado para este partido (Stammkader / Stammmannschaft).',
     noMatches:'No hay partidos para tu equipo.',
     noPlayers:'No se encontraron jugadores.',
-    conflictMsg:(n)=>`⚠️ ¡Conflicto!\n\nYa dijiste Sí para:\n${n}\n\nEste partido se marcará como "Quizás". Por favor decidí cuál podés jugar.`,
-    sameDayMsg:(n)=>`ℹ️ También dijiste Sí el mismo día para:\n${n}\n\n¿Igual querés confirmar?`,
+    priorityTitle:'¿Cuál es tu partido principal?',priorityHint:'Ya confirmaste para otro partido ese día. Elegí cuál es tu principal — el otro quedará como (Sí).',
     filterHint:'Tocá un equipo para ver solo sus partidos. Ves todos los equipos en los que tenés Spielberechtigung.',
+    mainTeamHint:'★ = Stammmannschaft — tu equipo recomendado.',
   },
   en:{
     headerSub:'Player availability',
@@ -254,15 +254,15 @@ const T={
     step1Ph:'Type your name...',findStatus:'Loading players...',
     step2Label:'Step 2 of 2',step2Sub:'Tap a match to confirm your availability.',
     step3Sub:'Can you play?',
-    yesBtn:'✓ Yes',maybeBtn:'? Maybe',noBtn:'✗ No',
+    yesBtn:'✓ Yes',conditionalBtn:'(Yes)',notfallBtn:'If needed',noBtn:'✗ No',
     saved:'✓ Saved',saving:'Saving...',
     backMatches:'← Back to matches',
     blockedWarn:'⛔ You are blocked for this match (Stammkader / Stammmannschaft).',
     noMatches:'No matches found for your team.',
     noPlayers:'No players found.',
-    conflictMsg:(n)=>`⚠️ Conflict!\n\nYou already said Yes to:\n${n}\n\nThis match will be set to "Maybe". Please decide which one you can play.`,
-    sameDayMsg:(n)=>`ℹ️ You also said Yes on the same day to:\n${n}\n\nConfirm anyway?`,
+    priorityTitle:'Which is your main match?',priorityHint:'You already confirmed for another match that day. Choose your main one — the other will become (Yes).',
     filterHint:'Tap a team to filter matches. You see all teams you are eligible to play for (Spielberechtigt).',
+    mainTeamHint:'★ = Stammmannschaft — your recommended team.',
   }
 };
 
@@ -289,7 +289,7 @@ function applyT(){
   document.getElementById('sub-step2').textContent=tr('step2Sub');
   document.getElementById('sub-step3').textContent=tr('step3Sub');
   document.getElementById('btn-yes').textContent=tr('yesBtn');
-  document.getElementById('btn-maybe').textContent=tr('maybeBtn');
+  document.getElementById('btn-notfall').textContent=tr('notfallBtn');
   document.getElementById('btn-no').textContent=tr('noBtn');
   document.getElementById('btn-back-matches').textContent=tr('backMatches');
 }
@@ -387,10 +387,15 @@ async function loadAll(){
     }
     state.playerTeams=ptRows;
     state.rankByTeam={};
+    state.mainTeam={};
     for(const r of ptRows){
       if(r.rank!=null){
         if(!state.rankByTeam[r.player_id])state.rankByTeam[r.player_id]={};
         state.rankByTeam[r.player_id][r.team_id]=r.rank;
+      }
+      if(r.is_mainteam){
+        if(!state.mainTeam[r.player_id])state.mainTeam[r.player_id]={};
+        state.mainTeam[r.player_id][r.team_id]=true;
       }
     }
     document.getElementById('find-status').textContent='';
@@ -466,27 +471,62 @@ async function quickAvail(matchId,status,event){
   if(status==='yes'){
     const thisMatch=state.matches.find(m=>m.id===matchId);
     if(thisMatch){
-      // Same time → force maybe
-      const sameTime=state.matches.filter(m=>m.id!==matchId&&m.date===thisMatch.date&&m.time===thisMatch.time&&state.availability[m.id]?.[pid]==='yes');
-      if(sameTime.length>0){
-        alert(T[lang].conflictMsg(sameTime.map(m=>{const t=teamById(m.team_id);return`${t?.name||'?'} vs ${m.opponent}`;}).join(', ')));
-        status='maybe';
-      } else {
-        // Same day different time → warn, allow cancel
-        const sameDay=state.matches.filter(m=>m.id!==matchId&&m.date===thisMatch.date&&m.time!==thisMatch.time&&state.availability[m.id]?.[pid]==='yes');
-        if(sameDay.length>0){
-          const names=sameDay.map(m=>{const t=teamById(m.team_id);return`${t?.name||'?'} vs ${m.opponent} (${m.time})`;}).join(', ');
-          if(!confirm(T[lang].sameDayMsg(names)))return;
-        }
+      // Check for other yes/conditional on same day
+      const sameDay=state.matches.filter(m=>
+        m.id!==matchId &&
+        m.date===thisMatch.date &&
+        (state.availability[m.id]?.[pid]==='yes'||state.availability[m.id]?.[pid]==='conditional')
+      );
+      if(sameDay.length>0){
+        // Show priority modal — let player choose which is the main match
+        showPriorityModal(matchId, sameDay, pid);
+        return;
       }
     }
   }
 
+  // conditional cannot be set manually
+  if(status==='conditional')return;
+
+  await saveAvail(matchId, pid, status);
+  renderMatchList();
+}
+
+function showPriorityModal(newMatchId, existingMatches, pid){
+  const newMatch=state.matches.find(m=>m.id===newMatchId);
+  const modal=document.getElementById('priority-modal');
+  document.getElementById('priority-modal-title').textContent=tr('priorityTitle');
+  document.getElementById('priority-modal-hint').textContent=tr('priorityHint');
+  const allMatches=[newMatchId,...existingMatches.map(m=>m.id)];
+  const btns=document.getElementById('priority-modal-btns');
+  btns.innerHTML=allMatches.map(mid=>{
+    const m=state.matches.find(x=>x.id===mid);
+    const team=teamById(m.team_id);
+    const label=`${team?.name||'?'} vs ${m.opponent} · ${m.time}`;
+    return`<button onclick="applyPriority('${mid}',[${allMatches.map(x=>`'${x}'`).join(',')}],'${pid}')"
+      style="padding:11px 14px;border-radius:10px;border:1px solid var(--court);background:#1a2e26;color:var(--court);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
+      ✓ ${label}
+    </button>`;
+  }).join('');
+  modal.style.display='flex';
+}
+
+function closePriorityModal(){
+  document.getElementById('priority-modal').style.display='none';
+}
+
+async function applyPriority(mainMatchId, allMatchIds, pid){
+  closePriorityModal();
+  const saves=allMatchIds.map(mid=>saveAvail(mid, pid, mid===mainMatchId?'yes':'conditional'));
+  await Promise.all(saves);
+  renderMatchList();
+}
+
+async function saveAvail(matchId, pid, status){
   if(!state.availability[matchId])state.availability[matchId]={};
   state.availability[matchId][pid]=status;
   try{
     await sbUpsert('availability',[{match_id:matchId,player_id:pid,status}]);
-    renderMatchList();
   }catch(e){console.error(e);}
 }
 
@@ -517,12 +557,16 @@ function renderMatchList(){
       <div style="font-size:13px;color:var(--muted)">${p.lk_str||p.lkStr||''} · Jg. ${p.year||'—'}</div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
         ${teams.map(t=>{const isActive=activeTeamFilters.size===0||activeTeamFilters.has(t.id);
+          const isMT=!!(state.mainTeam[p.id]?.[t.id]);
           return`<span onclick="toggleTeamFilter('${t.id}')" style="font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;
-            background:${isActive?'rgba(116,198,157,.2)':'#1a1a1a'};border:1px solid ${isActive?'var(--court)':'#333'};color:${isActive?'var(--court)':'#555'}">${t.name}</span>`;
+            background:${isMT?'rgba(212,160,23,.15)':isActive?'rgba(116,198,157,.2)':'#1a1a1a'};
+            border:${isMT?'1.5px solid #d4a017':isActive?'1px solid var(--court)':'1px solid #333'};
+            color:${isMT?'#d4a017':isActive?'var(--court)':'#555'}">${isMT?'★ ':''} ${t.name}</span>`;
         }).join('')}
         ${activeTeamFilters.size>0?`<span onclick="toggleTeamFilter(null)" style="font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;background:#1a1a1a;border:1px solid #333;color:#555">✕ Alle</span>`:''}
       </div>
       <div style="font-size:11px;color:#555;margin-top:6px">${tr('filterHint')}</div>
+      ${teams.some(t=>state.mainTeam[p.id]?.[t.id])?`<div style="font-size:11px;color:#d4a017;margin-top:4px;opacity:.85">${tr('mainTeamHint')}</div>`:''}
     </div>
   </div>`;
   const filterIds=activeTeamFilters.size>0?teamIds.filter(id=>activeTeamFilters.has(id)):teamIds;
@@ -534,7 +578,7 @@ function renderMatchList(){
     const avail=state.availability[m.id]?.[p.id]||'';
     const d=fmtDate(m.date);
     const blocked=isBlocked(p.id,m.team_id);
-    const yes=avail==='yes',no=avail==='no',maybe=avail==='maybe';
+    const yes=avail==='yes',conditional=avail==='conditional',notfall=avail==='notfall',no=avail==='no';
     return`<div class="match-item" style="flex-direction:column;gap:10px;cursor:default">
       <div style="display:flex;align-items:center;gap:12px">
         <div style="text-align:center;min-width:40px">
@@ -550,18 +594,24 @@ function renderMatchList(){
           📅 .ics
         </button>
       </div>
-      <div style="display:flex;gap:7px">
+      <div style="display:flex;gap:6px;flex-wrap:nowrap">
         <button onclick="quickAvail('${m.id}','yes',event)"
-          class="avail-btn ${yes?'active-yes':''}"
-          style="flex:1;padding:9px 4px;border-radius:8px;border:1px solid ${yes?'var(--court)':'#2e4a42'};background:${yes?'var(--court)':'transparent'};color:${yes?'#0d1a10':'var(--court)'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
-          ✓ ${tr('yesBtn').replace('✓ ','')}</button>
-        <button onclick="quickAvail('${m.id}','maybe',event)"
-          class="avail-btn ${maybe?'active-maybe':''}"
-          style="flex:1;padding:9px 4px;border-radius:8px;border:1px solid ${maybe?'var(--warn)':'#333'};background:${maybe?'rgba(244,162,97,.15)':'transparent'};color:var(--warn);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
-          ? ${tr('maybeBtn').replace('? ','')}</button>
+          style="flex:1;padding:8px 6px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;
+            border:${avail==='conditional'?'1px dashed var(--court)':'1px solid '+( avail==='yes'?'var(--court)':'#2e4a42')};
+            background:${avail==='yes'?'var(--court)':avail==='conditional'?'rgba(116,198,157,.12)':'transparent'};
+            color:${avail==='yes'?'#0d1a10':'var(--court)'}">
+          ${avail==='conditional'?tr('conditionalBtn'):'✓ '+tr('yesBtn').replace('✓ ','')}</button>
+        <button onclick="quickAvail('${m.id}','notfall',event)"
+          style="flex:1;padding:8px 6px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;
+            border:1px solid ${avail==='notfall'?'var(--warn)':'#333'};
+            background:${avail==='notfall'?'rgba(244,162,97,.15)':'transparent'};
+            color:var(--warn)">
+          ${tr('notfallBtn')}</button>
         <button onclick="quickAvail('${m.id}','no',event)"
-          class="avail-btn ${no?'active-no':''}"
-          style="flex:1;padding:9px 4px;border-radius:8px;border:1px solid ${no?'var(--red)':'#3a2020'};background:${no?'rgba(230,57,70,.15)':'transparent'};color:var(--red);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
+          style="flex:1;padding:8px 6px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;
+            border:1px solid ${avail==='no'?'var(--red)':'#3a2020'};
+            background:${avail==='no'?'rgba(230,57,70,.15)':'transparent'};
+            color:var(--red)">
           ✗ ${tr('noBtn').replace('✗ ','')}</button>
       </div>
     </div>`;
@@ -587,22 +637,39 @@ function renderConfirm(){
     <div><div style="font-weight:600">${p.name}</div><div style="font-size:12px;color:var(--muted)">${p.lk_str||p.lkStr||''} · Jg. ${p.year||'—'}</div></div>
   </div>`;
   document.getElementById('confirm-blocked').innerHTML=blocked?`<div class="blocked-warn">${tr('blockedWarn')}</div>`:'';
-  ['yes','maybe','no'].forEach(s=>{document.getElementById('btn-'+s).classList.toggle('on',avail===s);});
+  ['yes','notfall','no'].forEach(s=>{document.getElementById('btn-'+s).classList.toggle('on',avail===s);});
+  document.getElementById('btn-yes').textContent=avail==='conditional'?tr('conditionalBtn'):'✓ '+tr('yesBtn').replace('✓ ','');
+  document.getElementById('btn-yes').style.borderStyle=avail==='conditional'?'dashed':'solid';
   document.getElementById('saved-msg').textContent=avail?tr('saved'):'';
 }
 
 async function setAvail(status){
   if(!selectedMatch||!selectedPlayer)return;
   const matchId=selectedMatch.id,playerId=selectedPlayer.id;
+  if(status==='conditional')return; // cannot set manually
   document.getElementById('saved-msg').innerHTML=`<span class="spinner"></span>${tr('saving')}`;
-  if(!state.availability[matchId])state.availability[matchId]={};
-  state.availability[matchId][playerId]=status;
-  try{
-    await sbUpsert('availability',[{match_id:matchId,player_id:playerId,status}]);
-    ['yes','maybe','no'].forEach(s=>document.getElementById('btn-'+s).classList.toggle('on',s===status));
-    document.getElementById('saved-msg').textContent=tr('saved');
-    setTimeout(()=>{if(selectedPlayer)renderMatchList();},300);
-  }catch(e){document.getElementById('saved-msg').textContent='Fehler. Bitte erneut versuchen.';console.error(e);}
+
+  if(status==='yes'){
+    const thisMatch=state.matches.find(m=>m.id===matchId);
+    if(thisMatch){
+      const sameDay=state.matches.filter(m=>
+        m.id!==matchId &&
+        m.date===thisMatch.date &&
+        (state.availability[m.id]?.[playerId]==='yes'||state.availability[m.id]?.[playerId]==='conditional')
+      );
+      if(sameDay.length>0){
+        showPriorityModal(matchId, sameDay, playerId);
+        document.getElementById('saved-msg').textContent='';
+        return;
+      }
+    }
+  }
+
+  await saveAvail(matchId, playerId, status);
+  ['yes','notfall','no'].forEach(s=>document.getElementById('btn-'+s).classList.toggle('on',s===status));
+  document.getElementById('btn-yes').textContent=status==='conditional'?tr('conditionalBtn'):'✓ '+tr('yesBtn').replace('✓ ','');
+  document.getElementById('saved-msg').textContent=tr('saved');
+  setTimeout(()=>{if(selectedPlayer)renderMatchList();},300);
 }
 
 setLang('de');
@@ -613,5 +680,14 @@ loadAll();
   Daten basieren auf öffentlichen TVBB-Informationen · Nur für interne Vereinszwecke<br>
   Sportwart der Tennisabteilung · Füchse Berlin Reinickendorf e.V.
 </footer>
+<!-- PRIORITY MODAL -->
+<div id="priority-modal" style="display:none;position:fixed;inset:0;background:#000000bb;z-index:500;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#1e1e1e;border:1px solid #333;border-radius:16px;padding:24px;width:100%;max-width:360px">
+    <div id="priority-modal-title" style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court);letter-spacing:1px;margin-bottom:8px"></div>
+    <div id="priority-modal-hint" style="font-size:12px;color:#7a9e88;margin-bottom:18px;line-height:1.5"></div>
+    <div id="priority-modal-btns" style="display:flex;flex-direction:column;gap:8px"></div>
+    <button onclick="closePriorityModal()" style="margin-top:14px;width:100%;padding:8px;border-radius:8px;border:1px solid #333;background:transparent;color:#555;font-family:inherit;font-size:13px;cursor:pointer">Abbrechen</button>
+  </div>
+</div>
 </body>
 </html>

@@ -153,7 +153,7 @@ select option{background:#1b2926}
       <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#666;display:block;margin-bottom:5px">Email</label>
       <input id="login-user" type="email" autocomplete="off"
         style="width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none"
-        placeholder="email@fuechse-berlin-reinickendorf.de"
+        placeholder="sportwart@fuechse-berlin-reinickendorf.de"
         onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
     </div>
     <div style="margin-bottom:20px">
@@ -589,7 +589,7 @@ const T={
     matchesTitle:'Partidos',matchesSub:'Calendario',team:'Equipo',opponent:'Rival',date:'Fecha',time:'Hora',
     venueType:'Sede',home:'Heimspiel',away:'Auswärtsspiel',venue:'Lugar',venuePh:'Tennisanlage...',addMatchBtn:'+ Agregar',
     availTitle:'Disponibilidad',availSub:'Vista del admin',selectMatch:'Partido',
-    yesBtn:'✓ Sí',noBtn:'✗ No',maybeBtn:'? Quizás',
+    yesBtn:'✓ Sí',conditionalBtn:'(Sí)',notfallBtn:'Si es necesario',noBtn:'✗ No',
     lineupTitle:'Alineación',lineupSub:'Asignar jugadores · Orden LK',singles:'Singles',doubles:'Dobles',
     autoLineup:'⚡ Generar automático',goAvail:'Ver disponibilidad →',
     blockingTitle:'Bloqueos',blockingSub:'Reglas Stammkader + Stammmannschaft (TVBB)',allCategories:'Todas las categorías',
@@ -627,7 +627,7 @@ const T={
     matchesTitle:'Spiele',matchesSub:'Spielkalender',team:'Mannschaft',opponent:'Gegner',date:'Datum',time:'Uhrzeit',
     venueType:'Spielort',home:'Heimspiel',away:'Auswärtsspiel',venue:'Anlage',venuePh:'Tennisanlage...',addMatchBtn:'+ Hinzufügen',
     availTitle:'Verfügbarkeit',availSub:'Admin-Ansicht',selectMatch:'Spiel',
-    yesBtn:'✓ Ja',noBtn:'✗ Nein',maybeBtn:'? Vielleicht',
+    yesBtn:'✓ Ja',conditionalBtn:'(Ja)',notfallBtn:'Im Notfall',noBtn:'✗ Nein',
     lineupTitle:'Aufstellung',lineupSub:'Spieler zuordnen · LK-Reihenfolge',singles:'Einzel',doubles:'Doppel',
     autoLineup:'⚡ Automatisch',goAvail:'Verfügbarkeit →',
     blockingTitle:'Sperren',blockingSub:'Stammkader + Stammmannschaft-Regel (TVBB)',allCategories:'Alle Kategorien',
@@ -664,7 +664,7 @@ const T={
     matchesTitle:'Matches',matchesSub:'Schedule',team:'Team',opponent:'Opponent',date:'Date',time:'Time',
     venueType:'Venue',home:'Home',away:'Away',venue:'Location',venuePh:'Tennis club...',addMatchBtn:'+ Add',
     availTitle:'Availability',availSub:'Admin view',selectMatch:'Match',
-    yesBtn:'✓ Yes',noBtn:'✗ No',maybeBtn:'? Maybe',
+    yesBtn:'✓ Yes',conditionalBtn:'(Yes)',notfallBtn:'If needed',noBtn:'✗ No',
     lineupTitle:'Lineup',lineupSub:'Assign players · LK order',singles:'Singles',doubles:'Doubles',
     autoLineup:'⚡ Auto-generate',goAvail:'View availability →',
     blockingTitle:'Blocks',blockingSub:'Stammkader + Stammmannschaft rule (TVBB)',allCategories:'All categories',
@@ -684,7 +684,7 @@ const T={
 };
 
 let lang='de';
-let state={players:[],teams:[],matches:[],availability:{},lineups:{},matchCounts:{},rankByTeam:{}};
+let state={players:[],teams:[],matches:[],availability:{},lineups:{},matchCounts:{},rankByTeam:{},mainTeam:{}};
 
 function tr(k){return T[lang][k]??T.de[k]??k}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
@@ -797,10 +797,12 @@ async function loadAll(){
       ptOffset+=1000;
     }
     state.rankByTeam={};
+    state.mainTeam={};
     for(const r of ptRows){
       const p=state.players.find(x=>x.id===r.player_id);
       if(p&&!p.teamIds.includes(r.team_id))p.teamIds.push(r.team_id);
       if(r.rank!=null){if(!state.rankByTeam[r.player_id])state.rankByTeam[r.player_id]={};state.rankByTeam[r.player_id][r.team_id]=r.rank;}
+      if(r.is_mainteam){if(!state.mainTeam[r.player_id])state.mainTeam[r.player_id]={};state.mainTeam[r.player_id][r.team_id]=true;}
     }
     setSync('ok',tr('syncOk'));
     renderAll();
@@ -1005,7 +1007,7 @@ function renderPlayers(){
     const cats=[...new Set(teams.map(t=>t.category))];
     let blockedChips='',warnChips='';
     for(const cat of cats){const{blocked,warned}=getPlayerBlockStatus(p.id,cat);for(const b of blocked)blockedChips+=`<span class="blocked-badge">⛔ ${b.name}</span>`;for(const w of warned)warnChips+=`<span class="warn-badge">⚠ ${w.name}</span>`;}
-    const teamChips=teams.map(t=>`<span class="team-chip ${t.gender==='F'?'f':'m'}">${t.name}</span>`).join('');
+    const teamChips=teams.map(t=>{const isMT=!!(state.mainTeam[p.id]?.[t.id]);return isMT?`<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:12px;background:rgba(212,160,23,.12);border:1px solid #d4a01766;color:#d4a017;white-space:nowrap">★ ${t.name}</span>`:`<span class="team-chip ${t.gender==='F'?'f':'m'}">${t.name}</span>`;}).join('');
     return`<div class="player-row">
       <div class="player-avatar">${initials(p.name)}</div>
       <div style="flex:1;min-width:100px"><div class="player-name">${p.name}</div><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">${teamChips}</div></div>
@@ -1094,6 +1096,11 @@ function renderTeams(){
           <span class="year-badge">${p.year||'—'}</span>
           <span class="lk-badge">${p.lkStr}</span>
           ${isPlayerBlockedForTeam(p.id,t.id)?`<span class="blocked-badge">⛔</span>`:''}
+          <button id="mt-btn-${p.id}-${t.id}" onclick="toggleMainTeam('${p.id}','${t.id}')"
+            title="${state.mainTeam[p.id]?.[t.id]?'Stammmannschaft — click to remove':'Set as Stammmannschaft'}"
+            style="background:${state.mainTeam[p.id]?.[t.id]?'rgba(212,160,23,.12)':'transparent'};border:${state.mainTeam[p.id]?.[t.id]?'1.5px solid #d4a017':'1px solid #333'};color:${state.mainTeam[p.id]?.[t.id]?'#d4a017':'#555'};border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s">
+            ${state.mainTeam[p.id]?.[t.id]?'★ SM':'☆'}
+          </button>
         </div>`).join(''):`<div style="color:var(--muted);font-size:12px">${tr('noTeamPlayers')}</div>`}
       </div>`;
     }
@@ -1120,6 +1127,31 @@ async function editTeamSize(teamId){
 async function removeTeam(id){
   try{await sbDelete('teams',`id=eq.${id}`);}catch(e){console.error(e);}
   await loadAll();
+}
+
+async function toggleMainTeam(playerId, teamId){
+  if(!state.mainTeam[playerId])state.mainTeam[playerId]={};
+  const cur=!!state.mainTeam[playerId][teamId];
+  const next=!cur;
+  state.mainTeam[playerId][teamId]=next;
+  const btn=document.getElementById(`mt-btn-${playerId}-${teamId}`);
+  if(btn){
+    btn.style.border=next?'1.5px solid #d4a017':'1px solid #333';
+    btn.style.color=next?'#d4a017':'#555';
+    btn.style.background=next?'rgba(212,160,23,.12)':'transparent';
+    btn.title=next?'Stammmannschaft — click to remove':'Set as Stammmannschaft';
+    btn.textContent=next?'★ SM':'☆';
+  }
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/player_teams?player_id=eq.${playerId}&team_id=eq.${teamId}`,
+      {method:'PATCH',headers:getHDR(),body:JSON.stringify({is_mainteam:next})});
+    if(!r.ok)throw new Error(await r.text());
+    setSync('ok',tr('syncOk'));
+  }catch(e){
+    state.mainTeam[playerId][teamId]=cur;
+    setSync('err',tr('syncErr'));
+    console.error(e);
+  }
 }
 
 function openAssignModal(playerId){
@@ -1182,8 +1214,22 @@ async function saveAssign(playerId){
   const newTeamIds=[...checkboxes].filter(c=>c.checked).map(c=>c.getAttribute('data-tid'));
   const toRemove=p.teamIds.filter(tid=>!newTeamIds.includes(tid));
   const toAdd=newTeamIds.filter(tid=>!p.teamIds.includes(tid));
-  for(const tid of toRemove){try{await sbDelete('player_teams',`player_id=eq.${playerId}&team_id=eq.${tid}`);}catch(e){console.error(e);}}
-  if(toAdd.length)await sbUpsert('player_teams',toAdd.map(tid=>({player_id:playerId,team_id:tid})));
+  console.log('[saveAssign] toRemove:', toRemove, 'toAdd:', toAdd);
+  for(const tid of toRemove){
+    const url=`${SB_URL}/rest/v1/player_teams?player_id=eq.${playerId}&team_id=eq.${tid}`;
+    const r=await fetch(url,{method:'DELETE',headers:{...getHDR(),'Prefer':'return=representation'}});
+    const txt=await r.text();
+    console.log('[DELETE]', r.status, txt);
+    // Verify it's really gone
+    const check=await fetch(`${SB_URL}/rest/v1/player_teams?player_id=eq.${playerId}&team_id=eq.${tid}`,{headers:getHDR()});
+    const remaining=await check.json();
+    console.log('[VERIFY after DELETE] rows remaining:', remaining.length, remaining);
+  }
+  if(toAdd.length){
+    const r=await fetch(`${SB_URL}/rest/v1/player_teams`,{method:'POST',headers:{...getHDR(),'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(toAdd.map(tid=>({player_id:playerId,team_id:tid})))});
+    const txt=await r.text();
+    console.log('[INSERT]', r.status, txt);
+  }
   closeModal('assign-modal');await loadAll();
 }
 
@@ -1306,20 +1352,20 @@ function renderAvail(){
   if(!matchId||!state.matches.find(m=>m.id===matchId)){el.innerHTML=`<div class="empty">${tr('noMatchSel')}</div>`;return;}
   const match=state.matches.find(m=>m.id===matchId);
   const avail=state.availability[matchId]||{};
-  const _availOrder={yes:0,maybe:1,'':2,no:3};
+  const _availOrder={yes:0,conditional:1,notfall:2,'':3,no:4};
   const _avail0=state.availability[matchId]||{};
   const _cat=teamById(match.teamId)?.category;
   const _catTeams=_cat?state.teams.filter(t=>t.category===_cat).sort((x,y)=>teamNumber(x)-teamNumber(y)):[];
   const tp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>{
-    const ao=_availOrder[_avail0[a.id]||'']??2;
-    const bo=_availOrder[_avail0[b.id]||'']??2;
+    const ao=_availOrder[_avail0[a.id]||'']??3;
+    const bo=_availOrder[_avail0[b.id]||'']??3;
     if(ao!==bo)return ao-bo;
     const ra=playerRankInTeam(a.id,match.teamId);
     const rb=playerRankInTeam(b.id,match.teamId);
     return ra-rb;
   });
   if(!tp.length){el.innerHTML=`<div class="empty">${tr('noTeamPlayers')}</div>`;return;}
-  const yesCount=tp.filter(p=>avail[p.id]==='yes').length;
+  const yesCount=tp.filter(p=>avail[p.id]==='yes'||avail[p.id]==='conditional').length;
   el.innerHTML=`<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">
       <div>
@@ -1336,21 +1382,24 @@ function renderAvail(){
       <tbody>
         ${(()=>{
           let _lg=undefined;
-          const _gl={yes:'✓ Ja / Yes',maybe:'? Vielleicht / Maybe',no:'✗ Nein / No','':'— Keine Angabe'};
-          const _gc={yes:'var(--court)',maybe:'var(--warn)',no:'var(--danger)','':'var(--muted)'};
+          const _gl={yes:'✓ Ja',conditional:'(Ja) — Prio II',notfall:'Im Notfall',no:'✗ Nein','':'— Keine Angabe'};
+          const _gc={yes:'var(--court)',conditional:'#52c97a',notfall:'var(--warn)',no:'var(--danger)','':'var(--muted)'};
           return tp.map((p,i)=>{
           const s=avail[p.id]||'';
           let hdr='';
           if(s!==_lg){_lg=s;hdr=`<tr><td colspan="5" style="padding:5px 12px 2px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${_gc[s]};border-top:1px solid #2e4a4233">${_gl[s]}</td></tr>`;}
           const blocked=isPlayerBlockedForTeam(p.id,match.teamId);
+          const _yesMatch=s==='conditional'?state.matches.find(om=>om.id!==matchId&&om.date===match.date&&state.availability[om.id]?.[p.id]==='yes'):null;
+          const _yesTeam=_yesMatch?teamById(_yesMatch.teamId):null;
+          const _condLabel=_yesTeam?`(Ja → ${_yesTeam.name})`:'(Ja)';
           const row=`<tr style="${blocked?'background:#2d151544':''}">
             <td style="color:var(--muted)">${playerRankInTeam(p.id,match.teamId)<999?playerRankInTeam(p.id,match.teamId):i+1}</td>
             <td><strong>${p.name}</strong>${blocked?` <span class="blocked-badge">⛔</span>`:''}</td>
             <td><span class="lk-badge">${p.lkStr}</span></td>
             <td style="color:var(--muted)">${p.year||'—'}</td>
             <td><div style="display:flex;gap:4px">
-              <button class="avail-btn yes ${s==='yes'?'active':''}" onclick="setAvail('${matchId}','${p.id}','yes')">${tr('yesBtn')}</button>
-              <button class="avail-btn maybe ${s==='maybe'?'active':''}" onclick="setAvail('${matchId}','${p.id}','maybe')">${tr('maybeBtn')}</button>
+              <button class="avail-btn yes ${s==='yes'||s==='conditional'?'active':''}" style="${s==='conditional'?'border-style:dashed':''};" onclick="setAvail('${matchId}','${p.id}','yes')">${s==='conditional'?_condLabel:tr('yesBtn')}</button>
+              <button class="avail-btn maybe ${s==='notfall'?'active':''}" onclick="setAvail('${matchId}','${p.id}','notfall')">${tr('notfallBtn')}</button>
               <button class="avail-btn no ${s==='no'?'active':''}" onclick="setAvail('${matchId}','${p.id}','no')">${tr('noBtn')}</button>
             </div></td>
           </tr>`;
@@ -1544,6 +1593,20 @@ async function autoLineup(matchId){
   goToLineup(matchId);
 }
 
+async function sortLineup(matchId){
+  const lineup=state.lineups[matchId]||[];
+  const sorted=lineup.filter(Boolean).sort((a,b)=>{
+    const match=state.matches.find(m=>m.id===matchId);
+    if(!match)return 0;
+    return playerRankInTeam(a,match.teamId)-playerRankInTeam(b,match.teamId);
+  });
+  // Pad to original length
+  while(sorted.length<lineup.length)sorted.push(null);
+  state.lineups[matchId]=sorted;
+  try{await sbUpsert('lineups',[{match_id:matchId,slots:sorted}]);}catch(e){console.error(e);}
+  renderLineup();
+}
+
 function goToLineup(matchId){
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===5));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
@@ -1614,7 +1677,7 @@ function renderLineup(){
           <select style="flex:1;background:#181818;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:4px 8px;font-size:11px;font-family:'DM Sans',sans-serif" onchange="setLineupPlayer('${matchId}',${i},this.value)">
             <option value="">—</option>
             ${(()=>{
-              const _ao2={yes:0,maybe:1,'':2,no:3};
+              const _ao2={yes:0,conditional:1,notfall:2,'':3,no:4};
               const sorted=[...allTp].sort((a,b)=>{
                 const ao=_ao2[avail[a.id]||'']??2;
                 const bo=_ao2[avail[b.id]||'']??2;
@@ -1622,7 +1685,7 @@ function renderLineup(){
                 return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);
               });
               let _lg2=undefined;
-              const _gl2={yes:'── ✓ Ja',maybe:'── ? Vielleicht',no:'── ✗ Nein','':'── ?'};
+              const _gl2={yes:'── ✓ Ja',conditional:'── (Ja)',notfall:'── Im Notfall',no:'── ✗ Nein','':'── ?'};
               return sorted.map(tp=>{
                 const bl=isPlayerBlockedForTeam(tp.id,match.teamId);
                 const grp=avail[tp.id]||'';
@@ -1634,12 +1697,28 @@ function renderLineup(){
         </div>`;
       }).join('')}
     </div>
-    ${lineup.filter(Boolean).length>=size
-      ?`<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;display:flex;align-items:center;gap:10px">
-          <button class="btn btn-primary" onclick="confirmMatchPlayed('${matchId}')" id="confirm-btn-${matchId}">✔ Spiel bestätigen &amp; Zähler +1</button>
-          <span id="confirm-status-${matchId}" style="font-size:11px;color:var(--muted)"></span>
-        </div>`
-      :''}
+    ${(()=>{
+      // Double-booking warnings: players in lineup who also appear in another team's lineup same day
+      const doubleWarnings=lineup.filter(Boolean).map(pid=>{
+        const p=playerById(pid);if(!p)return null;
+        const otherMatch=state.matches.find(om=>
+          om.id!==matchId &&
+          om.date===match.date &&
+          (state.lineups[om.id]||[]).includes(pid)
+        );
+        if(!otherMatch)return null;
+        const otherTeam=teamById(otherMatch.teamId);
+        return`⚠ ${p.name} spielt auch für <strong>${otherTeam?.name||'?'}</strong> am selben Tag`;
+      }).filter(Boolean);
+      return doubleWarnings.length?`<div class="rule-box warn" style="margin-top:10px">${doubleWarnings.map(w=>`<div>${w}</div>`).join('')}</div>`:'';
+    })()}
+    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="sortLineup('${matchId}')" style="font-size:12px">↕ Sort</button>
+      ${lineup.filter(Boolean).length>=size
+        ?`<button class="btn btn-primary" onclick="confirmMatchPlayed('${matchId}')" id="confirm-btn-${matchId}">✔ Spiel bestätigen &amp; Zähler +1</button>
+          <span id="confirm-status-${matchId}" style="font-size:11px;color:var(--muted)"></span>`
+        :''}
+    </div>
   </div>`;
 }
 
@@ -1715,7 +1794,7 @@ function renderPvConfirm(){
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px">${match?`${team?.name||'?'} vs ${match.opponent} · ${fmtDate(match.date)}`:''}</div>
     <div style="display:flex;gap:9px;flex-wrap:wrap">
       <button class="avail-btn yes ${s==='yes'?'active':''}" style="padding:9px 18px;font-size:13px" onclick="pvSetAvail('yes')">${tr('yesBtn')}</button>
-      <button class="avail-btn maybe ${s==='maybe'?'active':''}" style="padding:9px 18px;font-size:13px" onclick="pvSetAvail('maybe')">${tr('maybeBtn')}</button>
+      <button class="avail-btn maybe ${s==='notfall'?'active':''}" style="padding:9px 18px;font-size:13px" onclick="pvSetAvail('notfall')">${tr('notfallBtn')}</button>
       <button class="avail-btn no ${s==='no'?'active':''}" style="padding:9px 18px;font-size:13px" onclick="pvSetAvail('no')">${tr('noBtn')}</button>
     </div>
     <div id="pv-saved-msg" style="margin-top:12px;font-size:12px;color:var(--court);min-height:18px">${s?tr('availSaved'):''}</div>`;

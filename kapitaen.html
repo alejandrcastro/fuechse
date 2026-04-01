@@ -385,7 +385,7 @@ function getPlayerBlockStatus(playerId,catGroup){
 function setSync(s,m){const b=document.getElementById('sync-badge');b.className='sync-badge sync-'+s;b.textContent=m;}
 
 // ── STATE ──
-let state={teams:[],players:[],matches:[],availability:{},lineups:{},matchCounts:{},rankByTeam:{}};
+let state={teams:[],players:[],matches:[],availability:{},lineups:{},matchCounts:{},rankByTeam:{},mainTeam:{}};
 let selectedTeamId=null;
 let selectedMatchId=null;
 
@@ -419,10 +419,12 @@ async function loadAll(){
       ptOffset+=1000;
     }
     state.rankByTeam={};
+    state.mainTeam={};
     for(const r of ptRows){
       const p=state.players.find(x=>x.id===r.player_id);
       if(p&&!p.teamIds.includes(r.team_id))p.teamIds.push(r.team_id);
       if(r.rank!=null){if(!state.rankByTeam[r.player_id])state.rankByTeam[r.player_id]={};state.rankByTeam[r.player_id][r.team_id]=r.rank;}
+      if(r.is_mainteam){if(!state.mainTeam[r.player_id])state.mainTeam[r.player_id]={};state.mainTeam[r.player_id][r.team_id]=true;}
     }
     setSync('ok','● sync');
     renderTeamSidebar();
@@ -518,14 +520,14 @@ function renderAvailPanel(){
 
   const avail=state.availability[selectedMatchId]||{};
   const tp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>{
-    const order={yes:0,maybe:1,'':2,no:3};
-    const ao=order[avail[a.id]||'']??2, bo=order[avail[b.id]||'']??2;
+    const order={yes:0,conditional:1,notfall:2,'':3,no:4};
+    const ao=order[avail[a.id]||'']??3, bo=order[avail[b.id]||'']??3;
     if(ao!==bo)return ao-bo;
     return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);
   });
 
-  const groupLabel={yes:'✓ Ja',maybe:'? Vielleicht',no:'✗ Nein','':'— Keine Angabe'};
-  const groupColor={yes:'var(--court)',maybe:'var(--warn)',no:'var(--danger)','':'var(--muted)'};
+  const groupLabel={yes:'✓ Ja',conditional:'(Ja) — Prio II',notfall:'Im Notfall',no:'✗ Nein','':'— Keine Angabe'};
+  const groupColor={yes:'var(--court)',conditional:'#52c97a',notfall:'var(--warn)',no:'var(--danger)','':'var(--muted)'};
   let lastGroup=undefined;
   let html='';
   for(const p of tp){
@@ -535,13 +537,24 @@ function renderAvailPanel(){
       lastGroup=s;
       html+=`<div class="avail-group-label" style="color:${groupColor[s]}">${groupLabel[s]}</div>`;
     }
+    const isMainTeam=!!(state.mainTeam[p.id]?.[match.teamId]);
     html+=`<div class="avail-row">
-      <div class="avail-avatar">${initials(p.name)}</div>
+      <div class="avail-avatar" style="${isMainTeam?'background:rgba(212,160,23,.25);border:1.5px solid #d4a017':''}">${initials(p.name)}</div>
       <div style="flex:1">
-        <div class="avail-name">${p.name}${blocked?` <span class="blocked-badge">⛔</span>`:''}</div>
+        <div class="avail-name">${p.name}${isMainTeam?` <span style="font-size:10px;font-weight:700;color:#d4a017;border:1px solid #d4a01766;background:rgba(212,160,23,.1);padding:1px 6px;border-radius:8px">★ SM</span>`:''}${blocked?` <span class="blocked-badge">⛔</span>`:''}</div>
         <div class="avail-meta">${p.lkStr||''} · Jg. ${p.year||'—'} · Rang ${playerRankInTeam(p.id,match.teamId)<999?playerRankInTeam(p.id,match.teamId):'—'}</div>
       </div>
-      <span class="avail-badge ${s==='yes'?'av-yes':s==='no'?'av-no':s==='maybe'?'av-maybe':'av-open'}">${s==='yes'?'Ja':s==='no'?'Nein':s==='maybe'?'Vielleicht':'—'}</span>
+      ${(()=>{
+        let badgeLabel=s==='yes'?'✓ Ja':s==='notfall'?'Im Notfall':s==='no'?'Nein':'—';
+        if(s==='conditional'){
+          const yesMatch=state.matches.find(om=>om.id!==match.id&&om.date===match.date&&state.availability[om.id]?.[p.id]==='yes');
+          const yesTeam=yesMatch?teamById(yesMatch.teamId):null;
+          badgeLabel=yesTeam?`(Ja → ${yesTeam.name})`:'(Ja)';
+        }
+        const bg=s==='yes'?'#1a2e26':s==='conditional'?'rgba(82,201,122,.1)':s==='notfall'?'#2e2a1a':s==='no'?'#2d1a1a':'#252525';
+        const col=s==='yes'?'var(--court)':s==='conditional'?'#52c97a':s==='notfall'?'var(--warn)':s==='no'?'var(--danger)':'var(--muted)';
+        return`<span class="avail-badge" style="background:${bg};color:${col};border-radius:10px;padding:2px 8px;font-size:11px;font-weight:600">${badgeLabel}</span>`;
+      })()}
     </div>`;
   }
   document.getElementById('avail-list').innerHTML=html;
@@ -586,7 +599,7 @@ function renderLineupSlots(){
   document.getElementById('lineup-warnings').innerHTML=warnHtml;
 
   // Slots — sorted by availability then rank, with group separators (same as admin)
-  const _ao2={yes:0,maybe:1,'':2,no:3};
+  const _ao2={yes:0,conditional:1,notfall:2,'':3,no:4};
   const sorted=[...allTp].sort((a,b)=>{
     const ao=_ao2[avail[a.id]||'']??2, bo=_ao2[avail[b.id]||'']??2;
     if(ao!==bo)return ao-bo;
@@ -604,7 +617,7 @@ function renderLineupSlots(){
 
     let opts='<option value="">—</option>';
     let _lg2=undefined;
-    const _gl2={yes:'── ✓ Ja',maybe:'── ? Vielleicht',no:'── ✗ Nein','':'── ?'};
+    const _gl2={yes:'── ✓ Ja',conditional:'── (Ja)',notfall:'── Im Notfall',no:'── ✗ Nein','':'── ?'};
     for(const tp of sorted){
       const bl=isPlayerBlockedForTeam(tp.id,match.teamId);
       const grp=avail[tp.id]||'';
@@ -617,6 +630,44 @@ function renderLineupSlots(){
     </div>`;
   }
   document.getElementById('lineup-slots').innerHTML=slotsHtml;
+
+  // Double-booking warnings
+  const doubleWarnings=lineup.filter(Boolean).map(pid=>{
+    const p=playerById(pid);if(!p)return null;
+    const otherMatch=state.matches.find(om=>
+      om.id!==selectedMatchId &&
+      om.date===match.date &&
+      (state.lineups[om.id]||[]).includes(pid)
+    );
+    if(!otherMatch)return null;
+    const otherTeam=teamById(otherMatch.teamId);
+    return`⚠ ${p.name} spielt auch für <strong>${otherTeam?.name||'?'}</strong> am selben Tag`;
+  }).filter(Boolean);
+  if(doubleWarnings.length){
+    document.getElementById('lineup-warnings').innerHTML+=
+      `<div class="warn-banner" style="margin-top:6px">${doubleWarnings.map(w=>`<div>${w}</div>`).join('')}</div>`;
+  }
+
+  // Sort button
+  document.getElementById('save-indicator').insertAdjacentHTML('afterend',
+    `<div style="margin-top:8px"><button onclick="sortLineupKap()" class="auto-btn" style="font-size:12px;padding:5px 12px">↕ Sort</button></div>`
+  );
+}
+
+async function sortLineupKap(){
+  if(!selectedMatchId)return;
+  const match=state.matches.find(m=>m.id===selectedMatchId);if(!match)return;
+  const lineup=state.lineups[selectedMatchId]||[];
+  const sorted=lineup.filter(Boolean).sort((a,b)=>playerRankInTeam(a,match.teamId)-playerRankInTeam(b,match.teamId));
+  while(sorted.length<lineup.length)sorted.push(null);
+  state.lineups[selectedMatchId]=sorted;
+  document.getElementById('save-indicator').innerHTML='<span class="spinner"></span>Speichern...';
+  try{
+    await sbUpsert('lineups',[{match_id:selectedMatchId,slots:sorted}]);
+    document.getElementById('save-indicator').textContent='✓ Gespeichert';
+    setTimeout(()=>document.getElementById('save-indicator').textContent='',2000);
+  }catch(e){console.error(e);}
+  renderLineupSlots();
 }
 
 async function setSlot(pos,playerId){
