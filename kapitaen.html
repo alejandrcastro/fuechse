@@ -191,7 +191,10 @@ input:focus,select:focus{border-color:var(--court)}
             <div class="avail-panel-title" id="panel-match-title"></div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px" id="panel-match-meta"></div>
           </div>
-          <button class="auto-btn" id="auto-btn" onclick="runAutoLineup()">&#9889; Auto-Aufstellung</button>
+          <div style="display:flex;gap:6px">
+            <button class="auto-btn" id="auto-btn" onclick="runAutoLineup()">&#9889; Auto-Aufstellung</button>
+            <button class="auto-btn" id="sort-btn" onclick="sortLineupKap()" style="background:transparent;border-color:var(--court)44;color:var(--muted)">↕ Sort</button>
+          </div>
         </div>
 
         <!-- Lineup FIRST (above availability) -->
@@ -648,10 +651,6 @@ function renderLineupSlots(){
       `<div class="warn-banner" style="margin-top:6px">${doubleWarnings.map(w=>`<div>${w}</div>`).join('')}</div>`;
   }
 
-  // Sort button
-  document.getElementById('save-indicator').insertAdjacentHTML('afterend',
-    `<div style="margin-top:8px"><button onclick="sortLineupKap()" class="auto-btn" style="font-size:12px;padding:5px 12px">↕ Sort</button></div>`
-  );
 }
 
 async function sortLineupKap(){
