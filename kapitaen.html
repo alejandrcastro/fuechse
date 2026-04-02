@@ -114,6 +114,10 @@ main{padding:22px;max-width:1080px;margin:0 auto;display:grid;grid-template-colu
 @keyframes spin{to{transform:rotate(360deg)}}
 input,select{background:#111;border:1px solid var(--border2);border-radius:7px;color:var(--white);padding:7px 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;width:100%}
 input:focus,select:focus{border-color:var(--court)}
+.rule-box{background:#181818;border-left:3px solid var(--court);border-radius:0 8px 8px 0;padding:8px 12px;margin:9px 0;font-size:12px;color:var(--muted);line-height:1.6}
+.rule-box.warn{border-left-color:var(--warn)}
+.rule-box.danger{border-left-color:var(--danger)}
+.rule-box strong{color:var(--white)}
 </style>
 </head>
 <body>
@@ -157,6 +161,7 @@ input:focus,select:focus{border-color:var(--court)}
 <!-- TABS -->
 <div style="display:flex;padding:0 22px;background:#111;border-bottom:1px solid var(--border2);overflow-x:auto">
   <button id="tab-spiele" onclick="showKapTab('spiele')" style="padding:11px 18px;font-size:13px;font-weight:500;color:var(--court);cursor:pointer;border-bottom:3px solid var(--court);border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif;white-space:nowrap">Spiele &amp; Aufstellung</button>
+  <button id="tab-overview" onclick="showKapTab('overview')" style="padding:11px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif;white-space:nowrap">Overview</button>
   <button id="tab-sperren" onclick="showKapTab('sperren')" style="padding:11px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif;white-space:nowrap">Sperren</button>
 </div>
 
@@ -213,6 +218,21 @@ input:focus,select:focus{border-color:var(--court)}
         <div id="avail-list"></div>
       </div>
     </div>
+    </div>
+
+    <!-- CONTENT: Overview -->
+    <div id="view-overview" style="display:none">
+      <div class="section-title">Overview</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+        <select id="kap-overview-cat" onchange="renderKapOverview()" style="width:auto;font-size:12px;padding:5px 9px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;outline:none"></select>
+        <div style="display:flex;gap:4px;margin-left:auto">
+          <button id="kap-ov-btn-matches" onclick="setKapOverviewMode('matches')"
+            style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--court);background:var(--court);color:#0d1a10">📋 Spiele</button>
+          <button id="kap-ov-btn-players" onclick="setKapOverviewMode('players')"
+            style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border2);background:transparent;color:var(--muted)">👥 Spieler</button>
+        </div>
+      </div>
+      <div id="kap-overview-content" style="overflow-x:auto"></div>
     </div>
 
     <!-- CONTENT: Sperren (read-only) -->
@@ -358,6 +378,12 @@ function isPlayerBlockedForTeam(playerId,teamId){
   const status=getPlayerBlockStatus(playerId,team.category);
   return status.blocked.some(b=>b.id===teamId);
 }
+// For lineup display only — ignores LK>20 rule, only shows real Stammkader/SM blocks
+function isPlayerBlockedForLineup(playerId,teamId){
+  const team=teamById(teamId);if(!team)return false;
+  const status=getPlayerBlockStatus(playerId,team.category);
+  return status.blocked.some(b=>b.id===teamId);
+}
 function getStammkaderTeam(playerId,catGroup){
   const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
   if(!catTeams.length)return null;
@@ -488,7 +514,7 @@ function renderTeamContent(){
     const _lineupTeam=teamById(m.teamId);
     const _lineupSize=teamSize(_lineupTeam);
     const _slots=state.lineups[m.id]||[];
-    const hasLineup=_slots.filter(Boolean).length>=_lineupSize;
+    const hasLineup=_slots.slice(0,_lineupSize).filter(Boolean).length>=_lineupSize;
     const isActive=selectedMatchId===m.id;
     return`<div class="match-card ${isActive?'active':''}" onclick="selectMatch('${m.id}')">
       <div class="match-header">
@@ -535,7 +561,7 @@ function renderAvailPanel(){
   let html='';
   for(const p of tp){
     const s=avail[p.id]||'';
-    const blocked=isPlayerBlockedForTeam(p.id,match.teamId);
+    const blocked=isPlayerBlockedForLineup(p.id,match.teamId);
     if(s!==lastGroup){
       lastGroup=s;
       html+=`<div class="avail-group-label" style="color:${groupColor[s]}">${groupLabel[s]}</div>`;
@@ -584,11 +610,11 @@ function renderLineupSlots(){
   }
   const blockedWarnings=lineup.filter(Boolean).map(pid=>{
     const p=playerById(pid);if(!p)return null;
-    if(isPlayerBlockedForTeam(pid,match.teamId))return`⛔ ${p.name} ist gesperrt für ${team?.name||'?'}`;
+    if(isPlayerBlockedForLineup(pid,match.teamId))return`⛔ ${p.name} ist gesperrt für ${team?.name||'?'}`;
     return null;
   }).filter(Boolean);
 
-  const filledCount=lineup.filter(Boolean).length;
+  const filledCount=lineup.slice(0,size).filter(Boolean).length;
   let warnHtml='';
   if(blockedWarnings.length)warnHtml+=`<div class="warn-banner">${blockedWarnings.join('<br>')}</div>`;
   if(warnings.length)
@@ -609,38 +635,58 @@ function renderLineupSlots(){
     return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);
   });
 
+  const _gl2={yes:'── ✓ Ja',conditional:'── (Ja)',notfall:'── Im Notfall',no:'── ✗ Nein','':'── ?'};
+  function buildOpts(selectedPid){
+    let opts='<option value="">—</option>';let _lgu=undefined;
+    for(const tp of sorted){
+      const bl=isPlayerBlockedForLineup(tp.id,match.teamId);const grp=avail[tp.id]||'';
+      let sep='';if(grp!==_lgu){_lgu=grp;sep=`<option disabled style="color:var(--muted);font-size:10px">${_gl2[grp]}</option>`;}
+      opts+=sep+`<option value="${tp.id}" ${selectedPid===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;
+    }
+    return opts;
+  }
   let slotsHtml='';
   for(let i=0;i<size;i++){
     const pid=lineup[i]||'';
     const p=pid?playerById(pid):null;
     const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
     const rankOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
-    const isBlocked=pid?isPlayerBlockedForTeam(pid,match.teamId):false;
+    const isBlocked=pid?isPlayerBlockedForLineup(pid,match.teamId):false;
     const cls=p?(isBlocked?'blocked-slot':rankOk?'ok':'warning'):'';
-
-    let opts='<option value="">—</option>';
-    let _lg2=undefined;
-    const _gl2={yes:'── ✓ Ja',conditional:'── (Ja)',notfall:'── Im Notfall',no:'── ✗ Nein','':'── ?'};
-    for(const tp of sorted){
-      const bl=isPlayerBlockedForTeam(tp.id,match.teamId);
-      const grp=avail[tp.id]||'';
-      let sep='';if(grp!==_lg2){_lg2=grp;sep=`<option disabled style="color:var(--muted);font-size:10px">${_gl2[grp]}</option>`;}
-      opts+=sep+`<option value="${tp.id}" ${pid===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;
-    }
     slotsHtml+=`<div class="lineup-slot ${cls}">
       <div class="lineup-pos">${i+1}</div>
-      <select onchange="setSlot(${i},this.value)">${opts}</select>
+      <select onchange="setSlot(${i},this.value)">${buildOpts(pid)}</select>
     </div>`;
   }
+
+  // Ersatz slot
+  const ersatzPid=lineup[size]||'';
+  const ersatzP=ersatzPid?playerById(ersatzPid):null;
+  const ersatzBlocked=ersatzPid?isPlayerBlockedForLineup(ersatzPid,match.teamId):false;
+  let ersatzWarn='';
+  if(ersatzPid){
+    const otherLineup=state.matches.find(om=>om.id!==selectedMatchId&&om.date===match.date&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(ersatzPid));
+    const otherErsatz=state.matches.find(om=>om.id!==selectedMatchId&&om.date===match.date&&(state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===ersatzPid);
+    if(otherLineup){const ot=teamById(otherLineup.teamId);ersatzWarn=`⚠ Bereits Aufstellung: <strong>${ot?.name||'?'}</strong>`;}
+    else if(otherErsatz){const ot=teamById(otherErsatz.teamId);ersatzWarn=`⚠ Bereits Ersatz: <strong>${ot?.name||'?'}</strong>`;}
+  }
+  slotsHtml+=`<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)">
+    <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Ersatz</div>
+    <div class="lineup-slot ${ersatzP?(ersatzBlocked?'blocked-slot':'ok'):''}" style="opacity:.85;border-style:dashed">
+      <div class="lineup-pos" style="color:var(--muted)">E</div>
+      <select onchange="setSlot(${size},this.value)">${buildOpts(ersatzPid)}</select>
+    </div>
+    ${ersatzWarn?`<div class="warn-banner" style="margin-top:6px;font-size:11px">${ersatzWarn}</div>`:''}
+  </div>`;
+
   document.getElementById('lineup-slots').innerHTML=slotsHtml;
 
-  // Double-booking warnings
-  const doubleWarnings=lineup.filter(Boolean).map(pid=>{
+  // Double-booking warnings for main lineup
+  const doubleWarnings=lineup.slice(0,size).filter(Boolean).map(pid=>{
     const p=playerById(pid);if(!p)return null;
     const otherMatch=state.matches.find(om=>
-      om.id!==selectedMatchId &&
-      om.date===match.date &&
-      (state.lineups[om.id]||[]).includes(pid)
+      om.id!==selectedMatchId&&om.date===match.date&&
+      (state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(pid)
     );
     if(!otherMatch)return null;
     const otherTeam=teamById(otherMatch.teamId);
@@ -690,19 +736,18 @@ async function setSlot(pos,playerId){
 function showKapTab(tab){
   document.getElementById('view-spiele').style.display=tab==='spiele'?'block':'none';
   document.getElementById('view-sperren').style.display=tab==='sperren'?'block':'none';
-  const btnSpiele=document.getElementById('tab-spiele');
-  const btnSperren=document.getElementById('tab-sperren');
-  btnSpiele.style.color=tab==='spiele'?'var(--court)':'var(--muted)';
-  btnSpiele.style.borderBottomColor=tab==='spiele'?'var(--court)':'transparent';
-  btnSperren.style.color=tab==='sperren'?'var(--court)':'var(--muted)';
-  btnSperren.style.borderBottomColor=tab==='sperren'?'var(--court)':'transparent';
-  // Hide sidebar and let content span full width on Sperren tab
+  document.getElementById('view-overview').style.display=tab==='overview'?'block':'none';
+  ['spiele','sperren','overview'].forEach(t=>{
+    const btn=document.getElementById('tab-'+t);
+    if(btn){btn.style.color=tab===t?'var(--court)':'var(--muted)';btn.style.borderBottomColor=tab===t?'var(--court)':'transparent';}
+  });
   const sidebar=document.getElementById('main-sidebar');
   const wrapper=document.getElementById('main-content-wrapper');
-  if(tab==='sperren'){
+  if(tab==='sperren'||tab==='overview'){
     sidebar.style.display='none';
     wrapper.style.gridColumn='1/-1';
-    renderBlocking();
+    if(tab==='sperren')renderBlocking();
+    if(tab==='overview')renderKapOverview();
   } else {
     sidebar.style.display='';
     wrapper.style.gridColumn='';
@@ -720,25 +765,22 @@ function renderBlocking(){
   const filterCat=catSel?.value||'';
   const catsToShow=filterCat?[filterCat]:cats;
   let html=`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <div style="background:#181818;border-left:3px solid var(--court);border-radius:0 8px 8px 0;padding:8px 12px;margin:9px 0;font-size:12px;color:var(--muted);line-height:1.6;flex:1"><strong style="color:var(--white)">Stammkader:</strong> Pos. 1–6 (Sommer) / 1–4 (Winter) → Mannschaft 1, usw. Spieler dürfen nicht in niedrigere Mannschaft der Kategorie.</div>
-    <div style="background:#181818;border-left:3px solid var(--warn);border-radius:0 8px 8px 0;padding:8px 12px;margin:9px 0;font-size:12px;color:var(--muted);line-height:1.6;flex:1"><strong style="color:var(--white)">Stammmannschaft:</strong> 2 Spiele in einer Mannschaft → gesperrt für alle niedrigeren in dieser Kategorie.</div>
+    <div class="rule-box" style="flex:1;margin:0"><strong>Stammkader:</strong> Pos. 1–6 (Sommer) / 1–4 (Winter) → Mannschaft 1, usw. Spieler dürfen nicht in niedrigere Mannschaft der Kategorie.</div>
+    <div class="rule-box warn" style="flex:1;margin:0"><strong>Stammmannschaft:</strong> 2 Spiele in einer Mannschaft → gesperrt für alle niedrigeren in dieser Kategorie.</div>
   </div>`;
   let anyEntry=false;
   for(const cat of catsToShow){
     const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
     if(!catTeams.length)continue;
-    const catPlayers=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>{
-      const rankA=Math.min(...catTeams.map(t=>state.rankByTeam[a.id]?.[t.id]??999));
-      const rankB=Math.min(...catTeams.map(t=>state.rankByTeam[b.id]?.[t.id]??999));
-      return rankA-rankB;
-    });
+    const groupSize=teamSize(catTeams[0]);
+    const catPlayers=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>(a.rank||999)-(b.rank||999));
     if(!catPlayers.length)continue;
     anyEntry=true;
     html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court);letter-spacing:1px;margin:14px 0 8px">${cat}</div>`;
-    html+=`<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0;overflow:hidden;overflow-x:auto;margin-bottom:10px">`;
+    html+=`<div class="card" style="padding:0;overflow:hidden;overflow-x:auto;margin-bottom:10px">`;
     html+=`<table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr style="border-bottom:1px solid #2e4a42">
-        <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);min-width:140px">Spieler</th>
+        <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);min-width:160px">Spieler</th>
         <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:10px">LK</th>
         <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:10px">Jg.</th>
         ${catTeams.map(t=>`<th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--court);font-size:11px;white-space:nowrap">${t.name}${t.is_4er?' <span style="font-size:9px;color:var(--warn)">(4er)</span>':''}</th>`).join('')}
@@ -747,10 +789,7 @@ function renderBlocking(){
       const p=catPlayers[i];
       const status=getPlayerBlockStatus(p.id,cat);
       const counts=state.matchCounts[p.id]||{};
-      const _rankInCat=Math.min(...catTeams.map(t=>state.rankByTeam[p.id]?.[t.id]??999));
-      let _r=_rankInCat<999?_rankInCat:(i+1),_skTeam=catTeams[catTeams.length-1];
-      for(const _t of catTeams){const _gs=teamSize(_t);if(_r<=_gs){_skTeam=_t;break;}_r-=_gs;}
-      const skTeam=_skTeam;
+      const skTeam=getStammkaderTeam(p.id,cat)||catTeams[catTeams.length-1];
       const cells=catTeams.map(t=>{
         const c=counts[t.id]||0;
         const isSkTeam=t.id===skTeam.id;
@@ -760,33 +799,34 @@ function renderBlocking(){
         const isAssigned=p.teamIds.includes(t.id);
         let bg='',txt='',label='',title='';
         if(isSkTeam){bg='background:#1a2d3d';txt='color:var(--info)';label='SK';title='Stammkader';}
-        if(isSmBlocked&&isSkBlocked){bg='background:#3d1a1a';txt='color:var(--danger)';label=`&#9940;${c>0?` (${c})`:''}`;title='SK + SM';}
+        if(isSmBlocked&&isSkBlocked){bg='background:#3d1a1a';txt='color:var(--danger)';label=`⛔${c>0?` (${c})`:''}`;title='SK + SM';}
         else if(isSmBlocked){
           const supSum=catTeams.filter(s=>teamNumber(s)<teamNumber(t)).reduce((a,s)=>(state.matchCounts[p.id]?.[s.id]||0)+a,0);
-          bg='background:#2d1a1a';txt='color:var(--danger)';label=`SM (${supSum})`;title=`${supSum}x in oberen Mannschaften`;}
-        else if(isSkBlocked){bg='background:#1a1a2d';txt='color:#a78bfa';label='SK&#9940;';title='Stammkader gesperrt';}
+          bg='background:#2d1a1a';txt='color:var(--danger)';label=`SM (${supSum})`;title=`${supSum}× in oberen Mannschaften`;}
+        else if(isSkBlocked){bg='background:#1a1a2d';txt='color:#a78bfa';label='SK⛔';title='Stammkader gesperrt';}
         else if(isSmWarned){
           const supSum=catTeams.filter(s=>teamNumber(s)<teamNumber(t)).reduce((a,s)=>(state.matchCounts[p.id]?.[s.id]||0)+a,0);
-          bg='background:#2d2215';txt='color:var(--warn)';label=`&#9888; ${supSum}/2`;title=`${supSum}x in oberen Mannschaften`;}
-        else if(c>0){txt='color:var(--court)';label=`${c}x`;}
+          bg='background:#2d2215';txt='color:var(--warn)';label=`⚠ ${supSum}/2`;title=`${supSum}× in oberen Mannschaften`;}
+        else if(c>0){txt='color:var(--court)';label=`${c}×`;}
         else if(isAssigned){txt='color:var(--muted)';label='—';}
         else{txt='color:#2e4a42';label='·';}
         return`<td style="padding:7px 8px;text-align:center;border-left:1px solid #2e4a4222;${bg}" title="${title}"><span style="font-size:11px;font-weight:600;${txt}">${label}</span></td>`;
       }).join('');
-      html+=`<tr style="border-bottom:1px solid #2e4a4222">
+      const rowBg=status.blocked.length>0?'background:#1e1e1e':'';
+      html+=`<tr style="border-bottom:1px solid #2e4a4222;${rowBg}">
         <td style="padding:7px 12px;white-space:nowrap"><div style="font-weight:600;font-size:12px">${p.name}</div></td>
-        <td style="padding:7px 8px;text-align:center"><span style="background:#1a2e26;color:var(--court);border:1px solid var(--court)33;font-size:10px;font-weight:700;padding:2px 5px;border-radius:5px">${p.lkStr||'?'}</span></td>
+        <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:10px">${p.lkStr||'?'}</span></td>
         <td style="padding:7px 8px;text-align:center;font-size:11px;color:var(--muted)">${p.year||'—'}</td>
         ${cells}
       </tr>`;
     }
     html+=`</tbody></table>
       <div style="padding:8px 12px;display:flex;gap:10px;flex-wrap:wrap;border-top:1px solid #2e4a42">
-        <span style="font-size:10px;color:var(--info)">&#9632; SK = Stammkader</span>
-        <span style="font-size:10px;color:#a78bfa">&#9632; SK&#9940; = Stammkader gesperrt</span>
-        <span style="font-size:10px;color:var(--danger)">&#9632; SM = Stammmannschaft gesperrt</span>
-        <span style="font-size:10px;color:var(--warn)">&#9632; &#9888; = 1 Spiel</span>
-        <span style="font-size:10px;color:var(--court)">&#9632; Zahl = Spiele</span>
+        <span style="font-size:10px;color:var(--info)">■ SK = Stammkader</span>
+        <span style="font-size:10px;color:#a78bfa">■ SK⛔ = Stammkader gesperrt</span>
+        <span style="font-size:10px;color:var(--danger)">■ SM = Stammmannschaft gesperrt</span>
+        <span style="font-size:10px;color:var(--warn)">■ ⚠ = 1 Spiel</span>
+        <span style="font-size:10px;color:var(--court)">■ Zahl = Spiele</span>
       </div></div>`;
   }
   if(!anyEntry)html+=`<div class="empty">Keine Sperren</div>`;
@@ -801,7 +841,7 @@ async function runAutoLineup(){
   const available=[...state.players.filter(p=>
     p.teamIds.includes(match.teamId)&&
     avail[p.id]==='yes'&&
-    !isPlayerBlockedForTeam(p.id,match.teamId)
+    !isPlayerBlockedForLineup(p.id,match.teamId)
   )].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
   const slots=Array.from({length:size},(_,i)=>available[i]?.id||null);
   state.lineups[selectedMatchId]=slots;
@@ -816,6 +856,190 @@ async function runAutoLineup(){
   }
   renderLineupSlots();
   renderTeamContent();
+}
+
+// ── KAPITÄN OVERVIEW ──
+let _kapOvMode='matches';
+function setKapOverviewMode(mode){
+  _kapOvMode=mode;
+  const bm=document.getElementById('kap-ov-btn-matches');
+  const bp=document.getElementById('kap-ov-btn-players');
+  if(bm){bm.style.background=mode==='matches'?'var(--court)':'transparent';bm.style.color=mode==='matches'?'#0d1a10':'var(--muted)';bm.style.borderColor=mode==='matches'?'var(--court)':'var(--border2)';}
+  if(bp){bp.style.background=mode==='players'?'var(--court)':'transparent';bp.style.color=mode==='players'?'#0d1a10':'var(--muted)';bp.style.borderColor=mode==='players'?'var(--court)':'var(--border2)';}
+  renderKapOverview();
+}
+
+function renderKapOverview(){
+  const cats=[...new Set(state.teams.map(t=>t.category))].sort();
+  const sel=document.getElementById('kap-overview-cat');
+  if(sel){
+    const cur=sel.value||cats[0]||'';
+    sel.innerHTML=cats.map(c=>`<option value="${c}" ${cur===c?'selected':''}>${c}</option>`).join('');
+    if(!sel.value&&cats.length)sel.value=cats[0];
+  }
+  const cat=sel?.value||'';
+  if(!cat)return;
+  if(_kapOvMode==='matches'){renderKapOverviewMatches(cat);return;}
+  const el=document.getElementById('kap-overview-content');
+  const teams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!matches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
+  const dates=[...new Set(matches.map(m=>m.date))].sort();
+  const players=[...state.players.filter(p=>p.teamIds.some(tid=>teams.find(t=>t.id===tid)))]
+    .sort((a,b)=>(a.rank||999)-(b.rank||999));
+
+  const legendLabels={de:['Aufstellung','Ersatz','Verfügbar','Im Notfall','Nein','★ Stammmannschaft'],es:['Aufstellung','Ersatz','Disponible','Si necesario','No','★ Stammmannschaft'],en:['Lineup','Ersatz','Available','If needed','No','★ Stammmannschaft']};
+  const ll=legendLabels['de'];
+  const legendColors=['var(--court)','var(--muted)','#52c97a','var(--warn)','var(--danger)','#d4a017'];
+  let html=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:8px 12px;background:#181818;border-radius:8px;font-size:11px">
+    ${ll.map((l,i)=>`<span style="color:${legendColors[i]}">■ ${l}</span>`).join('')}
+  </div>`;
+
+  html+=`<table style="border-collapse:collapse;font-size:12px;min-width:100%">
+    <thead><tr style="border-bottom:1px solid var(--border2)">
+      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:160px">Spieler</th>
+      <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:10px">LK</th>
+      ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
+    </tr></thead><tbody>`;
+
+  for(const p of players){
+    const smTeams=teams.filter(t=>state.mainTeam[p.id]?.[t.id]);
+    const smLabel=smTeams.length?smTeams.map(t=>t.name).join(', '):null;
+    html+=`<tr style="border-bottom:1px solid var(--border)22">
+      <td style="padding:7px 12px;white-space:nowrap">
+        <span style="font-weight:600">${p.name}</span>
+        ${smLabel?`<span style="font-size:9px;color:#d4a017;margin-left:4px">★ ${smLabel}</span>`:''}
+      </td>
+      <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:10px">${p.lkStr||'?'}</span></td>`;
+    for(const d of dates){
+      const dayMatches=matches.filter(m=>m.date===d&&p.teamIds.includes(m.teamId)).sort((a,b)=>teamNumber(teamById(a.teamId)||{})-teamNumber(teamById(b.teamId)||{}));
+      if(!dayMatches.length){html+=`<td style="padding:7px 10px;text-align:center;color:var(--border2)">—</td>`;continue;}
+      function shortName(t){
+        if(!t)return'?';
+        return t.name.replace('Herren','H').replace('Damen','D').replace('Senioren','Sen').replace('Seniorinnen','SenF').trim();
+      }
+      let cellHtml='<td style="padding:4px 6px;text-align:center;min-width:80px"><div style="display:flex;flex-direction:column;gap:3px">';
+      for(const m of dayMatches){
+        const team=teamById(m.teamId);
+        const sz=teamSize(team);
+        const slots=state.lineups[m.id]||[];
+        const inLineup=slots.slice(0,sz).includes(p.id);
+        const isErsatz=slots[sz]===p.id;
+        const avail=state.availability[m.id]?.[p.id]||'';
+        const sn=shortName(team);
+        let bg,col,icon,sublabel;
+        if(inLineup){bg='#1a2e26';col='var(--court)';icon='✓';sublabel=sn;}
+        else if(isErsatz){bg='#252525';col='var(--muted)';icon='E';sublabel=sn;}
+        else if(avail==='yes'){bg='#1a2a1a';col='#52c97a';icon='Ja';sublabel=sn;}
+        else if(avail==='conditional'){bg='rgba(82,201,122,.08)';col='#52c97a';icon='(Ja)';sublabel=sn;}
+        else if(avail==='notfall'){bg='#2e2a1a';col='var(--warn)';icon='Notfall';sublabel=sn;}
+        else if(avail==='no'){bg='#2d1a1a';col='var(--danger)';icon='✗';sublabel=sn;}
+        else{bg='transparent';col='#444';icon='?';sublabel=sn;}
+        cellHtml+=`<div style="background:${bg};border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600;color:${col};white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:6px">
+          <span style="opacity:.7;font-size:9px;font-weight:500">${sublabel}</span>
+          <span>${icon}</span>
+        </div>`;
+      }
+      cellHtml+='</div></td>';
+      html+=cellHtml;
+    }
+    html+='</tr>';
+  }
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+function goToMatchKap(matchId){
+  const m=state.matches.find(x=>x.id===matchId);if(!m)return;
+  showKapTab('spiele');
+  selectTeam(m.teamId);
+  selectMatch(matchId);
+  document.getElementById('avail-panel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function renderKapOverviewMatches(cat){
+  const el=document.getElementById('kap-overview-content');
+  const teams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!matches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
+  const dates=[...new Set(matches.map(m=>m.date))].sort();
+  const allCatPlayers=state.players.filter(p=>p.teamIds.some(tid=>teams.find(t=>t.id===tid)));
+  function getFirstName(p){
+    if(!p)return'—';
+    const rn=p.rawName||p.raw_name||p.name;
+    if(rn.includes(','))return rn.split(',')[1].trim().split(' ')[0];
+    return p.name.trim().split(' ')[0];
+  }
+  function getLastInitials(p){
+    if(!p)return'';
+    const rn=p.rawName||p.raw_name||p.name;
+    const surname=rn.includes(',')?rn.split(',')[0].trim():p.name.trim().split(' ').slice(1).join(' ');
+    return surname.split(/[ -]+/).map(w=>w[0]).join('.')+'.';
+  }
+  const catFirstNameCounts={};
+  for(const cp of allCatPlayers){const fn=getFirstName(cp);catFirstNameCounts[fn]=(catFirstNameCounts[fn]||0)+1;}
+  function shortPN(p){
+    if(!p)return'—';
+    const fn=getFirstName(p);
+    if(catFirstNameCounts[fn]>1)return`${fn} ${getLastInitials(p)}`;
+    return fn;
+  }
+
+  let html=`<table style="border-collapse:collapse;font-size:12px;min-width:100%">
+    <thead><tr style="border-bottom:1px solid var(--border2)">
+      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:100px">Team</th>
+      ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
+    </tr></thead><tbody>`;
+
+  for(const team of teams){
+    html+=`<tr style="border-top:2px solid var(--border2)">
+      <td style="padding:8px 12px;font-weight:600;color:var(--court);white-space:nowrap;vertical-align:top">${team.name}</td>`;
+    for(const d of dates){
+      const m=matches.find(x=>x.teamId===team.id&&x.date===d);
+      if(!m){html+=`<td style="padding:8px 10px;text-align:center;color:var(--border2);vertical-align:top">—</td>`;continue;}
+      const sz=teamSize(team);
+      const slots=state.lineups[m.id]||[];
+      const mainSlots=slots.slice(0,sz);
+      const filled=mainSlots.filter(Boolean).length;
+      const complete=filled>=sz;
+      const partial=filled>0&&!complete;
+      const bg=complete?'#1a2e26':partial?'#2d2215':'#1a1a1a';
+      const col=complete?'var(--court)':partial?'var(--warn)':'var(--muted)';
+      const icon=complete?'✓':partial?'⏳':'·';
+      const ersatzPid=slots[sz]||null;
+      let playersHtml='';
+      for(let i=0;i<sz;i++){
+        const pid=mainSlots[i];
+        const p=pid?playerById(pid):null;
+        playersHtml+=`<div style="font-size:10px;padding:1px 0;color:${p?'var(--white)':'#2e4a42'};display:flex;gap:4px;align-items:center">
+          <span style="color:var(--muted);min-width:12px;font-size:9px">${i+1}.</span>
+          <span>${shortPN(p)}</span>
+        </div>`;
+      }
+      if(ersatzPid){
+        const ep=playerById(ersatzPid);
+        if(ep)playersHtml+=`<div style="font-size:10px;padding:2px 0;border-top:1px dashed var(--border2);margin-top:2px;color:var(--muted);display:flex;gap:4px;align-items:center">
+          <span style="color:#444;min-width:12px;font-size:9px">E.</span>
+          <span>${shortPN(ep)}</span>
+        </div>`;
+      }
+      html+=`<td style="padding:6px 8px;vertical-align:top">
+        <div onclick="goToMatchKap('${m.id}')" style="cursor:pointer;background:${bg};border-radius:8px;padding:6px 8px;min-width:100px">
+          <div style="font-size:11px;font-weight:600;color:${col};margin-bottom:4px">${icon} ${(m.opponent||'').substring(0,12)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:5px">${m.time} · ${m.home==='Heim'?'H':'A'} · ${filled}/${sz}</div>
+          <div style="border-top:1px solid var(--border2);padding-top:4px">${playersHtml}</div>
+        </div>
+      </td>`;
+    }
+    html+='</tr>';
+  }
+  html+='</tbody></table>';
+  html+=`<div style="margin-top:10px;display:flex;gap:12px;font-size:11px;flex-wrap:wrap">
+    <span style="color:var(--court)">■ Vollständig</span>
+    <span style="color:var(--warn)">■ Teilweise</span>
+    <span style="color:var(--muted)">■ Offen</span>
+  </div>`;
+  el.innerHTML=html;
 }
 </script>
 <footer style="text-align:center;padding:18px;font-size:11px;color:#333;border-top:1px solid var(--border);margin-top:40px">
