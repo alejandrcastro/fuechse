@@ -12,6 +12,7 @@
   --white:#f0f7f2;--dark:#1e2d24;--mid:#263b2e;--muted:#7a9e88;
   --line:#2e4a38;--warn:#f4a261;--court:#52b788;
   --card:#243330;
+  --_a:'fe4d13ebc8af156b';
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);min-height:100vh}
@@ -121,11 +122,16 @@ input::placeholder{color:var(--muted)}
 </div>
 <script>
 (function(){
-  const PW='schlauerfuchs';const KEY='fcb_spieler_auth';
+  const _c='01612cccec019602';
+  const KEY='fcb_spieler_auth';
   if(sessionStorage.getItem(KEY)==='ok'){document.getElementById('sp-login').style.display='none';}
-  window.spLogin=function(){
+  window.spLogin=async function(){
+    const _d='59699dc4b9a79a54';
     const pw=document.getElementById('sp-pw').value;
-    if(pw===PW){
+    const _h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));
+    const hex=Array.from(new Uint8Array(_h)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    const _ref=getComputedStyle(document.documentElement).getPropertyValue('--_a').trim().replace(/'/g,'')+_b+_c+_d;
+    if(hex===_ref){
       sessionStorage.setItem(KEY,'ok');
       const o=document.getElementById('sp-login');
       o.style.opacity='0';o.style.transition='opacity .3s';
@@ -210,6 +216,7 @@ input::placeholder{color:var(--muted)}
 <script>
 const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
 const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
+const _b='17aa79be6d26e795';
 const HDR={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 
 async function sbGet(t,p=''){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{headers:{...HDR,'Prefer':''}});if(!r.ok)throw new Error(await r.text());return r.json();}
