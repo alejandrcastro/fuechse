@@ -1,125 +1,168 @@
-# Füchse Berlin Reinickendorf — Club Manager
+# Club Manager — Füchse Berlin Reinickendorf e.V.
 
-A lightweight tennis club management tool built for [Füchse Berlin Reinickendorf e.V.](https://www.fuechse-berlin-reinickendorf.de), designed to handle team rosters, match scheduling, player availability, and lineup planning according to TVBB Berlin competition rules.
+Tennis club management system for tracking availability, lineups, and TVBB Berlin regulatory blocks.
 
 ---
 
 ## Overview
 
-The app consists of two single-file HTML applications that run entirely in the browser and connect to a [Supabase](https://supabase.com) backend.
-
-| File | Purpose | Access |
-|------|---------|--------|
-| `admin.html` | Club administrator view — import, manage, plan | Login required (Supabase Auth) |
-| `index.html` | Player availability app — find yourself, confirm matches | Password protected |
-
-No build step, no framework, no server required. Deploy to any static host (e.g. GitHub Pages).
+Club Manager is a standalone web application made up of three independent HTML files, each targeting a different role within the club. No framework, bundler, or dedicated server required — everything runs directly in the browser, connected to a Supabase backend.
 
 ---
 
-## Features
+## Files
 
-### Admin (`admin.html`)
-
-**PDF Import**
-- **Namentliche Mannschaftsmeldung** — imports players and team assignments directly from the official TVBB PDF. Automatically assigns each player to all teams they are eligible for within their category (Stammkader rule).
-- **ResultReport** — imports teams and leagues from the Ergebnistabellen PDF.
-- **Begegnungen** — imports the full match schedule, filtering out junior matches automatically.
-
-**Players**
-- Full roster view sorted by LK, filterable by team, gender, and blocking status.
-- Manual team assignment and match count adjustment.
-
-**Teams**
-- Manage teams with category, league, season (Sommer/Winter), and group size (6er/4er).
-
-**Matches**
-- Full schedule view with availability progress per match.
-- Opens the player availability view inline.
-
-**Verfügbarkeit (Availability)**
-- Per-match availability overview, filterable by category.
-- Players grouped by response (Ja → Vielleicht → Nein), sorted by rank within each group.
-
-**Aufstellung (Lineup)**
-- Assign players to lineup slots, filterable by category.
-- Auto-generate lineup from available, non-blocked players.
-- LK order validation and blocking warnings.
-- Dropdown menus grouped by availability.
-
-**Sperren (Blocking)**
-- Cross-table view of all players × teams per category.
-- Implements both TVBB blocking rules:
-  - **Stammkader** (§10 Abs. 1): based on position in the Namentliche Mannschaftsmeldung.
-  - **Stammmannschaft** (§10 Abs. 2): cumulative matches played across superior teams within a category.
-
----
-
-### Player App (`index.html`)
-
-- Search by name with autocomplete.
-- See all matches across all eligible teams.
-- Toggle team chips to filter which matches are shown (multi-select).
-- Confirm availability directly from the match list (Ja / Vielleicht / Nein).
-- Download individual matches as `.ics` calendar events.
-- Conflict detection: same time → auto-downgrade to Vielleicht; same day different time → warning with option to confirm.
-- Available in German, Spanish, and English.
-
----
-
-## Rules Implemented
-
-The blocking logic follows the TVBB Wettspielordnung (April 2024):
-
-**§10 Abs. 1 — Stammkader**
-Players are assigned to teams by their position in the Namentliche Mannschaftsmeldung. Positions 1–6 (or 1–4 for 4er-teams) belong to team 1, the next group to team 2, and so on. A Stammspieler of a higher team has no Spielberechtigung for lower-numbered teams within the same category.
-
-**§10 Abs. 2 — Stammmannschaft**
-A player may be used as a substitute (Ersatzspieler) in a higher team only once. The blocking threshold is cumulative: the sum of all matches played in teams with a lower team number than team X determines eligibility for team X. Two or more such matches → gesperrt. One match → Verwarnung (⚠).
-
----
-
-## Database
-
-Powered by [Supabase](https://supabase.com). The schema includes the following tables:
-
-`teams` · `players` · `player_teams` · `matches` · `availability` · `lineups` · `player_match_counts`
-
-Key columns:
-- `teams.is_4er` — boolean, marks Sommer teams with 4-player groups (Damen 55+, Herren 65+, etc.)
-- `player_teams.rank` — the player's position within their category from the Namentliche Mannschaftsmeldung
-
-Row Level Security (RLS) can be configured to allow public reads and restrict writes to authenticated users only.
+| File | Role | Access |
+|---|---|---|
+| `admin.html` | Sportwart (full admin) | Login with email/password |
+| `kapitaen.html` | Team captain | Login with email/password |
+| `index.html` | Player (confirm availability) | Shared club password |
 
 ---
 
 ## Tech Stack
 
-- Vanilla HTML/CSS/JavaScript — no framework, no build step
-- [PDF.js](https://mozilla.github.io/pdf.js/) 3.11.174 — PDF parsing
-- [Supabase JS](https://supabase.com/docs/reference/javascript) — database and authentication
-- [Bebas Neue](https://fonts.google.com/specimen/Bebas+Neue) + [DM Sans](https://fonts.google.com/specimen/DM+Sans) — typography
+- **Frontend:** Plain HTML, CSS and JavaScript — no frameworks, no build step
+- **Backend:** [Supabase](https://supabase.com) — PostgreSQL with direct REST API
+- **PDF parsing:** PDF.js — import of official TVBB Berlin documents
+- **Fonts:** Bebas Neue + DM Sans (Google Fonts)
 
 ---
 
-## Deployment
+## Database (Supabase)
 
-The two files can be deployed to any static host. GitHub Pages works out of the box:
+Project: `kepbpcttbvkbcckqoecv.supabase.co`
 
-1. Push `admin.html` and `index.html` to a repository.
-2. Enable GitHub Pages from the repository settings.
-3. `index.html` is the public player URL; `admin.html` requires login.
+### Tables
+
+| Table | Description |
+|---|---|
+| `players` | Club roster — LK, birth year, gender, IDnr, global rank |
+| `teams` | Mannschaften — category, league, number, season |
+| `matches` | Matches — date, time, opponent, venue |
+| `player_teams` | Player↔team relationship with rank and `is_mainteam` flag |
+| `availability` | Availability responses per player and match |
+| `lineups` | Starting lineup + Ersatz per match |
+| `player_match_counts` | Matches played per team (used for block rules) |
+
+### Key columns
+
+- `players.rank` — global LK rank; **source of truth** for ordering in all views
+- `players.raw_name` — `"Lastname, Firstname"` format used to generate smart short names
+- `player_teams.is_mainteam` — boolean flag marking the Stammmannschaft assigned by the admin
+- `player_teams.rank` — player rank within a specific team
+- `teams.season` — `'Sommer'` (6 players) or `'Winter'` (4 players)
+- `teams.is_4er` — manual override for 4-player format regardless of season
 
 ---
 
-## Configuration
+## Roles & Features
 
-Connection details (Supabase URL and publishable API key) are defined at the top of each HTML file. The publishable key is safe to expose — write access is controlled by Supabase Auth and Row Level Security policies.
+### `admin.html` — Sportwart
 
-Admin access is managed through Supabase Authentication. Create users via the Supabase dashboard under **Authentication → Users**.
+Full club management view. Requires Supabase Auth login.
+
+**Tabs:**
+- **PDF importieren** — import players from TVBB Namentliche Mannschaftsmeldung, teams from ResultReport PDF, and matches from Begegnungen PDF
+- **Spieler** — full roster with filters; edit team assignments and Stammmannschaft flag
+- **Mannschaften** — create and configure teams (league, category, season, 4er format)
+- **Spiele & Aufstellung** — match calendar with lineup management (drag & drop, auto-generate, Ersatz slot) and availability view
+- **Sperren** — active blocks table by Stammkader and Stammmannschaft rules (includes LK > 20 rule for Herren I/II)
+- **Overview** — cross-table teams × dates and players × dates with availability and lineup status
+
+**Languages:** DE / ES / EN
 
 ---
 
-## License
+### `kapitaen.html` — Team Captain
 
-MIT
+Operational view for the captain. Shows only the teams assigned to the logged-in user.
+
+**Tabs:**
+- **Spiele & Aufstellung** — availability per match, lineup assignment with drag & drop, LK rule validation
+- **Overview** — players × dates with availability state and lineup position
+- **Sperren** — read-only block view for the category (LK > 20 rule not shown here)
+
+**Languages:** DE / ES / EN
+
+---
+
+### `index.html` — Player
+
+Mobile-first interface for players to confirm availability.
+
+**Flow:**
+1. Player enters the club password
+2. Searches their name in the roster
+3. Selects a match and confirms availability
+
+**Availability states:**
+
+| State | DE label | Description |
+|---|---|---|
+| `yes` | ✓ Ja | Available — solid green |
+| `conditional` | (Ja) | Available, lower priority — auto-assigned when player already has a `yes` that day |
+| `notfall` | Im Notfall | Only if necessary — orange |
+| `no` | ✗ Nein | Not available — red |
+
+When a player confirms for two matches on the same day, a priority modal appears to choose the main match — the other becomes `conditional` automatically.
+
+**Languages:** DE / ES / EN
+
+---
+
+## TVBB Berlin Rules
+
+### Stammkader
+
+A player's global LK rank determines which team they must play for within their category. The top N players (by `players.rank`) are assigned to Mannschaft 1, the next N to Mannschaft 2, etc. A player cannot be fielded in a higher-numbered team than their Stammkader position allows.
+
+- Sommer: blocks of 6 players per team
+- Winter: blocks of 4 players per team
+
+### Stammmannschaft
+
+If a player plays 2 or more matches for a team in their category, they are blocked from all higher-numbered teams in that same category for the rest of the season.
+
+- The rule applies **per category** independently (Herren, Herren 30, Damen, etc.)
+- The admin can manually set `is_mainteam` to highlight the recommended team (gold `★ SM` badge)
+- The captain view **does not** apply the LK > 20 rule in the lineup view — only visible in the admin Sperren tab
+
+---
+
+## PDF Import
+
+Three types of official TVBB Berlin documents are parsed using PDF.js:
+
+| Document | What it imports | Order |
+|---|---|---|
+| Namentliche Mannschaftsmeldung | Players — name, LK, birth year, IDnr | 1st |
+| ResultReport | Teams — name, league, category | 2nd |
+| Begegnungen | Matches — date, time, home/away, opponent. Filters juniors automatically. | 3rd |
+
+Teams must be imported before matches. Each import shows a preview before confirming.
+
+---
+
+## Internationalisation (i18n)
+
+All three files support three languages with a visible toggle in the header:
+
+- 🇩🇪 **DE** — German (default)
+- 🇦🇷 **ES** — Spanish
+- 🇬🇧 **EN** — English
+
+Language changes are instant and re-render all active views without a page reload. Translations live in `const T = {de, es, en}` inside each file. Fallback is always `de`.
+
+---
+
+## Development Conventions
+
+- One file = one role. No imports between files.
+- All Supabase calls go through `sbGet()`, `sbUpsert()` and `sbDelete()`.
+- `admin.html` and `kapitaen.html` use `getHDR()` which injects the authenticated user's JWT.
+- `index.html` uses the anon key directly (players do not have Supabase accounts).
+- Short player names are derived from `raw_name` (`"Lastname, Firstname"` format).
+- `teamSize(team)` returns 4 or 6 based on season and `is_4er` flag.
+- The Ersatz slot is always index `size` of the `lineup` array.
+- Translation order: DE → ES → EN
