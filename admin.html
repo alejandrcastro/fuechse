@@ -140,6 +140,12 @@ select option{background:#1b2926}
 .warn-panel{background:#1e1a0e;border:1px solid var(--warn)44;border-radius:10px;padding:12px 15px;margin-bottom:10px}
 .warn-panel-title{font-size:12px;font-weight:600;color:var(--warn);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
 @media(max-width:640px){main{padding:12px}header{padding:10px 12px}.tabs{padding:0 12px}.lineup-grid{grid-template-columns:1fr}}
+.drag-handle{color:var(--muted);font-size:14px;cursor:grab;padding:0 4px;user-select:none;flex-shrink:0}
+.drag-handle:hover{color:var(--court)}
+.lineup-slot[draggable]{cursor:default}
+.lineup-slot.drag-over{border-color:var(--court)!important;background:rgba(116,198,157,.1)!important}
+.lineup-slot.dragging{opacity:.4}
+#sec-spieleadmin{padding:0!important}
 </style>
 </head>
 <body>
@@ -249,8 +255,8 @@ window.doLogin=async function(){
   </div>
   <div class="header-right">
     <div class="lang-bar">
-      <button class="lang-btn" onclick="setLang('es')">ES</button>
       <button class="lang-btn active" onclick="setLang('de')">DE</button>
+      <button class="lang-btn" onclick="setLang('es')">ES</button>
       <button class="lang-btn" onclick="setLang('en')">EN</button>
     </div>
     <a id="download-spieler-btn" href="spieler.html" download="spieler.html" style="padding:3px 9px;font-size:10px;font-weight:600;border:1px solid var(--court)55;border-radius:20px;color:var(--court);background:#1a2e26;text-decoration:none;white-space:nowrap">↓ Spieler-App</a>
@@ -263,9 +269,7 @@ window.doLogin=async function(){
   <button class="tab active" onclick="showTab('import',event)" data-tab="import"></button>
   <button class="tab" onclick="showTab('players',event)" data-tab="players"></button>
   <button class="tab" onclick="showTab('teams',event)" data-tab="teams"></button>
-  <button class="tab" onclick="showTab('matches',event)" data-tab="matches"></button>
-  <button class="tab" onclick="showTab('avail',event)" data-tab="avail"></button>
-  <button class="tab" onclick="showTab('lineup',event)" data-tab="lineup"></button>
+  <button class="tab" onclick="showTab('spieleadmin',event)" data-tab="spieleadmin"></button>
   <button class="tab" onclick="showTab('blocking',event)" data-tab="blocking"></button>
   <button class="tab" onclick="showTab('overview',event)" data-tab="overview"></button>
 </div>
@@ -408,72 +412,95 @@ window.doLogin=async function(){
   <div id="team-list"></div>
 </div>
 
-<!-- MATCHES -->
-<div class="section" id="sec-matches">
-  <div class="section-title" data-i18n="matchesTitle"></div>
-  <div class="section-sub" data-i18n="matchesSub"></div>
-  <div class="card">
-    <div class="form-row">
-      <div class="form-group"><label data-i18n="team"></label><select id="m-team"></select></div>
-      <div class="form-group"><label data-i18n="opponent"></label><input id="m-opp" placeholder="TC Blau-Weiss"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label data-i18n="date"></label><input type="date" id="m-date"></div>
-      <div class="form-group"><label data-i18n="time"></label><input type="time" id="m-time" value="10:00"></div>
-      <div class="form-group"><label data-i18n="venueType"></label>
-        <select id="m-home"><option value="Heim" data-i18n="home"></option><option value="Auswärts" data-i18n="away"></option></select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label data-i18n="venue"></label><input id="m-venue" data-i18n-placeholder="venuePh"></div>
-      <div class="form-group" style="justify-content:flex-end;min-width:110px"><label>&nbsp;</label>
-        <button class="btn btn-primary" onclick="addMatch()" data-i18n="addMatchBtn"></button>
-      </div>
-    </div>
-  </div>
-  <div id="match-list"></div>
-</div>
 
-<!-- AVAILABILITY -->
-<div class="section" id="sec-avail">
-  <div class="section-title" data-i18n="availTitle"></div>
-  <div class="section-sub" data-i18n="availSub"></div>
-  <div class="card">
-    <div class="form-row" style="gap:8px;margin-bottom:0">
-      <div class="form-group" style="min-width:140px;margin-bottom:0">
-        <label data-i18n="category"></label>
-        <select id="avail-cat-filter" onchange="populateAvailMatchSel();renderAvail()" style="font-size:12px;padding:5px 9px">
-          <option value="">Alle Kategorien</option>
-        </select>
-      </div>
-      <div class="form-group" style="flex:1;margin-bottom:0">
-        <label data-i18n="selectMatch"></label>
-        <select id="av-match" onchange="renderAvail()"></select>
-      </div>
-    </div>
-  </div>
-  <div id="avail-content"></div>
-</div>
 
-<!-- LINEUP -->
-<div class="section" id="sec-lineup">
-  <div class="section-title" data-i18n="lineupTitle"></div>
-  <div class="section-sub" data-i18n="lineupSub"></div>
-  <div class="card">
-    <div class="form-row" style="gap:8px;margin-bottom:0">
-      <div class="form-group" style="min-width:140px;margin-bottom:0">
-        <label data-i18n="category"></label>
-        <select id="lineup-cat-filter" onchange="populateMatchSel('lineup-match');renderLineup()" style="font-size:12px;padding:5px 9px">
-          <option value="" data-i18n="allCategories"></option>
-        </select>
+<!-- SPIELE & AUFSTELLUNG (integrated) -->
+<div class="section" id="sec-spieleadmin" style="padding:0;max-width:none">
+  <div style="display:grid;grid-template-columns:240px 1fr;gap:0;min-height:calc(100vh - 120px)">
+    <!-- Sidebar -->
+    <div style="border-right:1px solid var(--border2);padding:18px 14px;overflow-y:auto">
+      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Mannschaften</div>
+      <div style="margin-bottom:10px">
+        <button onclick="document.getElementById('sa-add-form').style.display=document.getElementById('sa-add-form').style.display==='none'?'block':'none'"
+          style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left">
+          + Spiel hinzufügen
+        </button>
+        <div id="sa-add-form" style="display:none;margin-top:8px;background:#181818;border-radius:8px;padding:10px">
+          <div style="margin-bottom:6px">
+            <label style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px" data-i18n="team"></label>
+            <select id="m-team" style="width:100%;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif"></select>
+          </div>
+          <div style="margin-bottom:6px">
+            <label style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px" data-i18n="opponent"></label>
+            <input id="m-opp" placeholder="TC Blau-Weiss" style="width:100%;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif">
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:6px">
+            <div style="flex:1">
+              <label style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px" data-i18n="date"></label>
+              <input type="date" id="m-date" style="width:100%;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif">
+            </div>
+            <div style="width:80px">
+              <label style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px" data-i18n="time"></label>
+              <input type="time" id="m-time" value="10:00" style="width:100%;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif">
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <div style="flex:1">
+              <label style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px" data-i18n="venueType"></label>
+              <select id="m-home" style="width:100%;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif">
+                <option value="Heim" data-i18n="home"></option>
+                <option value="Auswärts" data-i18n="away"></option>
+              </select>
+            </div>
+            <div style="flex:1">
+              <label style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px" data-i18n="venue"></label>
+              <input id="m-venue" data-i18n-placeholder="venuePh" style="width:100%;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="saAddMatch()" style="width:100%;font-size:12px" data-i18n="addMatchBtn"></button>
+        </div>
       </div>
-      <div class="form-group" style="flex:1;margin-bottom:0">
-        <label data-i18n="selectMatch"></label>
-        <select id="lineup-match" onchange="renderLineup()"></select>
+      <div id="sa-team-sidebar"></div>
+    </div>
+    <!-- Content -->
+    <div style="padding:18px;overflow-y:auto" id="sa-content-wrap">
+      <div id="sa-no-team" class="empty" style="margin-top:60px">← Mannschaft auswählen</div>
+      <div id="sa-team-content" style="display:none">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--court);letter-spacing:1px" id="sa-team-name"></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:14px" id="sa-team-meta"></div>
+        <div id="sa-match-list"></div>
+        <div id="sa-panel" style="display:none;margin-top:14px">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+              <div>
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--court)" id="sa-panel-title"></div>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px" id="sa-panel-meta"></div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="btn btn-outline btn-sm" onclick="saAutoLineup()" data-i18n="autoLineup"></button>
+                <button class="btn btn-outline btn-sm" onclick="saSortLineup()" style="font-size:11px">↕ Sort</button>
+              </div>
+            </div>
+            <!-- Lineup -->
+            <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px" data-i18n="singles"></div>
+            <div id="sa-warnings"></div>
+            <div id="sa-lineup-slots" class="lineup-grid"></div>
+            <div id="sa-save-indicator" style="font-size:11px;color:var(--court);text-align:right;margin-top:4px;min-height:16px"></div>
+            <!-- Divider -->
+            <div style="border-top:1px solid var(--border);margin:16px 0"></div>
+            <!-- Availability -->
+            <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px" data-i18n="availTitle"></div>
+            <div id="sa-avail-content"></div>
+            <!-- Confirm button -->
+            <div id="sa-confirm-wrap" style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;display:none;align-items:center;gap:10px">
+              <button class="btn btn-primary" onclick="saConfirmMatch()" id="sa-confirm-btn">✔ Spiel bestätigen &amp; Zähler +1</button>
+              <span id="sa-confirm-status" style="font-size:11px;color:var(--muted)"></span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-  <div id="lineup-content"></div>
 </div>
 
 <!-- BLOCKING -->
@@ -586,46 +613,7 @@ function teamSortCmp(a,b){
 
 
 const T={
-  es:{tabs:['Importar PDF','Jugadores','Equipos','Partidos','Disponibilidad','Alineación','Bloqueos','Overview'],
-    ovMatches:'📋 Partidos',ovPlayers:'👥 Jugadores',
-    importTitle:'Importar jugadores desde PDF',importSub:'Formato oficial TVBB Berlin',
-    uploadBtn:'Subir PDF del TVBB',uploadSub:'Namentliche Mannschaftsmeldung · Sommer / Winter',
-    teamsImportTitle:'Importar equipos',teamsImportSub:'ResultReport PDF del TVBB — detecta equipos y ligas automáticamente',
-    teamsUploadBtn:'Subir ResultReport PDF',teamsUploadSub:'Ergebnistabellen · detecta Herren, Damen, Senioren...',
-    teamsImportedMsg:(n)=>`✓ ${n} equipos importados.`,
-    matchesImportTitle:'Importar partidos',matchesImportSub:'Begegnungen PDF del TVBB — crea todos los partidos automáticamente',
-    matchesUploadBtn:'Subir Begegnungen PDF',matchesUploadSub:'Lista de partidos · filtra juveniles automáticamente',
-    matchesImportedMsg:(n)=>`✓ ${n} partidos importados.`,
-    deleteAllMatches:'🗑 Borrar todos los partidos',deleteAllConfirm:'¿Borrar TODOS los partidos? Esto no se puede deshacer.',
-    deletedMsg:'✓ Todos los partidos borrados.',matchesParsedMsg:(n)=>`${n} partidos adultos encontrados.`,
-    teamsParsedMsg:(n)=>`${n} equipos encontrados.`,
-    noTeamMatch:'Equipo no encontrado — importá los equipos primero.',
-    previewTitle:'Vista previa',confirmImport:'Importar todos',cancel:'Cancelar',
-    playersTitle:'Jugadores',playersSub:'Plantel — ordenado por LK',
-    searchPlaceholder:'Buscar...',allTeams:'Todos los equipos',allGenders:'Todos',genderM:'Masculino',genderF:'Femenino',showBlocked:'Solo bloqueados',
-    teamsTitle:'Equipos',teamsSub:'Gestión de equipos',addTeam:'Crear equipo',teamName:'Nombre',teamNamePh:'Herren 1...',
-    liga:'Liga',ligaPh:'Verbandsliga...',category:'Categoría',teamNumber:'Número',season:'Temporada',summer:'Sommer (6)',winter:'Winter (4)',addTeamBtn:'+ Crear',
-    matchesTitle:'Partidos',matchesSub:'Calendario',team:'Equipo',opponent:'Rival',date:'Fecha',time:'Hora',
-    venueType:'Sede',home:'Heimspiel',away:'Auswärtsspiel',venue:'Lugar',venuePh:'Tennisanlage...',addMatchBtn:'+ Agregar',
-    availTitle:'Disponibilidad',availSub:'Vista del admin',selectMatch:'Partido',
-    yesBtn:'✓ Sí',conditionalBtn:'(Sí)',notfallBtn:'Si es necesario',noBtn:'✗ No',
-    lineupTitle:'Alineación',lineupSub:'Asignar jugadores · Orden LK',singles:'Singles',doubles:'Dobles',
-    autoLineup:'⚡ Generar automático',goAvail:'Ver disponibilidad →',
-    blockingTitle:'Bloqueos',blockingSub:'Reglas Stammkader + Stammmannschaft (TVBB)',allCategories:'Todas las categorías',
-    noPlayers:'Sin jugadores. Importá un PDF primero.',noMatches:'Sin partidos aún.',noTeamPlayers:'Sin jugadores para este equipo.',noMatchSel:'Seleccioná un partido.',noBlocked:'Sin bloqueos activos.',
-    available:'disponibles',withLineup:'Con alineación',
-    parsedMsg:(n,f)=>`${n} jugadores en ${f} PDF${f>1?'s':''}.`,importedMsg:(n,t)=>`✓ ${n} importados. ${t} en total.`,addedPlayers:n=>`+${n} más...`,
-    matchAlert:'Completá equipo, rival y fecha.',lkViolation:(i,a,j,b)=>`⚠️ Pos. ${i} (${a}) peor que pos. ${j} (${b})`,
-    lineupValid:'✓ Alineación válida',lineupNote:'TVBB: Singles antes del inicio. Dobles máximo 10 min después.',
-    blockedInLineup:(name,team)=>`⛔ ${name} bloqueado — ya jugó 2 veces en ${team}`,
-    assignTeam:'Equipos',saveAssign:'Guardar',noTeam:'Sin equipo',
-    players:'Jugadores',teams:'Equipos',matches:'Partidos',
-    matchesPlayed:'partidos jugados',blockedFrom:'bloqueado en equipos inferiores a',warnOneMatch:'1 partido — próximo bloqueo',
-    back:'Volver',pvPickMatch:'Seleccioná tu partido',pvWhoAreYou:'¿Quién sos?',playerSearchPh:'Buscar jugador...',
-    pvChangeMatch:'← Cambiar partido',pvChangePlayer:'← Cambiar jugador',pvOpenView:'Vista jugador',
-    syncOk:'● sync',syncErr:'✕ offline',syncIng:'⟳',availSaved:'✓ Guardado',confirmingAvail:'Guardando...',
-    addMatchCount:'+ Sumar partido',blockNote:'La regla aplica dentro de cada categoría (Herren, Herren 30, etc.) por separado.'},
-  de:{tabs:['PDF importieren','Spieler','Mannschaften','Spiele','Verfügbarkeit','Aufstellung','Sperren','Overview'],
+  de:{tabs:['PDF importieren','Spieler','Mannschaften','Spiele & Aufstellung','Sperren','Overview'],
     ovMatches:'📋 Spiele',ovPlayers:'👥 Spieler',
     importTitle:'Spieler aus PDF importieren',importSub:'Offizielles TVBB-Format',
     uploadBtn:'TVBB-PDF hochladen',uploadSub:'Namentliche Mannschaftsmeldung · Sommer / Winter',
@@ -664,7 +652,46 @@ const T={
     pvChangeMatch:'← Spiel ändern',pvChangePlayer:'← Spieler ändern',pvOpenView:'Spieleransicht',
     syncOk:'● sync',syncErr:'✕ offline',syncIng:'⟳',availSaved:'✓ Gespeichert',confirmingAvail:'Speichern...',
     addMatchCount:'+ Spiel addieren',blockNote:'Die Regel gilt innerhalb jeder Kategorie (Herren, Herren 30 usw.) getrennt.'},
-  en:{tabs:['Import PDF','Players','Teams','Matches','Availability','Lineup','Blocks','Overview'],
+  es:{tabs:['Importar PDF','Jugadores','Equipos','Partidos & Alineación','Bloqueos','Overview'],
+    ovMatches:'📋 Partidos',ovPlayers:'👥 Jugadores',
+    importTitle:'Importar jugadores desde PDF',importSub:'Formato oficial TVBB Berlin',
+    uploadBtn:'Subir PDF del TVBB',uploadSub:'Namentliche Mannschaftsmeldung · Sommer / Winter',
+    teamsImportTitle:'Importar equipos',teamsImportSub:'ResultReport PDF del TVBB — detecta equipos y ligas automáticamente',
+    teamsUploadBtn:'Subir ResultReport PDF',teamsUploadSub:'Ergebnistabellen · detecta Herren, Damen, Senioren...',
+    teamsImportedMsg:(n)=>`✓ ${n} equipos importados.`,
+    matchesImportTitle:'Importar partidos',matchesImportSub:'Begegnungen PDF del TVBB — crea todos los partidos automáticamente',
+    matchesUploadBtn:'Subir Begegnungen PDF',matchesUploadSub:'Lista de partidos · filtra juveniles automáticamente',
+    matchesImportedMsg:(n)=>`✓ ${n} partidos importados.`,
+    deleteAllMatches:'🗑 Borrar todos los partidos',deleteAllConfirm:'¿Borrar TODOS los partidos? Esto no se puede deshacer.',
+    deletedMsg:'✓ Todos los partidos borrados.',matchesParsedMsg:(n)=>`${n} partidos adultos encontrados.`,
+    teamsParsedMsg:(n)=>`${n} equipos encontrados.`,
+    noTeamMatch:'Equipo no encontrado — importá los equipos primero.',
+    previewTitle:'Vista previa',confirmImport:'Importar todos',cancel:'Cancelar',
+    playersTitle:'Jugadores',playersSub:'Plantel — ordenado por LK',
+    searchPlaceholder:'Buscar...',allTeams:'Todos los equipos',allGenders:'Todos',genderM:'Masculino',genderF:'Femenino',showBlocked:'Solo bloqueados',
+    teamsTitle:'Equipos',teamsSub:'Gestión de equipos',addTeam:'Crear equipo',teamName:'Nombre',teamNamePh:'Herren 1...',
+    liga:'Liga',ligaPh:'Verbandsliga...',category:'Categoría',teamNumber:'Número',season:'Temporada',summer:'Sommer (6)',winter:'Winter (4)',addTeamBtn:'+ Crear',
+    matchesTitle:'Partidos',matchesSub:'Calendario',team:'Equipo',opponent:'Rival',date:'Fecha',time:'Hora',
+    venueType:'Sede',home:'Heimspiel',away:'Auswärtsspiel',venue:'Lugar',venuePh:'Tennisanlage...',addMatchBtn:'+ Agregar',
+    availTitle:'Disponibilidad',availSub:'Vista del admin',selectMatch:'Partido',
+    yesBtn:'✓ Sí',conditionalBtn:'(Sí)',notfallBtn:'Si es necesario',noBtn:'✗ No',
+    lineupTitle:'Alineación',lineupSub:'Asignar jugadores · Orden LK',singles:'Singles',doubles:'Dobles',
+    autoLineup:'⚡ Generar automático',goAvail:'Ver disponibilidad →',
+    blockingTitle:'Bloqueos',blockingSub:'Reglas Stammkader + Stammmannschaft (TVBB)',allCategories:'Todas las categorías',
+    noPlayers:'Sin jugadores. Importá un PDF primero.',noMatches:'Sin partidos aún.',noTeamPlayers:'Sin jugadores para este equipo.',noMatchSel:'Seleccioná un partido.',noBlocked:'Sin bloqueos activos.',
+    available:'disponibles',withLineup:'Con alineación',
+    parsedMsg:(n,f)=>`${n} jugadores en ${f} PDF${f>1?'s':''}.`,importedMsg:(n,t)=>`✓ ${n} importados. ${t} en total.`,addedPlayers:n=>`+${n} más...`,
+    matchAlert:'Completá equipo, rival y fecha.',lkViolation:(i,a,j,b)=>`⚠️ Pos. ${i} (${a}) peor que pos. ${j} (${b})`,
+    lineupValid:'✓ Alineación válida',lineupNote:'TVBB: Singles antes del inicio. Dobles máximo 10 min después.',
+    blockedInLineup:(name,team)=>`⛔ ${name} bloqueado — ya jugó 2 veces en ${team}`,
+    assignTeam:'Equipos',saveAssign:'Guardar',noTeam:'Sin equipo',
+    players:'Jugadores',teams:'Equipos',matches:'Partidos',
+    matchesPlayed:'partidos jugados',blockedFrom:'bloqueado en equipos inferiores a',warnOneMatch:'1 partido — próximo bloqueo',
+    back:'Volver',pvPickMatch:'Seleccioná tu partido',pvWhoAreYou:'¿Quién sos?',playerSearchPh:'Buscar jugador...',
+    pvChangeMatch:'← Cambiar partido',pvChangePlayer:'← Cambiar jugador',pvOpenView:'Vista jugador',
+    syncOk:'● sync',syncErr:'✕ offline',syncIng:'⟳',availSaved:'✓ Guardado',confirmingAvail:'Guardando...',
+    addMatchCount:'+ Sumar partido',blockNote:'La regla aplica dentro de cada categoría (Herren, Herren 30, etc.) por separado.'},
+  en:{tabs:['Import PDF','Players','Teams','Matches & Lineup','Blocks','Overview'],
     ovMatches:'📋 Matches',ovPlayers:'👥 Players',
     importTitle:'Import players from PDF',importSub:'Official TVBB Berlin format',
     uploadBtn:'Upload TVBB PDF',uploadSub:'Namentliche Mannschaftsmeldung · Summer / Winter',
@@ -847,9 +874,7 @@ function showTab(name,e){
   document.getElementById('sec-'+name).classList.add('active');
   if(name==='players')renderPlayers();
   if(name==='teams')renderTeams();
-  if(name==='matches')renderMatches();
-  if(name==='avail'){populateAvailMatchSel();renderAvail();}
-  if(name==='lineup'){populateMatchSel('lineup-match');renderLineup();}
+  if(name==='spieleadmin'){renderSATeamSidebar();populateTeamSel('m-team');}
   if(name==='blocking')renderBlocking();
   if(name==='overview')renderOverview();
 }
@@ -1356,7 +1381,7 @@ function populateMatchSel(selId){
 }
 
 function openMatchAvail(matchId){
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===4));
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===3));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-avail').classList.add('active');
   populateAvailMatchSel();
@@ -1633,12 +1658,11 @@ async function sortLineup(matchId){
 }
 
 function goToLineup(matchId){
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===5));
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.getElementById('sec-lineup').classList.add('active');
-  populateMatchSel('lineup-match');
-  document.getElementById('lineup-match').value=matchId;
-  renderLineup();
+  const match=state.matches.find(m=>m.id===matchId);if(!match)return;
+  showTab('spieleadmin',null);
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===4));
+  saSelectTeam(match.teamId);
+  saSelectMatch(matchId);
 }
 
 async function setLineupPlayer(matchId,pos,playerId){
@@ -1866,7 +1890,342 @@ document.addEventListener('click',e=>{
   }
 });
 
-function renderAll(){renderPlayers();renderTeams();renderMatches();renderBlocking();applyT();}
+// ── SPIELE & AUFSTELLUNG (integrated admin view) ──
+let _saTeamId=null, _saMatchId=null;
+
+async function saAddMatch(){
+  const teamId=document.getElementById('m-team')?.value;
+  const opp=document.getElementById('m-opp')?.value.trim();
+  const date=document.getElementById('m-date')?.value;
+  const time=document.getElementById('m-time')?.value||'10:00';
+  const home=document.getElementById('m-home')?.value;
+  const venue=document.getElementById('m-venue')?.value.trim();
+  if(!teamId||!opp||!date){alert(tr('matchAlert'));return;}
+  const nm={id:uid(),teamId,opponent:opp,date,time,home,venue};
+  try{
+    await sbUpsert('matches',[{id:nm.id,team_id:teamId,opponent:opp,date,time,home,venue}]);
+    state.matches.push(nm);
+  }catch(e){console.error(e);return;}
+  document.getElementById('m-opp').value='';
+  document.getElementById('m-venue').value='';
+  document.getElementById('sa-add-form').style.display='none';
+  renderSAMatchList();
+}
+
+function renderSATeamSidebar(){
+  const byCat={};
+  for(const t of state.teams){const c=t.category||'Herren';if(!byCat[c])byCat[c]=[];byCat[c].push(t);}
+  let html='';
+  for(const[cat,teams] of Object.entries(byCat).sort(([a],[b])=>{
+    const ga=a.startsWith('Damen')?1:0,gb=b.startsWith('Damen')?1:0;if(ga!==gb)return ga-gb;
+    const aa=parseInt(a.replace(/^(Herren|Damen)\s*/,''))||0,ab=parseInt(b.replace(/^(Herren|Damen)\s*/,''))||0;return aa-ab;
+  })){
+    html+=`<div style="font-size:10px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;padding-left:4px">${cat}</div>`;
+    for(const t of teams.sort((a,b)=>teamNumber(a)-teamNumber(b))){
+      const active=_saTeamId===t.id;
+      html+=`<button onclick="saSelectTeam('${t.id}')" style="width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:1px solid ${active?'var(--court)55':'transparent'};background:${active?'#1a2e26':'transparent'};color:${active?'var(--court)':'var(--muted)'};font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;margin-bottom:3px">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--court);flex-shrink:0;opacity:${active?1:.4}"></span>
+        <span style="flex:1">${t.name}</span>
+        <span style="font-size:10px;color:#444">${state.matches.filter(m=>m.teamId===t.id).length}</span>
+      </button>`;
+    }
+  }
+  document.getElementById('sa-team-sidebar').innerHTML=html||'<div class="empty" style="padding:10px">Keine Teams</div>';
+}
+
+function saSelectTeam(teamId){
+  _saTeamId=teamId;_saMatchId=null;
+  document.getElementById('sa-no-team').style.display='none';
+  document.getElementById('sa-team-content').style.display='block';
+  document.getElementById('sa-panel').style.display='none';
+  renderSATeamSidebar();
+  renderSAMatchList();
+}
+
+function renderSAMatchList(){
+  const team=teamById(_saTeamId);if(!team)return;
+  document.getElementById('sa-team-name').textContent=team.name;
+  document.getElementById('sa-team-meta').textContent=`${team.liga} · ${team.season} · ${teamSize(team)} Spieler`;
+  const matches=[...state.matches.filter(m=>m.teamId===_saTeamId)].sort((a,b)=>a.date.localeCompare(b.date));
+  if(!matches.length){document.getElementById('sa-match-list').innerHTML='<div class="empty">Keine Spiele für diese Mannschaft</div>';return;}
+  document.getElementById('sa-match-list').innerHTML=matches.map(m=>{
+    const avail=state.availability[m.id]||{};
+    const tp=state.players.filter(p=>p.teamIds.includes(m.teamId));
+    const yes=tp.filter(p=>avail[p.id]==='yes'||avail[p.id]==='conditional').length;
+    const pct=tp.length>0?Math.round(yes/tp.length*100):0;
+    const sz=teamSize(team);
+    const slots=(state.lineups[m.id]||[]).slice(0,sz);
+    const filled=slots.filter(Boolean).length;
+    const hasLineup=filled>=sz;
+    const isActive=_saMatchId===m.id;
+    return`<div onclick="saSelectMatch('${m.id}')" style="background:${isActive?'#1a2e26':'var(--card)'};border:1px solid ${isActive?'var(--court)':'var(--border)'};border-radius:10px;padding:13px 16px;margin-bottom:8px;cursor:pointer;transition:all .15s">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div>
+          <div style="font-weight:600;font-size:14px">${team.name} vs ${(m.opponent||'').replace(/&/g,'&amp;')}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">📅 ${fmtDate(m.date)} · ${m.time} · ${m.home}</div>
+        </div>
+        <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:${hasLineup?'#1a2e26':'#2e2a1a'};color:${hasLineup?'var(--court)':'var(--warn)'}">${hasLineup?'✓ OK':'⏳ offen'}</span>
+      </div>
+      <div style="height:4px;background:#252525;border-radius:2px;overflow:hidden">
+        <div style="height:100%;background:var(--court);border-radius:2px;width:${pct}%"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${yes}/${tp.length} verfügbar · ${filled}/${sz} Aufstellung</div>
+    </div>`;
+  }).join('');
+}
+
+function saSelectMatch(matchId){
+  _saMatchId=matchId;
+  renderSAMatchList();
+  renderSAPanel();
+  document.getElementById('sa-panel').style.display='block';
+  document.getElementById('sa-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function renderSAPanel(){
+  const match=state.matches.find(m=>m.id===_saMatchId);if(!match)return;
+  const team=teamById(match.teamId);
+  document.getElementById('sa-panel-title').textContent=`${team?.name||'?'} vs ${match.opponent}`;
+  document.getElementById('sa-panel-meta').textContent=`${fmtDate(match.date)} · ${match.time} · ${match.home}`;
+  renderSALineup();
+  renderSAAvail();
+}
+
+// ── SA LINEUP ──
+let _saDragSrc=null;
+function renderSALineup(){
+  const match=state.matches.find(m=>m.id===_saMatchId);if(!match)return;
+  const team=teamById(match.teamId);
+  const size=teamSize(team);
+  const avail=state.availability[_saMatchId]||{};
+  const lineup=state.lineups[_saMatchId]||[];
+  const allTp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
+
+  // Warnings
+  const warnings=[];
+  for(let i=0;i<size-1;i++){
+    const p1=lineup[i]?playerById(lineup[i]):null;
+    const p2=lineup[i+1]?playerById(lineup[i+1]):null;
+    if(p1&&p2&&(p1.rank||999)>(p2.rank||999))
+      warnings.push(T[lang].lkViolation(i+1,p1.lkStr,i+2,p2.lkStr));
+  }
+  const blockedW=lineup.slice(0,size).filter(Boolean).map(pid=>{
+    const p=playerById(pid);if(!p)return null;
+    if(isPlayerBlockedForTeam(pid,match.teamId))return T[lang].blockedInLineup(p.name,team?.name||'?');
+    return null;
+  }).filter(Boolean);
+  const doubleW=lineup.slice(0,size).filter(Boolean).map(pid=>{
+    const p=playerById(pid);if(!p)return null;
+    const om=state.matches.find(om=>om.id!==_saMatchId&&om.date===match.date&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(pid));
+    if(!om)return null;
+    return`⚠ ${p.name} spielt auch für <strong>${teamById(om.teamId)?.name||'?'}</strong>`;
+  }).filter(Boolean);
+
+  let warnHtml='';
+  if(blockedW.length)warnHtml+=`<div class="rule-box danger" style="margin-bottom:8px">${blockedW.map(w=>`<div>${w}</div>`).join('')}</div>`;
+  if(warnings.length)warnHtml+=`<div style="background:#3d1a1a;border:1px solid var(--danger)44;border-radius:8px;padding:8px 12px;margin-bottom:8px">${warnings.map(w=>`<div style="font-size:12px;color:var(--danger)">${w}</div>`).join('')}</div>`;
+  if(doubleW.length)warnHtml+=`<div class="rule-box warn" style="margin-bottom:8px">${doubleW.map(w=>`<div>${w}</div>`).join('')}</div>`;
+  document.getElementById('sa-warnings').innerHTML=warnHtml;
+
+  // Build dropdown options
+  const _ao2={yes:0,conditional:1,notfall:2,'':3,no:4};
+  const sorted=[...allTp].sort((a,b)=>{const ao=_ao2[avail[a.id]||'']??3,bo=_ao2[avail[b.id]||'']??3;if(ao!==bo)return ao-bo;return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);});
+  const _gl2={yes:'── ✓ Ja',conditional:'── (Ja)',notfall:'── Im Notfall',no:'── ✗ Nein','':'── ?'};
+  function buildOpts(selPid){
+    let opts='<option value="">—</option>';let _lg=undefined;
+    for(const tp of sorted){
+      const bl=isPlayerBlockedForTeam(tp.id,match.teamId);const grp=avail[tp.id]||'';
+      let sep='';if(grp!==_lg){_lg=grp;sep=`<option disabled style="color:var(--muted);font-size:10px">${_gl2[grp]}</option>`;}
+      opts+=sep+`<option value="${tp.id}" ${selPid===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;
+    }
+    return opts;
+  }
+
+  // Slots with drag & drop
+  let html='';
+  for(let i=0;i<size;i++){
+    const pid=lineup[i]||'';
+    const p=pid?playerById(pid):null;
+    const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
+    const rankOk=!p||!prev||(p.rank||999)>=(prev.rank||999);
+    const isBlocked=pid?isPlayerBlockedForTeam(pid,match.teamId):false;
+    const cls=p?(isBlocked?'blocked-slot':rankOk?'ok':'warning'):'';
+    html+=`<div class="lineup-slot ${cls}" draggable="true" data-slot-index="${i}"
+      ondragstart="saDragStart(event,${i})" ondragover="saDragOver(event)" ondragleave="saDragLeave(event)"
+      ondrop="saDrop(event,${i})" ondragend="saDragEnd(event)">
+      <span class="drag-handle" title="Ziehen">⠿</span>
+      <div class="lineup-pos">${i+1}</div>
+      <select style="flex:1;background:#181818;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:4px 8px;font-size:11px;font-family:'DM Sans',sans-serif"
+        onchange="saSetSlot(${i},this.value)">${buildOpts(pid)}</select>
+    </div>`;
+  }
+
+  // Ersatz
+  const ersatzPid=lineup[size]||'';
+  const ersatzP=ersatzPid?playerById(ersatzPid):null;
+  const ersatzBlocked=ersatzPid?isPlayerBlockedForTeam(ersatzPid,match.teamId):false;
+  let ersatzWarn='';
+  if(ersatzPid){
+    const otherL=state.matches.find(om=>om.id!==_saMatchId&&om.date===match.date&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(ersatzPid));
+    const otherE=state.matches.find(om=>om.id!==_saMatchId&&om.date===match.date&&(state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===ersatzPid);
+    if(otherL){const ot=teamById(otherL.teamId);ersatzWarn=`⚠ Bereits Aufstellung: <strong>${ot?.name||'?'}</strong>`;}
+    else if(otherE){const ot=teamById(otherE.teamId);ersatzWarn=`⚠ Bereits Ersatz: <strong>${ot?.name||'?'}</strong>`;}
+  }
+  html+=`<div style="grid-column:1/-1;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border2)">
+    <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Ersatz</div>
+    <div class="lineup-slot ${ersatzP?(ersatzBlocked?'blocked-slot':'ok'):''}" style="opacity:.85;border-style:dashed">
+      <div class="lineup-pos" style="color:var(--muted)">E</div>
+      <select style="flex:1;background:#181818;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:4px 8px;font-size:11px;font-family:'DM Sans',sans-serif"
+        onchange="saSetSlot(${size},this.value)">${buildOpts(ersatzPid)}</select>
+    </div>
+    ${ersatzWarn?`<div class="rule-box warn" style="margin-top:6px;font-size:11px">${ersatzWarn}</div>`:''}
+  </div>`;
+  document.getElementById('sa-lineup-slots').innerHTML=html;
+
+  // Confirm button
+  const filledCount=lineup.slice(0,size).filter(Boolean).length;
+  const confirmWrap=document.getElementById('sa-confirm-wrap');
+  confirmWrap.style.display=filledCount>=size?'flex':'none';
+
+  if(!blockedW.length&&!warnings.length&&filledCount>=size){
+    document.getElementById('sa-warnings').innerHTML+=`<div style="background:#1a2d22;border:1px solid var(--court)33;border-radius:8px;padding:6px 12px;margin-bottom:8px;font-size:12px;color:var(--court)">${tr('lineupValid')}</div>`;
+  }
+}
+
+async function saSetSlot(pos,playerId){
+  if(!state.lineups[_saMatchId])state.lineups[_saMatchId]=[];
+  state.lineups[_saMatchId][pos]=playerId||null;
+  document.getElementById('sa-save-indicator').innerHTML='<span class="spinner"></span>Speichern...';
+  try{
+    await sbUpsert('lineups',[{match_id:_saMatchId,slots:state.lineups[_saMatchId]}]);
+    document.getElementById('sa-save-indicator').textContent='✓ Gespeichert';
+    setTimeout(()=>{if(document.getElementById('sa-save-indicator'))document.getElementById('sa-save-indicator').textContent='';},2000);
+  }catch(e){console.error(e);}
+  renderSALineup();
+  renderSAMatchList();
+}
+
+// Drag & drop
+function saDragStart(e,i){_saDragSrc=i;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
+function saDragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
+function saDragLeave(e){e.currentTarget.classList.remove('drag-over');}
+function saDragEnd(e){e.currentTarget.classList.remove('dragging');document.querySelectorAll('#sa-lineup-slots .lineup-slot').forEach(s=>s.classList.remove('drag-over'));_saDragSrc=null;}
+async function saDrop(e,dest){
+  e.preventDefault();e.currentTarget.classList.remove('drag-over');
+  if(_saDragSrc===null||_saDragSrc===dest)return;
+  const match=state.matches.find(m=>m.id===_saMatchId);if(!match)return;
+  const lineup=[...(state.lineups[_saMatchId]||[])];
+  while(lineup.length<=Math.max(_saDragSrc,dest))lineup.push(null);
+  [lineup[_saDragSrc],lineup[dest]]=[lineup[dest],lineup[_saDragSrc]];
+  state.lineups[_saMatchId]=lineup;
+  document.getElementById('sa-save-indicator').innerHTML='<span class="spinner"></span>Speichern...';
+  try{
+    await sbUpsert('lineups',[{match_id:_saMatchId,slots:lineup}]);
+    document.getElementById('sa-save-indicator').textContent='✓ Gespeichert';
+    setTimeout(()=>{if(document.getElementById('sa-save-indicator'))document.getElementById('sa-save-indicator').textContent='';},2000);
+  }catch(e){console.error(e);}
+  renderSALineup();
+}
+
+async function saAutoLineup(){
+  const match=state.matches.find(m=>m.id===_saMatchId);if(!match)return;
+  const team=teamById(match.teamId);
+  const avail=state.availability[_saMatchId]||{};
+  const size=teamSize(team);
+  const available=[...state.players.filter(p=>p.teamIds.includes(match.teamId)&&avail[p.id]==='yes'&&!isPlayerBlockedForTeam(p.id,match.teamId))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
+  const slots=available.slice(0,size).map(p=>p.id);
+  state.lineups[_saMatchId]=slots;
+  try{await sbUpsert('lineups',[{match_id:_saMatchId,slots}]);}catch(e){console.error(e);}
+  renderSALineup();renderSAMatchList();
+}
+
+async function saSortLineup(){
+  const match=state.matches.find(m=>m.id===_saMatchId);if(!match)return;
+  const lineup=state.lineups[_saMatchId]||[];
+  const sorted=lineup.filter(Boolean).sort((a,b)=>playerRankInTeam(a,match.teamId)-playerRankInTeam(b,match.teamId));
+  while(sorted.length<lineup.length)sorted.push(null);
+  state.lineups[_saMatchId]=sorted;
+  try{await sbUpsert('lineups',[{match_id:_saMatchId,slots:sorted}]);}catch(e){console.error(e);}
+  renderSALineup();
+}
+
+async function saConfirmMatch(){
+  const match=state.matches.find(m=>m.id===_saMatchId);if(!match)return;
+  const lineup=(state.lineups[_saMatchId]||[]).filter(Boolean);
+  if(!lineup.length)return;
+  const btn=document.getElementById('sa-confirm-btn');
+  const statusEl=document.getElementById('sa-confirm-status');
+  if(btn){btn.disabled=true;btn.textContent='...';}
+  setSync('ing',tr('syncIng'));
+  try{
+    for(const playerId of lineup){
+      if(!state.matchCounts[playerId])state.matchCounts[playerId]={};
+      const cur=state.matchCounts[playerId][match.teamId]||0;
+      state.matchCounts[playerId][match.teamId]=cur+1;
+      await sbUpsert('player_match_counts',[{player_id:playerId,team_id:match.teamId,matches_played:cur+1}]);
+    }
+    setSync('ok',tr('syncOk'));
+    if(statusEl)statusEl.textContent=`✓ ${lineup.length} Spieler +1`;
+    setTimeout(()=>{if(statusEl)statusEl.textContent='';},3000);
+    renderBlocking();renderSALineup();
+  }catch(e){setSync('err',tr('syncErr'));console.error(e);}
+  finally{if(btn){btn.disabled=false;btn.textContent='✔ Spiel bestätigen & Zähler +1';}}
+}
+
+// ── SA AVAILABILITY ──
+function renderSAAvail(){
+  const match=state.matches.find(m=>m.id===_saMatchId);if(!match)return;
+  const avail=state.availability[_saMatchId]||{};
+  const _availOrder={yes:0,conditional:1,notfall:2,'':3,no:4};
+  const tp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>{
+    const ao=_availOrder[avail[a.id]||'']??3,bo=_availOrder[avail[b.id]||'']??3;
+    if(ao!==bo)return ao-bo;
+    return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);
+  });
+  if(!tp.length){document.getElementById('sa-avail-content').innerHTML=`<div class="empty">${tr('noTeamPlayers')}</div>`;return;}
+  const yesCount=tp.filter(p=>avail[p.id]==='yes'||avail[p.id]==='conditional').length;
+  const _gl={yes:'✓ Ja',conditional:'(Ja) — Prio II',notfall:'Im Notfall',no:'✗ Nein','':'— Keine Angabe'};
+  const _gc={yes:'var(--court)',conditional:'#52c97a',notfall:'var(--warn)',no:'var(--danger)','':'var(--muted)'};
+  let _lg=undefined;
+  let rows=tp.map((p,i)=>{
+    const s=avail[p.id]||'';
+    let hdr='';
+    if(s!==_lg){_lg=s;hdr=`<tr><td colspan="5" style="padding:5px 12px 2px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${_gc[s]};border-top:1px solid #2e4a4233">${_gl[s]}</td></tr>`;}
+    const blocked=isPlayerBlockedForTeam(p.id,match.teamId);
+    const _yesMatch=s==='conditional'?state.matches.find(om=>om.id!==_saMatchId&&om.date===match.date&&state.availability[om.id]?.[p.id]==='yes'):null;
+    const _yesTeam=_yesMatch?teamById(_yesMatch.teamId):null;
+    const _condLabel=_yesTeam?`(Ja → ${_yesTeam.name})`:'(Ja)';
+    return hdr+`<tr style="${blocked?'background:#2d151544':''}">
+      <td style="color:var(--muted)">${playerRankInTeam(p.id,match.teamId)<999?playerRankInTeam(p.id,match.teamId):i+1}</td>
+      <td><strong>${p.name}</strong>${blocked?` <span class="blocked-badge">⛔</span>`:''}</td>
+      <td><span class="lk-badge">${p.lkStr}</span></td>
+      <td style="color:var(--muted)">${p.year||'—'}</td>
+      <td><div style="display:flex;gap:4px">
+        <button class="avail-btn yes ${s==='yes'||s==='conditional'?'active':''}" style="${s==='conditional'?'border-style:dashed':''}" onclick="saSetAvail('${p.id}','yes')">${s==='conditional'?_condLabel:tr('yesBtn')}</button>
+        <button class="avail-btn maybe ${s==='notfall'?'active':''}" onclick="saSetAvail('${p.id}','notfall')">${tr('notfallBtn')}</button>
+        <button class="avail-btn no ${s==='no'?'active':''}" onclick="saSetAvail('${p.id}','no')">${tr('noBtn')}</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('sa-avail-content').innerHTML=`
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--court)">${yesCount}<span style="font-size:12px;color:var(--muted)">/${tp.length} ${tr('available')}</span></span>
+    </div>
+    <table class="avail-table">
+      <thead><tr><th>#</th><th>${tr('players')}</th><th>LK</th><th>Jg.</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+async function saSetAvail(playerId,status){
+  const matchId=_saMatchId;if(!matchId)return;
+  if(!state.availability[matchId])state.availability[matchId]={};
+  state.availability[matchId][playerId]=status;
+  try{await sbUpsert('availability',[{match_id:matchId,player_id:playerId,status}]);}catch(e){console.error(e);}
+  renderSAAvail();renderSALineup();renderSAMatchList();
+}
+
+function renderAll(){renderPlayers();renderTeams();renderBlocking();if(_saTeamId)renderSAMatchList();populateTeamSel('m-team');applyT();}
 
 // ── OVERVIEW ──
 let _ovMode='matches';
