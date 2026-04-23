@@ -240,8 +240,20 @@ input:focus,select:focus{border-color:var(--court)}
     <!-- CONTENT: Overview -->
     <div id="view-overview" style="display:none">
       <div class="section-title">Overview</div>
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
-        <select id="kap-overview-cat" onchange="renderKapOverview()" style="width:auto;font-size:12px;padding:5px 9px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;outline:none"></select>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;position:relative;z-index:200">
+        <!-- Multi-select dropdown: shown in both Spiele and Spieler modes -->
+        <div id="kap-ov-multicat" style="position:relative">
+          <button id="kap-ov-multicat-btn" onclick="toggleMultiCat(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
+            <span id="kap-ov-multicat-label" style="font-size:12px;white-space:nowrap">Alle Kategorien</span>
+            <span style="font-size:9px;color:var(--muted)">▼</span>
+          </button>
+        </div>
+        <div id="kap-ov-sort-wrap" style="position:relative">
+          <button id="kap-ov-sort-btn" onclick="toggleSortMenu(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
+            <span id="kap-ov-sort-label" style="font-size:12px;white-space:nowrap">Nach Mannschaftsnummer</span>
+            <span style="font-size:9px;color:var(--muted)">▼</span>
+          </button>
+        </div>
         <div style="display:flex;gap:4px;margin-left:auto">
           <button id="kap-ov-btn-matches" onclick="setKapOverviewMode('matches')"
             style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--court);background:var(--court);color:#0d1a10">📋 Spiele</button>
@@ -502,6 +514,9 @@ function setLang(l){
   const bl=document.getElementById('blocking-loading');if(bl)bl.textContent=t.loading;
   const st=document.getElementById('sperren-title');if(st)st.textContent=t.sperrenTitle;
   const ss=document.getElementById('sperren-sub');if(ss)ss.textContent=t.sperrenSub;
+  // Update sort button label
+  const sortLbl=document.getElementById('kap-ov-sort-label');
+  if(sortLbl)sortLbl.textContent=_sortLabel(_kapOvSort,l);
   // Re-render current views if loaded
   if(state.matches.length){
     renderTeamSidebar();
@@ -554,6 +569,8 @@ async function loadAll(){
       if(r.is_mainteam){if(!state.mainTeam[r.player_id])state.mainTeam[r.player_id]={};state.mainTeam[r.player_id][r.team_id]=true;}
     }
     setSync('ok','● sync');
+    buildMultiCatList();
+    _kapOvSelectedCats=null;
     renderTeamSidebar();
     if(selectedTeamId)renderTeamContent();
     if(selectedMatchId)renderAvailPanel();
@@ -893,7 +910,7 @@ function showKapTab(tab){
     sidebar.style.display='none';
     wrapper.style.gridColumn='1/-1';
     if(tab==='sperren')renderBlocking();
-    if(tab==='overview')renderKapOverview();
+    if(tab==='overview')setKapOverviewMode(_kapOvMode);
   } else {
     sidebar.style.display='';
     wrapper.style.gridColumn='';
@@ -1006,6 +1023,183 @@ async function runAutoLineup(){
 
 // ── KAPITÄN OVERVIEW ──
 let _kapOvMode='matches';
+let _kapOvSelectedCats=null;
+let _kapOvSort='number'; // 'number' or 'altersklasse'
+let _kapOvSortPanelEl=null;
+
+function _sortLabel(key,l){
+  l=l||lang;
+  if(key==='number')return l==='de'?'Nach Mannschaftsnummer':l==='es'?'Por número de equipo':'By team number';
+  return l==='de'?'Nach Altersklasse':l==='es'?'Por categoría (AK)':'By age group (AK)';
+}
+
+function _getSortPanel(){
+  if(!_kapOvSortPanelEl){
+    _kapOvSortPanelEl=document.createElement('div');
+    _kapOvSortPanelEl.style.cssText='display:none;position:fixed;background:#161616;border:1px solid #444;border-radius:10px;padding:6px 4px;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,.9);white-space:nowrap';
+    document.body.appendChild(_kapOvSortPanelEl);
+  }
+  return _kapOvSortPanelEl;
+}
+
+function toggleSortMenu(e){
+  if(e)e.stopPropagation();
+  const panel=_getSortPanel();
+  if(panel.style.display==='none'){
+    _buildSortPanelContent(panel);
+    const r=document.getElementById('kap-ov-sort-btn').getBoundingClientRect();
+    panel.style.top=(r.bottom+4)+'px';
+    panel.style.left=r.left+'px';
+    panel.style.display='block';
+  } else {
+    panel.style.display='none';
+  }
+}
+
+document.addEventListener('click',function(e){
+  if(!_kapOvSortPanelEl||_kapOvSortPanelEl.style.display==='none')return;
+  const wrap=document.getElementById('kap-ov-sort-wrap');
+  if(!_kapOvSortPanelEl.contains(e.target)&&(!wrap||!wrap.contains(e.target))){
+    _kapOvSortPanelEl.style.display='none';
+  }
+});
+
+function _buildSortPanelContent(panel){
+  panel.innerHTML='';
+  ['number','altersklasse'].forEach(function(key){
+    const lbl=document.createElement('label');
+    lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:#aaa';
+    lbl.addEventListener('mouseover',function(){lbl.style.background='#222';});
+    lbl.addEventListener('mouseout',function(){lbl.style.background='transparent';});
+    const cb=document.createElement('input');
+    cb.type='radio';cb.name='_kapovsort';
+    cb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
+    cb.checked=_kapOvSort===key;
+    cb.addEventListener('change',function(){
+      if(cb.checked){
+        _kapOvSort=key;
+        document.getElementById('kap-ov-sort-label').textContent=_sortLabel(key);
+        panel.style.display='none';
+        renderKapOverview();
+      }
+    });
+    const span=document.createElement('span');
+    span.textContent=_sortLabel(key);
+    lbl.appendChild(cb);
+    lbl.appendChild(span);
+    panel.appendChild(lbl);
+  });
+}
+
+function _kapOvSortTeams(teams){
+  const ts=[...teams];
+  if(_kapOvSort==='altersklasse'){
+    return ts.sort((a,b)=>{
+      if(a.category!==b.category)return a.category.localeCompare(b.category);
+      return teamNumber(a)-teamNumber(b);
+    });
+  }
+  // 'number': sort by team number first, then by category
+  return ts.sort((a,b)=>{
+    const na=teamNumber(a),nb=teamNumber(b);
+    if(na!==nb)return na-nb;
+    return a.category.localeCompare(b.category);
+  });
+}
+let _kapOvPanelEl=null;
+
+function _getPanel(){
+  if(!_kapOvPanelEl){
+    _kapOvPanelEl=document.createElement('div');
+    _kapOvPanelEl.style.cssText='display:none;position:fixed;background:#161616;border:1px solid #444;border-radius:10px;padding:6px 4px;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,.9)';
+    document.body.appendChild(_kapOvPanelEl);
+  }
+  return _kapOvPanelEl;
+}
+
+function toggleMultiCat(e){
+  if(e)e.stopPropagation();
+  const panel=_getPanel();
+  if(panel.style.display==='none'){
+    _buildPanelContent(panel);
+    const r=document.getElementById('kap-ov-multicat-btn').getBoundingClientRect();
+    panel.style.top=(r.bottom+4)+'px';
+    panel.style.left=r.left+'px';
+    panel.style.width='160px';
+    panel.style.display='block';
+  } else {
+    panel.style.display='none';
+  }
+}
+
+document.addEventListener('click',function(e){
+  if(!_kapOvPanelEl||_kapOvPanelEl.style.display==='none')return;
+  const wrap=document.getElementById('kap-ov-multicat');
+  if(!_kapOvPanelEl.contains(e.target)&&(!wrap||!wrap.contains(e.target))){
+    _kapOvPanelEl.style.display='none';
+  }
+});
+
+function _buildPanelContent(panel){
+  const cats=[...new Set(state.teams.map(t=>t.category))].sort();
+  panel.innerHTML='';
+  const allSelected=!_kapOvSelectedCats;
+  ['__all__',...cats].forEach(function(c){
+    const isAll=c==='__all__';
+    const lbl=document.createElement('label');
+    lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:'+(isAll?'#fff':'#aaa')+';font-weight:'+(isAll?'600':'400');
+    lbl.addEventListener('mouseover',function(){lbl.style.background='#222';});
+    lbl.addEventListener('mouseout',function(){lbl.style.background='transparent';});
+    const cb=document.createElement('input');
+    cb.type='checkbox';
+    cb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
+    cb.checked=isAll?allSelected:(allSelected||!!(_kapOvSelectedCats&&_kapOvSelectedCats.includes(c)));
+    if(isAll)cb.id='_mc_all';
+    else cb.dataset.cat=c;
+    cb.addEventListener('change',function(){
+      if(isAll){
+        _kapOvSelectedCats=cb.checked?null:[];
+      } else {
+        const checked=[..._kapOvPanelEl.querySelectorAll('input[data-cat]:checked')].map(function(i){return i.dataset.cat;});
+        _kapOvSelectedCats=checked.length===cats.length?null:checked;
+        const allCb=_kapOvPanelEl.querySelector('#_mc_all');
+        if(allCb)allCb.checked=!_kapOvSelectedCats;
+      }
+      _updateMultiCatLabel();
+      _buildPanelContent(panel);
+      renderKapOverview();
+    });
+    const span=document.createElement('span');
+    span.textContent=isAll?(lang==='de'?'Alle':lang==='es'?'Todas':'All'):c;
+    lbl.appendChild(cb);
+    lbl.appendChild(span);
+    panel.appendChild(lbl);
+    if(isAll){
+      const div=document.createElement('div');
+      div.style.cssText='border-top:1px solid #333;margin:3px 6px';
+      panel.appendChild(div);
+    }
+  });
+}
+
+function _updateMultiCatLabel(){
+  const lbl=document.getElementById('kap-ov-multicat-label');
+  if(!lbl)return;
+  if(!_kapOvSelectedCats)lbl.textContent=lang==='de'?'Alle Kategorien':lang==='es'?'Todas las categorías':'All categories';
+  else if(!_kapOvSelectedCats.length)lbl.textContent=lang==='de'?'Keine':lang==='es'?'Ninguna':'None';
+  else lbl.textContent=_kapOvSelectedCats.join(', ');
+}
+
+function updateMultiCatLabel(){_updateMultiCatLabel();}
+function buildMultiCatList(){
+  _kapOvSelectedCats=null;
+  if(_kapOvPanelEl){_kapOvPanelEl.remove();_kapOvPanelEl=null;}
+  _updateMultiCatLabel();
+}
+function onMultiSelectChange(){}
+function onMultiCatAll(){}
+function onMultiCatChange(){}
+
 function setKapOverviewMode(mode){
   _kapOvMode=mode;
   const bm=document.getElementById('kap-ov-btn-matches');
@@ -1016,82 +1210,83 @@ function setKapOverviewMode(mode){
 }
 
 function renderKapOverview(){
-  const cats=[...new Set(state.teams.map(t=>t.category))].sort();
-  const sel=document.getElementById('kap-overview-cat');
-  if(sel){
-    const cur=sel.value||cats[0]||'';
-    sel.innerHTML=cats.map(c=>`<option value="${c}" ${cur===c?'selected':''}>${c}</option>`).join('');
-    if(!sel.value&&cats.length)sel.value=cats[0];
+  if(_kapOvMode==='matches'){
+    renderKapOverviewMatches(_kapOvSelectedCats);
+    return;
   }
-  const cat=sel?.value||'';
-  if(!cat)return;
-  if(_kapOvMode==='matches'){renderKapOverviewMatches(cat);return;}
+
+  // ── SPIELER MODE ──
   const el=document.getElementById('kap-overview-content');
-  const teams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
-  const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
-  if(!matches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
-  const dates=[...new Set(matches.map(m=>m.date))].sort();
-  const players=[...state.players.filter(p=>p.teamIds.some(tid=>teams.find(t=>t.id===tid)))]
-    .sort((a,b)=>(a.rank||999)-(b.rank||999));
+  const selected=_kapOvSelectedCats;
+
+  function renderPlayersTable(teams,players,matches){
+    if(!matches.length)return'';
+    const dates=[...new Set(matches.map(m=>m.date))].sort();
+    function shortName(t){
+      if(!t)return'?';
+      return t.name.replace('Herren','H').replace('Damen','D').replace('Senioren','Sen').replace('Seniorinnen','SenF').trim();
+    }
+    let html=`<table style="border-collapse:collapse;font-size:12px;min-width:100%;margin-bottom:24px">
+      <thead><tr style="border-bottom:1px solid var(--border2)">
+        <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:160px">${tr('colPlayer')}</th>
+        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:10px">${tr('colLK')}</th>
+        ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
+      </tr></thead><tbody>`;
+    for(const p of players){
+      const smTeams=teams.filter(t=>state.mainTeam[p.id]?.[t.id]);
+      const smLabel=smTeams.length?smTeams.map(t=>t.name).join(', '):null;
+      html+=`<tr style="border-bottom:1px solid var(--border)22">
+        <td style="padding:7px 12px;white-space:nowrap">
+          <span style="font-weight:600">${p.name}</span>
+          ${smLabel?`<span style="font-size:9px;color:#d4a017;margin-left:4px">★ ${smLabel}</span>`:''}
+        </td>
+        <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:10px">${p.lkStr||'?'}</span></td>`;
+      for(const d of dates){
+        const dayMatches=matches.filter(m=>m.date===d&&p.teamIds.includes(m.teamId)).sort((a,b)=>teamNumber(teamById(a.teamId)||{})-teamNumber(teamById(b.teamId)||{}));
+        if(!dayMatches.length){html+=`<td style="padding:7px 10px;text-align:center;color:var(--border2)">—</td>`;continue;}
+        let cellHtml='<td style="padding:4px 6px;text-align:center;min-width:80px"><div style="display:flex;flex-direction:column;gap:3px">';
+        for(const m of dayMatches){
+          const team=teamById(m.teamId);
+          const sz=teamSize(team);
+          const slots=state.lineups[m.id]||[];
+          const inLineup=slots.slice(0,sz).includes(p.id);
+          const isErsatz=slots[sz]===p.id;
+          const avail=state.availability[m.id]?.[p.id]||'';
+          const sn=shortName(team);
+          let bg,col,icon,sublabel;
+          if(inLineup){bg='#1a2e26';col='var(--court)';icon='✓';sublabel=sn;}
+          else if(isErsatz){bg='#252525';col='var(--muted)';icon='E';sublabel=sn;}
+          else if(avail==='yes'){bg='#1a2a1a';col='#52c97a';icon=tr('overviewIconYes');sublabel=sn;}
+          else if(avail==='conditional'){bg='rgba(82,201,122,.08)';col='#52c97a';icon='('+tr('overviewIconYes')+')';sublabel=sn;}
+          else if(avail==='notfall'){bg='#2e2a1a';col='var(--warn)';icon=tr('overviewIconNotfall');sublabel=sn;}
+          else if(avail==='no'){bg='#2d1a1a';col='var(--danger)';icon='✗';sublabel=sn;}
+          else{bg='transparent';col='#444';icon='?';sublabel=sn;}
+          cellHtml+=`<div style="background:${bg};border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600;color:${col};white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:6px">
+            <span style="opacity:.7;font-size:9px;font-weight:500">${sublabel}</span>
+            <span>${icon}</span>
+          </div>`;
+        }
+        cellHtml+='</div></td>';
+        html+=cellHtml;
+      }
+      html+='</tr>';
+    }
+    html+='</tbody></table>';
+    return html;
+  }
 
   const ll=tr('legendLabels');
   const legendColors=['var(--court)','var(--muted)','#52c97a','var(--warn)','var(--danger)','#d4a017'];
-  let html=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:8px 12px;background:#181818;border-radius:8px;font-size:11px">
+  const legend=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:8px 12px;background:#181818;border-radius:8px;font-size:11px">
     ${ll.map((l,i)=>`<span style="color:${legendColors[i]}">■ ${l}</span>`).join('')}
   </div>`;
 
-  html+=`<table style="border-collapse:collapse;font-size:12px;min-width:100%">
-    <thead><tr style="border-bottom:1px solid var(--border2)">
-      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:160px">${tr('colPlayer')}</th>
-      <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:10px">${tr('colLK')}</th>
-      ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
-    </tr></thead><tbody>`;
-
-  for(const p of players){
-    const smTeams=teams.filter(t=>state.mainTeam[p.id]?.[t.id]);
-    const smLabel=smTeams.length?smTeams.map(t=>t.name).join(', '):null;
-    html+=`<tr style="border-bottom:1px solid var(--border)22">
-      <td style="padding:7px 12px;white-space:nowrap">
-        <span style="font-weight:600">${p.name}</span>
-        ${smLabel?`<span style="font-size:9px;color:#d4a017;margin-left:4px">★ ${smLabel}</span>`:''}
-      </td>
-      <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:10px">${p.lkStr||'?'}</span></td>`;
-    for(const d of dates){
-      const dayMatches=matches.filter(m=>m.date===d&&p.teamIds.includes(m.teamId)).sort((a,b)=>teamNumber(teamById(a.teamId)||{})-teamNumber(teamById(b.teamId)||{}));
-      if(!dayMatches.length){html+=`<td style="padding:7px 10px;text-align:center;color:var(--border2)">—</td>`;continue;}
-      function shortName(t){
-        if(!t)return'?';
-        return t.name.replace('Herren','H').replace('Damen','D').replace('Senioren','Sen').replace('Seniorinnen','SenF').trim();
-      }
-      let cellHtml='<td style="padding:4px 6px;text-align:center;min-width:80px"><div style="display:flex;flex-direction:column;gap:3px">';
-      for(const m of dayMatches){
-        const team=teamById(m.teamId);
-        const sz=teamSize(team);
-        const slots=state.lineups[m.id]||[];
-        const inLineup=slots.slice(0,sz).includes(p.id);
-        const isErsatz=slots[sz]===p.id;
-        const avail=state.availability[m.id]?.[p.id]||'';
-        const sn=shortName(team);
-        let bg,col,icon,sublabel;
-        if(inLineup){bg='#1a2e26';col='var(--court)';icon='✓';sublabel=sn;}
-        else if(isErsatz){bg='#252525';col='var(--muted)';icon='E';sublabel=sn;}
-        else if(avail==='yes'){bg='#1a2a1a';col='#52c97a';icon=tr('overviewIconYes');sublabel=sn;}
-        else if(avail==='conditional'){bg='rgba(82,201,122,.08)';col='#52c97a';icon='('+tr('overviewIconYes')+')';sublabel=sn;}
-        else if(avail==='notfall'){bg='#2e2a1a';col='var(--warn)';icon=tr('overviewIconNotfall');sublabel=sn;}
-        else if(avail==='no'){bg='#2d1a1a';col='var(--danger)';icon='✗';sublabel=sn;}
-        else{bg='transparent';col='#444';icon='?';sublabel=sn;}
-        cellHtml+=`<div style="background:${bg};border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600;color:${col};white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:6px">
-          <span style="opacity:.7;font-size:9px;font-weight:500">${sublabel}</span>
-          <span>${icon}</span>
-        </div>`;
-      }
-      cellHtml+='</div></td>';
-      html+=cellHtml;
-    }
-    html+='</tr>';
-  }
-  html+='</tbody></table>';
-  el.innerHTML=html;
+  // Single table with filtered categories
+  const teams=_kapOvSortTeams(!selected||!selected.length?state.teams:state.teams.filter(t=>selected.includes(t.category)));
+  const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
+  const players=[...state.players.filter(p=>p.teamIds.some(tid=>teams.find(t=>t.id===tid)))].sort((a,b)=>(a.rank||999)-(b.rank||999));
+  if(!matches.length){el.innerHTML=legend+'<div class="empty">Keine Spiele</div>';return;}
+  el.innerHTML=legend+renderPlayersTable(teams,players,matches);
 }
 
 function goToMatchKap(matchId){
@@ -1102,9 +1297,9 @@ function goToMatchKap(matchId){
   document.getElementById('avail-panel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function renderKapOverviewMatches(cat){
+function renderKapOverviewMatches(selectedCats){
   const el=document.getElementById('kap-overview-content');
-  const teams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  const teams=_kapOvSortTeams((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
   const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
   if(!matches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
   const dates=[...new Set(matches.map(m=>m.date))].sort();
@@ -1158,14 +1353,14 @@ function renderKapOverviewMatches(cat){
         const p=pid?playerById(pid):null;
         playersHtml+=`<div style="font-size:10px;padding:1px 0;color:${p?'var(--white)':'#2e4a42'};display:flex;gap:4px;align-items:center">
           <span style="color:var(--muted);min-width:12px;font-size:9px">${i+1}.</span>
-          <span>${shortPN(p)}</span>
+          <span title="${p?p.name:''}">${shortPN(p)}</span>
         </div>`;
       }
       if(ersatzPid){
         const ep=playerById(ersatzPid);
         if(ep)playersHtml+=`<div style="font-size:10px;padding:2px 0;border-top:1px dashed var(--border2);margin-top:2px;color:var(--muted);display:flex;gap:4px;align-items:center">
           <span style="color:#444;min-width:12px;font-size:9px">E.</span>
-          <span>${shortPN(ep)}</span>
+          <span title="${ep.name}">${shortPN(ep)}</span>
         </div>`;
       }
       html+=`<td style="padding:6px 8px;vertical-align:top">
@@ -1178,6 +1373,55 @@ function renderKapOverviewMatches(cat){
     }
     html+='</tr>';
   }
+
+  // ── NICHT AUFGESTELLT row ──
+  const naLabel=lang==='de'?'Nicht aufgestellt':lang==='es'?'No alineados':'Not in lineup';
+  html+=`<tr style="border-top:2px solid var(--border2);background:#0f0f0f">
+    <td style="padding:8px 12px;font-weight:600;color:var(--muted);white-space:nowrap;vertical-align:top;font-size:11px;text-transform:uppercase;letter-spacing:.5px">${naLabel}</td>`;
+  for(const d of dates){
+    const dayMatches=matches.filter(x=>x.date===d);
+    if(!dayMatches.length){html+=`<td style="padding:8px 10px;text-align:center;color:var(--border2);vertical-align:top">—</td>`;continue;}
+    // Build set of player IDs in lineup or Ersatz across all matches that day
+    const inLineupAcrossDay=new Set();
+    for(const dm of dayMatches){
+      const dmTeam=teamById(dm.teamId);
+      const dmSz=teamSize(dmTeam);
+      const dmSlots=state.lineups[dm.id]||[];
+      dmSlots.slice(0,dmSz).filter(Boolean).forEach(pid=>inLineupAcrossDay.add(pid));
+      if(dmSlots[dmSz])inLineupAcrossDay.add(dmSlots[dmSz]);
+    }
+    // Collect available players from all teams playing this day, deduplicated by player id
+    const availMap=new Map(); // pid -> {p, a (best status)}
+    const ord={yes:0,conditional:1,notfall:2};
+    for(const dm of dayMatches){
+      const dmTeamPlayers=state.players.filter(p=>p.teamIds.includes(dm.teamId));
+      for(const p of dmTeamPlayers){
+        if(inLineupAcrossDay.has(p.id))continue;
+        const a=state.availability[dm.id]?.[p.id]||'';
+        if(a!=='yes'&&a!=='conditional'&&a!=='notfall')continue;
+        const existing=availMap.get(p.id);
+        if(!existing||ord[a]<ord[existing.a])availMap.set(p.id,{p,a});
+      }
+    }
+    if(!availMap.size){html+=`<td style="padding:8px 10px;text-align:center;color:var(--border2);vertical-align:top">—</td>`;continue;}
+    const sorted=[...availMap.values()].sort((x,y)=>{
+      if(ord[x.a]!==ord[y.a])return ord[x.a]-ord[y.a];
+      return (x.p.rank||999)-(y.p.rank||999);
+    });
+    let cellHtml='<td style="padding:6px 8px;vertical-align:top">';
+    for(const x of sorted){
+      const c=x.a==='yes'?'#52c97a':x.a==='conditional'?'rgba(82,201,122,.7)':'var(--warn)';
+      const mark=x.a==='yes'?'✓':x.a==='conditional'?'(✓)':'!';
+      cellHtml+=`<div style="font-size:10px;padding:1px 0;color:${c};display:flex;gap:4px;align-items:center;white-space:nowrap">
+        <span style="min-width:14px;font-size:9px;opacity:.8">${mark}</span>
+        <span title="${x.p.name}">${shortPN(x.p)}</span>
+      </div>`;
+    }
+    cellHtml+='</td>';
+    html+=cellHtml;
+  }
+  html+='</tr>';
+
   html+='</tbody></table>';
   html+=`<div style="margin-top:10px;display:flex;gap:12px;font-size:11px;flex-wrap:wrap">
     <span style="color:var(--court)">■ Vollständig</span>

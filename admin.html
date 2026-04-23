@@ -520,8 +520,19 @@ window.doLogin=async function(){
 <div class="section" id="sec-overview">
   <div class="section-title">Overview</div>
   <div class="section-sub" id="overview-sub"></div>
-  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
-    <select id="overview-cat-filter" onchange="renderOverview()" style="width:auto;font-size:12px;padding:5px 9px"></select>
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;position:relative;z-index:200">
+    <div id="ov-multicat" style="position:relative">
+      <button id="ov-multicat-btn" onclick="toggleOvMultiCat(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
+        <span id="ov-multicat-label" style="font-size:12px;white-space:nowrap">Alle Kategorien</span>
+        <span style="font-size:9px;color:var(--muted)">▼</span>
+      </button>
+    </div>
+    <div id="ov-sort-wrap" style="position:relative">
+      <button id="ov-sort-btn" onclick="toggleOvSortMenu(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
+        <span id="ov-sort-label" style="font-size:12px;white-space:nowrap">Nach Mannschaftsnummer</span>
+        <span style="font-size:9px;color:var(--muted)">▼</span>
+      </button>
+    </div>
     <div style="display:flex;gap:4px;margin-left:auto">
       <button id="ov-btn-matches" onclick="setOverviewMode('matches')"
         style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--court);background:var(--court);color:#0d1a10" data-i18n="ovMatches">📋 Partidos</button>
@@ -865,6 +876,10 @@ function applyT(){
   document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(T[lang][k]!==undefined)el.textContent=T[lang][k];});
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const k=el.getAttribute('data-i18n-placeholder');if(T[lang][k]!==undefined)el.placeholder=T[lang][k];});
   document.querySelectorAll('option[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(T[lang][k]!==undefined)el.textContent=T[lang][k];});
+  // Update overview sort/multicat labels
+  const sortLbl=document.getElementById('ov-sort-label');
+  if(sortLbl)sortLbl.textContent=_ovSortLabel(_ovSort,lang);
+  if(typeof _updateOvMultiCatLabel==='function')_updateOvMultiCatLabel();
 }
 
 function showTab(name,e){
@@ -2229,6 +2244,173 @@ function renderAll(){renderPlayers();renderTeams();renderBlocking();if(_saTeamId
 
 // ── OVERVIEW ──
 let _ovMode='matches';
+// ── ADMIN OVERVIEW MULTICAT ──
+let _ovSelectedCats=null; // null = all
+let _ovPanelEl=null;
+let _ovSort='number'; // 'number' or 'altersklasse'
+let _ovSortPanelEl=null;
+
+function _ovSortLabel(key,l){
+  l=l||lang;
+  if(key==='number')return l==='de'?'Nach Mannschaftsnummer':l==='es'?'Por número de equipo':'By team number';
+  return l==='de'?'Nach Altersklasse':l==='es'?'Por categoría (AK)':'By age group (AK)';
+}
+
+function _getOvSortPanel(){
+  if(!_ovSortPanelEl){
+    _ovSortPanelEl=document.createElement('div');
+    _ovSortPanelEl.style.cssText='display:none;position:fixed;background:#161616;border:1px solid #444;border-radius:10px;padding:6px 4px;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,.9);white-space:nowrap';
+    document.body.appendChild(_ovSortPanelEl);
+  }
+  return _ovSortPanelEl;
+}
+
+function toggleOvSortMenu(e){
+  if(e)e.stopPropagation();
+  const panel=_getOvSortPanel();
+  if(panel.style.display==='none'){
+    _buildOvSortPanelContent(panel);
+    const r=document.getElementById('ov-sort-btn').getBoundingClientRect();
+    panel.style.top=(r.bottom+4)+'px';
+    panel.style.left=r.left+'px';
+    panel.style.display='block';
+  } else {
+    panel.style.display='none';
+  }
+}
+
+document.addEventListener('click',function(e){
+  if(!_ovSortPanelEl||_ovSortPanelEl.style.display==='none')return;
+  const wrap=document.getElementById('ov-sort-wrap');
+  if(!_ovSortPanelEl.contains(e.target)&&(!wrap||!wrap.contains(e.target))){
+    _ovSortPanelEl.style.display='none';
+  }
+});
+
+function _buildOvSortPanelContent(panel){
+  panel.innerHTML='';
+  ['number','altersklasse'].forEach(function(key){
+    const lbl=document.createElement('label');
+    lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:#aaa';
+    lbl.addEventListener('mouseover',function(){lbl.style.background='#222';});
+    lbl.addEventListener('mouseout',function(){lbl.style.background='transparent';});
+    const cb=document.createElement('input');
+    cb.type='radio';cb.name='_ovsort';
+    cb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
+    cb.checked=_ovSort===key;
+    cb.addEventListener('change',function(){
+      if(cb.checked){
+        _ovSort=key;
+        document.getElementById('ov-sort-label').textContent=_ovSortLabel(key);
+        panel.style.display='none';
+        renderOverview();
+      }
+    });
+    const span=document.createElement('span');
+    span.textContent=_ovSortLabel(key);
+    lbl.appendChild(cb);
+    lbl.appendChild(span);
+    panel.appendChild(lbl);
+  });
+}
+
+function _ovSortTeams(teams){
+  const ts=[...teams];
+  if(_ovSort==='altersklasse'){
+    return ts.sort((a,b)=>{
+      if(a.category!==b.category)return a.category.localeCompare(b.category);
+      return teamNumber(a)-teamNumber(b);
+    });
+  }
+  return ts.sort((a,b)=>{
+    const na=teamNumber(a),nb=teamNumber(b);
+    if(na!==nb)return na-nb;
+    return a.category.localeCompare(b.category);
+  });
+}
+
+function _getOvPanel(){
+  if(!_ovPanelEl){
+    _ovPanelEl=document.createElement('div');
+    _ovPanelEl.style.cssText='display:none;position:fixed;background:#161616;border:1px solid #444;border-radius:10px;padding:6px 4px;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,.9)';
+    document.body.appendChild(_ovPanelEl);
+  }
+  return _ovPanelEl;
+}
+
+function toggleOvMultiCat(e){
+  if(e)e.stopPropagation();
+  const panel=_getOvPanel();
+  if(panel.style.display==='none'){
+    _buildOvPanelContent(panel);
+    const r=document.getElementById('ov-multicat-btn').getBoundingClientRect();
+    panel.style.top=(r.bottom+4)+'px';
+    panel.style.left=r.left+'px';
+    panel.style.width='160px';
+    panel.style.display='block';
+  } else {
+    panel.style.display='none';
+  }
+}
+
+document.addEventListener('click',function(e){
+  if(!_ovPanelEl||_ovPanelEl.style.display==='none')return;
+  const wrap=document.getElementById('ov-multicat');
+  if(!_ovPanelEl.contains(e.target)&&(!wrap||!wrap.contains(e.target))){
+    _ovPanelEl.style.display='none';
+  }
+});
+
+function _buildOvPanelContent(panel){
+  const cats=[...new Set(state.teams.map(t=>t.category))].sort();
+  panel.innerHTML='';
+  const allSelected=!_ovSelectedCats;
+  ['__all__',...cats].forEach(function(c){
+    const isAll=c==='__all__';
+    const lbl=document.createElement('label');
+    lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:'+(isAll?'#fff':'#aaa')+';font-weight:'+(isAll?'600':'400');
+    lbl.addEventListener('mouseover',function(){lbl.style.background='#222';});
+    lbl.addEventListener('mouseout',function(){lbl.style.background='transparent';});
+    const cb=document.createElement('input');
+    cb.type='checkbox';
+    cb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
+    cb.checked=isAll?allSelected:(allSelected||!!(_ovSelectedCats&&_ovSelectedCats.includes(c)));
+    if(isAll)cb.id='_ov_mc_all';
+    else cb.dataset.cat=c;
+    cb.addEventListener('change',function(){
+      if(isAll){
+        _ovSelectedCats=cb.checked?null:[];
+      } else {
+        const checked=[..._ovPanelEl.querySelectorAll('input[data-cat]:checked')].map(function(i){return i.dataset.cat;});
+        _ovSelectedCats=checked.length===cats.length?null:checked;
+        const allCb=_ovPanelEl.querySelector('#_ov_mc_all');
+        if(allCb)allCb.checked=!_ovSelectedCats;
+      }
+      _updateOvMultiCatLabel();
+      _buildOvPanelContent(panel);
+      renderOverview();
+    });
+    const span=document.createElement('span');
+    span.textContent=isAll?(lang==='de'?'Alle':lang==='es'?'Todas':'All'):c;
+    lbl.appendChild(cb);
+    lbl.appendChild(span);
+    panel.appendChild(lbl);
+    if(isAll){
+      const div=document.createElement('div');
+      div.style.cssText='border-top:1px solid #333;margin:3px 6px';
+      panel.appendChild(div);
+    }
+  });
+}
+
+function _updateOvMultiCatLabel(){
+  const lbl=document.getElementById('ov-multicat-label');
+  if(!lbl)return;
+  if(!_ovSelectedCats)lbl.textContent=lang==='de'?'Alle Kategorien':lang==='es'?'Todas las categorías':'All categories';
+  else if(!_ovSelectedCats.length)lbl.textContent=lang==='de'?'Keine':lang==='es'?'Ninguna':'None';
+  else lbl.textContent=_ovSelectedCats.join(', ');
+}
+
 function setOverviewMode(mode){
   _ovMode=mode;
   document.getElementById('ov-btn-matches').style.background=mode==='matches'?'var(--court)':'transparent';
@@ -2241,22 +2423,14 @@ function setOverviewMode(mode){
 }
 
 function renderOverview(){
-  const cats=[...new Set(state.teams.map(t=>t.category))].sort();
-  const sel=document.getElementById('overview-cat-filter');
-  if(sel){
-    const cur=sel.value||cats[0]||'';
-    sel.innerHTML=cats.map(c=>`<option value="${c}" ${cur===c?'selected':''}>${c}</option>`).join('');
-    if(!sel.value&&cats.length)sel.value=cats[0];
-  }
-  const cat=sel?.value||'';
-  if(!cat)return;
-  if(_ovMode==='matches') renderOverviewMatches(cat);
-  else renderOverviewPlayers(cat);
+  _updateOvMultiCatLabel();
+  if(_ovMode==='matches') renderOverviewMatches(_ovSelectedCats);
+  else renderOverviewPlayers(_ovSelectedCats);
 }
 
-function renderOverviewMatches(cat){
+function renderOverviewMatches(selectedCats){
   const el=document.getElementById('overview-content');
-  const teams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  const teams=_ovSortTeams((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
   const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
   if(!matches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
   const dates=[...new Set(matches.map(m=>m.date))].sort();
@@ -2313,14 +2487,14 @@ function renderOverviewMatches(cat){
         const p=pid?playerById(pid):null;
         playersHtml+=`<div style="font-size:10px;padding:1px 0;color:${p?'var(--white)':'#2e4a42'};display:flex;gap:4px;align-items:center">
           <span style="color:var(--muted);min-width:12px;font-size:9px">${i+1}.</span>
-          <span>${shortPN(p)}</span>
+          <span title="${p?p.name:''}">${shortPN(p)}</span>
         </div>`;
       }
       if(ersatzPid){
         const ep=playerById(ersatzPid);
         if(ep)playersHtml+=`<div style="font-size:10px;padding:2px 0;border-top:1px dashed var(--border2);margin-top:2px;color:var(--muted);display:flex;gap:4px;align-items:center">
           <span style="color:#444;min-width:12px;font-size:9px">E.</span>
-          <span>${shortPN(ep)}</span>
+          <span title="${ep.name}">${shortPN(ep)}</span>
         </div>`;
       }
       html+=`<td style="padding:6px 8px;vertical-align:top">
@@ -2333,6 +2507,53 @@ function renderOverviewMatches(cat){
     }
     html+='</tr>';
   }
+
+  // ── NICHT AUFGESTELLT row ──
+  const naLabel=lang==='de'?'Nicht aufgestellt':lang==='es'?'No alineados':'Not in lineup';
+  html+=`<tr style="border-top:2px solid var(--border2);background:#0f0f0f">
+    <td style="padding:8px 12px;font-weight:600;color:var(--muted);white-space:nowrap;vertical-align:top;font-size:11px;text-transform:uppercase;letter-spacing:.5px">${naLabel}</td>`;
+  for(const d of dates){
+    const dayMatches=matches.filter(x=>x.date===d);
+    if(!dayMatches.length){html+=`<td style="padding:8px 10px;text-align:center;color:var(--border2);vertical-align:top">—</td>`;continue;}
+    const inLineupAcrossDay=new Set();
+    for(const dm of dayMatches){
+      const dmTeam=teamById(dm.teamId);
+      const dmSz=teamSize(dmTeam);
+      const dmSlots=state.lineups[dm.id]||[];
+      dmSlots.slice(0,dmSz).filter(Boolean).forEach(pid=>inLineupAcrossDay.add(pid));
+      if(dmSlots[dmSz])inLineupAcrossDay.add(dmSlots[dmSz]);
+    }
+    const availMap=new Map();
+    const ord={yes:0,conditional:1,notfall:2};
+    for(const dm of dayMatches){
+      const dmTeamPlayers=state.players.filter(p=>p.teamIds.includes(dm.teamId));
+      for(const p of dmTeamPlayers){
+        if(inLineupAcrossDay.has(p.id))continue;
+        const a=state.availability[dm.id]?.[p.id]||'';
+        if(a!=='yes'&&a!=='conditional'&&a!=='notfall')continue;
+        const existing=availMap.get(p.id);
+        if(!existing||ord[a]<ord[existing.a])availMap.set(p.id,{p,a});
+      }
+    }
+    if(!availMap.size){html+=`<td style="padding:8px 10px;text-align:center;color:var(--border2);vertical-align:top">—</td>`;continue;}
+    const sorted=[...availMap.values()].sort((x,y)=>{
+      if(ord[x.a]!==ord[y.a])return ord[x.a]-ord[y.a];
+      return (x.p.rank||999)-(y.p.rank||999);
+    });
+    let cellHtml='<td style="padding:6px 8px;vertical-align:top">';
+    for(const x of sorted){
+      const c=x.a==='yes'?'#52c97a':x.a==='conditional'?'rgba(82,201,122,.7)':'var(--warn)';
+      const mark=x.a==='yes'?'✓':x.a==='conditional'?'(✓)':'!';
+      cellHtml+=`<div style="font-size:10px;padding:1px 0;color:${c};display:flex;gap:4px;align-items:center;white-space:nowrap">
+        <span style="min-width:14px;font-size:9px;opacity:.8">${mark}</span>
+        <span title="${x.p.name}">${shortPN(x.p)}</span>
+      </div>`;
+    }
+    cellHtml+='</td>';
+    html+=cellHtml;
+  }
+  html+='</tr>';
+
   html+='</tbody></table>';
   html+=`<div style="margin-top:10px;display:flex;gap:12px;font-size:11px;flex-wrap:wrap">
     <span style="color:var(--court)">■ Vollständig</span>
@@ -2342,9 +2563,9 @@ function renderOverviewMatches(cat){
   el.innerHTML=html;
 }
 
-function renderOverviewPlayers(cat){
+function renderOverviewPlayers(selectedCats){
   const el=document.getElementById('overview-content');
-  const teams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  const teams=_ovSortTeams((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
   const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
   if(!matches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
   const dates=[...new Set(matches.map(m=>m.date))].sort();
