@@ -76,7 +76,7 @@ main{padding:22px;max-width:1080px;margin:0 auto;display:grid;grid-template-colu
 .match-meta{font-size:11px;color:var(--muted);margin-top:2px}
 .match-status{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
 .status-ready{background:#1a2e26;color:var(--court)}
-.status-open{background:#2e2a1a;color:var(--warn)}
+.status-open{background:#2e2a15;color:#ffd700}
 .prog-bar{height:4px;background:#252525;border-radius:2px;overflow:hidden;margin-top:8px}
 .prog-fill{height:100%;background:var(--court);border-radius:2px;transition:width .3s}
 
@@ -244,7 +244,13 @@ input:focus,select:focus{border-color:var(--court)}
         <!-- Multi-select dropdown: shown in both Spiele and Spieler modes -->
         <div id="kap-ov-multicat" style="position:relative">
           <button id="kap-ov-multicat-btn" onclick="toggleMultiCat(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
-            <span id="kap-ov-multicat-label" style="font-size:12px;white-space:nowrap">Alle Kategorien</span>
+            <span id="kap-ov-multicat-label" style="font-size:12px;white-space:nowrap">Alle Altersklassen</span>
+            <span style="font-size:9px;color:var(--muted)">▼</span>
+          </button>
+        </div>
+        <div id="kap-ov-teams-wrap" style="position:relative">
+          <button id="kap-ov-teams-btn" onclick="toggleTeamsMenu(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
+            <span id="kap-ov-teams-label" style="font-size:12px;white-space:nowrap">Alle Teams</span>
             <span style="font-size:9px;color:var(--muted)">▼</span>
           </button>
         </div>
@@ -517,6 +523,8 @@ function setLang(l){
   // Update sort button label
   const sortLbl=document.getElementById('kap-ov-sort-label');
   if(sortLbl)sortLbl.textContent=_sortLabel(_kapOvSort,l);
+  // Update team filter label
+  if(typeof _updateTeamsLabel==='function')_updateTeamsLabel();
   // Re-render current views if loaded
   if(state.matches.length){
     renderTeamSidebar();
@@ -586,7 +594,12 @@ function renderTeamSidebar(){
     byCat[c].push(t);
   }
   let html='';
-  for(const[cat,teams] of Object.entries(byCat)){
+  for(const[cat,teams] of Object.entries(byCat).sort((a,b)=>{
+    const isDamenA=/^Damen/i.test(a[0]);
+    const isDamenB=/^Damen/i.test(b[0]);
+    if(isDamenA!==isDamenB)return isDamenA?1:-1;
+    return a[0].localeCompare(b[0]);
+  })){
     html+=`<div style="font-size:10px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;padding-left:4px">${cat}</div>`;
     for(const t of teams.sort((a,b)=>teamNumber(a)-teamNumber(b))){
       const matches=state.matches.filter(m=>m.teamId===t.id);
@@ -794,7 +807,7 @@ function renderLineupSlots(){
     if(filledCount>=size)
       warnHtml=`<div class="ok-banner">✓ Aufstellung vollständig</div>`;
     else if(filledCount>0)
-      warnHtml+=`<div style="background:#2d2215;border:1px solid var(--warn)44;border-radius:8px;padding:6px 12px;margin-bottom:10px;font-size:12px;color:var(--warn)">⏳ Aufstellung unvollständig (${filledCount}/${size})</div>`;
+      warnHtml+=`<div style="background:#2e2a15;border:1px solid #ffd70044;border-radius:8px;padding:6px 12px;margin-bottom:10px;font-size:12px;color:#ffd700">⏳ Aufstellung unvollständig (${filledCount}/${size})</div>`;
   }
   document.getElementById('lineup-warnings').innerHTML=warnHtml;
 
@@ -1040,6 +1053,8 @@ let _kapOvMode='matches';
 let _kapOvSelectedCats=null;
 let _kapOvSort='number'; // 'number' or 'altersklasse'
 let _kapOvSortPanelEl=null;
+let _kapOvSelectedTeams=null; // null = all teams
+let _kapOvTeamsPanelEl=null;
 
 function _sortLabel(key,l){
   l=l||lang;
@@ -1105,16 +1120,142 @@ function _buildSortPanelContent(panel){
   });
 }
 
+function _getTeamsPanel(){
+  if(!_kapOvTeamsPanelEl){
+    _kapOvTeamsPanelEl=document.createElement('div');
+    _kapOvTeamsPanelEl.style.cssText='display:none;position:fixed;background:#161616;border:1px solid #444;border-radius:10px;padding:6px 4px;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,.9)';
+    document.body.appendChild(_kapOvTeamsPanelEl);
+  }
+  return _kapOvTeamsPanelEl;
+}
+
+function toggleTeamsMenu(e){
+  if(e)e.stopPropagation();
+  const panel=_getTeamsPanel();
+  if(panel.style.display==='none'){
+    _buildTeamsPanelContent(panel);
+    const r=document.getElementById('kap-ov-teams-btn').getBoundingClientRect();
+    panel.style.top=(r.bottom+4)+'px';
+    panel.style.left=r.left+'px';
+    panel.style.width='180px';
+    panel.style.display='block';
+  } else {
+    panel.style.display='none';
+  }
+}
+
+function _buildTeamsPanelContent(panel){
+  // Filter teams by selected categories first
+  const availableTeams=(!_kapOvSelectedCats||_kapOvSelectedCats.length===0)?
+    state.teams:
+    state.teams.filter(t=>_kapOvSelectedCats.includes(t.category));
+  
+  if(!availableTeams.length){
+    panel.innerHTML='<div style="padding:10px;color:#666;font-size:12px">Keine Teams verfügbar</div>';
+    return;
+  }
+  
+  // Sort teams (Herren first, then by name)
+  const sortedTeams=_kapOvSortTeams(availableTeams);
+  const allSelected=!_kapOvSelectedTeams;
+  
+  panel.innerHTML='';
+  
+  // "All teams" option
+  const allLbl=document.createElement('label');
+  allLbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:#fff;font-weight:600';
+  allLbl.addEventListener('mouseover',function(){allLbl.style.background='#222';});
+  allLbl.addEventListener('mouseout',function(){allLbl.style.background='transparent';});
+  const allCb=document.createElement('input');
+  allCb.type='checkbox';
+  allCb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
+  allCb.checked=allSelected;
+  allCb.id='_kap_teams_all';
+  allCb.addEventListener('change',function(){
+    _kapOvSelectedTeams=allCb.checked?null:[];
+    _updateTeamsLabel();
+    _buildTeamsPanelContent(panel);
+    renderKapOverview();
+  });
+  const allSpan=document.createElement('span');
+  allSpan.textContent=lang==='de'?'Alle Teams':lang==='es'?'Todos los equipos':'All teams';
+  allLbl.appendChild(allCb);
+  allLbl.appendChild(allSpan);
+  panel.appendChild(allLbl);
+  
+  // Divider
+  const div=document.createElement('div');
+  div.style.cssText='border-top:1px solid #333;margin:3px 6px';
+  panel.appendChild(div);
+  
+  // Individual teams
+  for(const team of sortedTeams){
+    const lbl=document.createElement('label');
+    lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:#aaa';
+    lbl.addEventListener('mouseover',function(){lbl.style.background='#222';});
+    lbl.addEventListener('mouseout',function(){lbl.style.background='transparent';});
+    const cb=document.createElement('input');
+    cb.type='checkbox';
+    cb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
+    cb.checked=allSelected||!!(_kapOvSelectedTeams&&_kapOvSelectedTeams.includes(team.id));
+    cb.dataset.teamId=team.id;
+    cb.addEventListener('change',function(){
+      const checked=[..._kapOvTeamsPanelEl.querySelectorAll('input[data-team-id]:checked')].map(i=>i.dataset.teamId);
+      _kapOvSelectedTeams=checked.length===sortedTeams.length?null:checked;
+      const allCb=_kapOvTeamsPanelEl.querySelector('#_kap_teams_all');
+      if(allCb)allCb.checked=!_kapOvSelectedTeams;
+      _updateTeamsLabel();
+      _buildTeamsPanelContent(panel);
+      renderKapOverview();
+    });
+    const span=document.createElement('span');
+    span.textContent=team.name;
+    lbl.appendChild(cb);
+    lbl.appendChild(span);
+    panel.appendChild(lbl);
+  }
+}
+
+function _updateTeamsLabel(){
+  const lbl=document.getElementById('kap-ov-teams-label');
+  if(!lbl)return;
+  if(!_kapOvSelectedTeams){
+    lbl.textContent=lang==='de'?'Alle Teams':lang==='es'?'Todos los equipos':'All teams';
+  } else if(!_kapOvSelectedTeams.length){
+    lbl.textContent=lang==='de'?'Keine':lang==='es'?'Ninguno':'None';
+  } else if(_kapOvSelectedTeams.length===1){
+    const team=teamById(_kapOvSelectedTeams[0]);
+    lbl.textContent=team?team.name:'?';
+  } else {
+    lbl.textContent=`${_kapOvSelectedTeams.length} Teams`;
+  }
+}
+
+document.addEventListener('click',function(e){
+  if(!_kapOvTeamsPanelEl||_kapOvTeamsPanelEl.style.display==='none')return;
+  const wrap=document.getElementById('kap-ov-teams-wrap');
+  if(!_kapOvTeamsPanelEl.contains(e.target)&&(!wrap||!wrap.contains(e.target))){
+    _kapOvTeamsPanelEl.style.display='none';
+  }
+});
+
 function _kapOvSortTeams(teams){
   const ts=[...teams];
+  // Herren always before Damen
+  const isDamen=c=>/^Damen/i.test(c);
+  const genderRank=c=>isDamen(c)?1:0;
   if(_kapOvSort==='altersklasse'){
     return ts.sort((a,b)=>{
+      const ga=genderRank(a.category),gb=genderRank(b.category);
+      if(ga!==gb)return ga-gb;
       if(a.category!==b.category)return a.category.localeCompare(b.category);
       return teamNumber(a)-teamNumber(b);
     });
   }
   // 'number': sort by team number first, then by category
   return ts.sort((a,b)=>{
+    const ga=genderRank(a.category),gb=genderRank(b.category);
+    if(ga!==gb)return ga-gb;
     const na=teamNumber(a),nb=teamNumber(b);
     if(na!==nb)return na-nb;
     return a.category.localeCompare(b.category);
@@ -1199,7 +1340,7 @@ function _buildPanelContent(panel){
 function _updateMultiCatLabel(){
   const lbl=document.getElementById('kap-ov-multicat-label');
   if(!lbl)return;
-  if(!_kapOvSelectedCats)lbl.textContent=lang==='de'?'Alle Kategorien':lang==='es'?'Todas las categorías':'All categories';
+  if(!_kapOvSelectedCats)lbl.textContent=lang==='de'?'Alle Altersklassen':lang==='es'?'Todas las categorías':'All age groups';
   else if(!_kapOvSelectedCats.length)lbl.textContent=lang==='de'?'Keine':lang==='es'?'Ninguna':'None';
   else lbl.textContent=_kapOvSelectedCats.join(', ');
 }
@@ -1296,7 +1437,11 @@ function renderKapOverview(){
   </div>`;
 
   // Single table with filtered categories
-  const teams=_kapOvSortTeams(!selected||!selected.length?state.teams:state.teams.filter(t=>selected.includes(t.category)));
+  let teams=_kapOvSortTeams(!selected||!selected.length?state.teams:state.teams.filter(t=>selected.includes(t.category)));
+  // Apply team filter
+  if(_kapOvSelectedTeams&&_kapOvSelectedTeams.length>0){
+    teams=teams.filter(t=>_kapOvSelectedTeams.includes(t.id));
+  }
   const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
   const players=[...state.players.filter(p=>p.teamIds.some(tid=>teams.find(t=>t.id===tid)))].sort((a,b)=>(a.rank||999)-(b.rank||999));
   if(!matches.length){el.innerHTML=legend+'<div class="empty">Keine Spiele</div>';return;}
@@ -1313,7 +1458,11 @@ function goToMatchKap(matchId){
 
 function renderKapOverviewMatches(selectedCats){
   const el=document.getElementById('kap-overview-content');
-  const teams=_kapOvSortTeams((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
+  let teams=_kapOvSortTeams((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
+  // Apply team filter
+  if(_kapOvSelectedTeams&&_kapOvSelectedTeams.length>0){
+    teams=teams.filter(t=>_kapOvSelectedTeams.includes(t.id));
+  }
   const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
   if(!matches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
   const dates=[...new Set(matches.map(m=>m.date))].sort();
@@ -1357,8 +1506,8 @@ function renderKapOverviewMatches(selectedCats){
       const filled=mainSlots.filter(Boolean).length;
       const complete=filled>=sz;
       const partial=filled>0&&!complete;
-      const bg=complete?'#1a2e26':partial?'#2d2215':'#1a1a1a';
-      const col=complete?'var(--court)':partial?'var(--warn)':'var(--muted)';
+      const bg=complete?'#1a2e26':partial?'#2e2a15':'#1a1a1a';
+      const col=complete?'var(--court)':partial?'#ffd700':'var(--muted)';
       const icon=complete?'✓':partial?'⏳':'·';
       const ersatzPid=slots[sz]||null;
       let playersHtml='';
@@ -1437,10 +1586,37 @@ function renderKapOverviewMatches(selectedCats){
   html+='</tr>';
 
   html+='</tbody></table>';
-  html+=`<div style="margin-top:10px;display:flex;gap:12px;font-size:11px;flex-wrap:wrap">
-    <span style="color:var(--court)">■ Vollständig</span>
-    <span style="color:var(--warn)">■ Teilweise</span>
-    <span style="color:var(--muted)">■ Offen</span>
+  html+=`<div style="margin-top:16px;padding:12px;background:#1a1a1a;border-radius:8px;border:1px solid var(--border2)">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:11px">
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="color:var(--court);font-size:14px">●</span>
+          <span style="color:var(--muted)">Vollständig aufgestellt</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="color:#ffd700;font-size:14px">●</span>
+          <span style="color:var(--muted)">Teilweise aufgestellt</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="color:var(--muted);font-size:14px">●</span>
+          <span style="color:var(--muted)">Noch offen</span>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="color:#52c97a;font-size:14px">✓</span>
+          <span style="color:var(--muted)">Ja (Prio I)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="color:rgba(82,201,122,.7);font-size:14px">(✓)</span>
+          <span style="color:var(--muted)">Prio II</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="color:var(--warn);font-size:14px">!</span>
+          <span style="color:var(--muted)">Notfall</span>
+        </div>
+      </div>
+    </div>
   </div>`;
   el.innerHTML=html;
 }

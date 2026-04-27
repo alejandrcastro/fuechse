@@ -78,7 +78,7 @@ select option{background:#1b2926}
 .match-vs{color:var(--court);margin:0 5px}
 .match-info{font-size:11px;color:var(--muted);margin-top:2px}
 .match-status{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;text-transform:uppercase}
-.status-open{background:var(--warn)33;color:var(--warn);border:1px solid var(--warn)55}
+.status-open{background:#ffd70033;color:#ffd700;border:1px solid #ffd70055}
 .status-ready{background:#2d6a4f44;color:var(--court);border:1px solid var(--court)44}
 .avail-table{width:100%;border-collapse:collapse}
 .avail-table th{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:6px 10px;text-align:left;border-bottom:1px solid #2e4a42}
@@ -92,7 +92,7 @@ select option{background:#1b2926}
 .avail-btn.no.active{background:#e63946;color:#fff;border-color:#e63946}
 .avail-btn.maybe{background:#2e2a1a55;color:var(--warn);border-color:var(--warn)44}
 .avail-btn.maybe.active{background:var(--warn);color:var(--dark);border-color:var(--warn)}
-.lineup-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
+.lineup-grid{display:grid;grid-template-columns:1fr;gap:9px;margin-top:9px}
 .lineup-slot{background:#181818;border:1px solid var(--border);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:7px}
 .lineup-pos{font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--court);min-width:20px;text-align:center}
 .lineup-slot.warning{border-color:var(--warn)77;background:#2d2215}
@@ -272,6 +272,7 @@ window.doLogin=async function(){
   <button class="tab" onclick="showTab('spieleadmin',event)" data-tab="spieleadmin"></button>
   <button class="tab" onclick="showTab('blocking',event)" data-tab="blocking"></button>
   <button class="tab" onclick="showTab('overview',event)" data-tab="overview"></button>
+  <button class="tab" onclick="showTab('statistiken',event)" data-tab="statistiken"></button>
 </div>
 
 <main>
@@ -523,7 +524,13 @@ window.doLogin=async function(){
   <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;position:relative;z-index:200">
     <div id="ov-multicat" style="position:relative">
       <button id="ov-multicat-btn" onclick="toggleOvMultiCat(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
-        <span id="ov-multicat-label" style="font-size:12px;white-space:nowrap">Alle Kategorien</span>
+        <span id="ov-multicat-label" style="font-size:12px;white-space:nowrap">Alle Altersklassen</span>
+        <span style="font-size:9px;color:var(--muted)">▼</span>
+      </button>
+    </div>
+    <div id="ov-teams-wrap" style="position:relative">
+      <button id="ov-teams-btn" onclick="toggleOvTeamsMenu(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
+        <span id="ov-teams-label" style="font-size:12px;white-space:nowrap">Alle Teams</span>
         <span style="font-size:9px;color:var(--muted)">▼</span>
       </button>
     </div>
@@ -541,6 +548,32 @@ window.doLogin=async function(){
     </div>
   </div>
   <div id="overview-content" style="overflow-x:auto"></div>
+</div>
+
+<!-- STATISTIKEN -->
+<div class="section" id="sec-statistiken">
+  <div class="section-title">Statistiken</div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;position:relative;z-index:200">
+    <div id="stats-multicat" style="position:relative">
+      <button id="stats-multicat-btn" onclick="toggleStatsMultiCat(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
+        <span id="stats-multicat-label" style="font-size:12px;white-space:nowrap">Alle Altersklassen</span>
+        <span style="font-size:9px;color:var(--muted)">▼</span>
+      </button>
+    </div>
+    <div id="stats-sort-wrap" style="position:relative">
+      <button id="stats-sort-btn" onclick="toggleStatsSortMenu(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
+        <span id="stats-sort-label" style="font-size:12px;white-space:nowrap">Nach Datum</span>
+        <span style="font-size:9px;color:var(--muted)">▼</span>
+      </button>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <button id="stats-btn-matches" onclick="setStatsMode('matches')"
+      style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border2);background:transparent;color:var(--muted)">🎾 Spiele</button>
+    <button id="stats-btn-lkanalysis" onclick="setStatsMode('lkanalysis')"
+      style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border2);background:transparent;color:var(--muted)">📊 LK-Analyse</button>
+  </div>
+  <div id="stats-content" style="overflow-x:auto"></div>
 </div>
 
 </main>
@@ -624,7 +657,7 @@ function teamSortCmp(a,b){
 
 
 const T={
-  de:{tabs:['PDF importieren','Spieler','Mannschaften','Spiele & Aufstellung','Sperren','Overview'],
+  de:{tabs:['PDF importieren','Spieler','Mannschaften','Spiele & Aufstellung','Sperren','Overview','Statistiken'],
     ovMatches:'📋 Spiele',ovPlayers:'👥 Spieler',
     importTitle:'Spieler aus PDF importieren',importSub:'Offizielles TVBB-Format',
     uploadBtn:'TVBB-PDF hochladen',uploadSub:'Namentliche Mannschaftsmeldung · Sommer / Winter',
@@ -663,7 +696,7 @@ const T={
     pvChangeMatch:'← Spiel ändern',pvChangePlayer:'← Spieler ändern',pvOpenView:'Spieleransicht',
     syncOk:'● sync',syncErr:'✕ offline',syncIng:'⟳',availSaved:'✓ Gespeichert',confirmingAvail:'Speichern...',
     addMatchCount:'+ Spiel addieren',blockNote:'Die Regel gilt innerhalb jeder Kategorie (Herren, Herren 30 usw.) getrennt.'},
-  es:{tabs:['Importar PDF','Jugadores','Equipos','Partidos & Alineación','Bloqueos','Overview'],
+  es:{tabs:['Importar PDF','Jugadores','Equipos','Partidos & Alineación','Bloqueos','Overview','Estadísticas'],
     ovMatches:'📋 Partidos',ovPlayers:'👥 Jugadores',
     importTitle:'Importar jugadores desde PDF',importSub:'Formato oficial TVBB Berlin',
     uploadBtn:'Subir PDF del TVBB',uploadSub:'Namentliche Mannschaftsmeldung · Sommer / Winter',
@@ -702,7 +735,7 @@ const T={
     pvChangeMatch:'← Cambiar partido',pvChangePlayer:'← Cambiar jugador',pvOpenView:'Vista jugador',
     syncOk:'● sync',syncErr:'✕ offline',syncIng:'⟳',availSaved:'✓ Guardado',confirmingAvail:'Guardando...',
     addMatchCount:'+ Sumar partido',blockNote:'La regla aplica dentro de cada categoría (Herren, Herren 30, etc.) por separado.'},
-  en:{tabs:['Import PDF','Players','Teams','Matches & Lineup','Blocks','Overview'],
+  en:{tabs:['Import PDF','Players','Teams','Matches & Lineup','Blocks','Overview','Statistics'],
     ovMatches:'📋 Matches',ovPlayers:'👥 Players',
     importTitle:'Import players from PDF',importSub:'Official TVBB Berlin format',
     uploadBtn:'Upload TVBB PDF',uploadSub:'Namentliche Mannschaftsmeldung · Summer / Winter',
@@ -880,6 +913,11 @@ function applyT(){
   const sortLbl=document.getElementById('ov-sort-label');
   if(sortLbl)sortLbl.textContent=_ovSortLabel(_ovSort,lang);
   if(typeof _updateOvMultiCatLabel==='function')_updateOvMultiCatLabel();
+  if(typeof _updateOvTeamsLabel==='function')_updateOvTeamsLabel();
+  // Update stats labels
+  const statsSortLbl=document.getElementById('stats-sort-label');
+  if(statsSortLbl)statsSortLbl.textContent=_statsSortLabel(_statsSort,lang);
+  if(typeof _updateStatsMultiCatLabel==='function')_updateStatsMultiCatLabel();
 }
 
 function showTab(name,e){
@@ -892,6 +930,7 @@ function showTab(name,e){
   if(name==='spieleadmin'){renderSATeamSidebar();populateTeamSel('m-team');}
   if(name==='blocking')renderBlocking();
   if(name==='overview')renderOverview();
+  if(name==='statistiken'){setStatsMode('matches');}
 }
 
 // ── DRAG & DROP SETUP ──
@@ -1430,7 +1469,7 @@ function renderAvail(){
     return ra-rb;
   });
   if(!tp.length){el.innerHTML=`<div class="empty">${tr('noTeamPlayers')}</div>`;return;}
-  const yesCount=tp.filter(p=>avail[p.id]==='yes'||avail[p.id]==='conditional').length;
+  const yesCount=tp.filter(p=>avail[p.id]==='yes').length;
   el.innerHTML=`<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">
       <div>
@@ -1966,7 +2005,7 @@ function renderSAMatchList(){
   document.getElementById('sa-match-list').innerHTML=matches.map(m=>{
     const avail=state.availability[m.id]||{};
     const tp=state.players.filter(p=>p.teamIds.includes(m.teamId));
-    const yes=tp.filter(p=>avail[p.id]==='yes'||avail[p.id]==='conditional').length;
+    const yes=tp.filter(p=>avail[p.id]==='yes').length;
     const pct=tp.length>0?Math.round(yes/tp.length*100):0;
     const sz=teamSize(team);
     const slots=(state.lineups[m.id]||[]).slice(0,sz);
@@ -2198,7 +2237,7 @@ function renderSAAvail(){
     return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);
   });
   if(!tp.length){document.getElementById('sa-avail-content').innerHTML=`<div class="empty">${tr('noTeamPlayers')}</div>`;return;}
-  const yesCount=tp.filter(p=>avail[p.id]==='yes'||avail[p.id]==='conditional').length;
+  const yesCount=tp.filter(p=>avail[p.id]==='yes').length;
   const _gl={yes:'✓ Ja',conditional:'(Ja) — Prio II',notfall:'Im Notfall',no:'✗ Nein','':'— Keine Angabe'};
   const _gc={yes:'var(--court)',conditional:'#52c97a',notfall:'var(--warn)',no:'var(--danger)','':'var(--muted)'};
   let _lg=undefined;
@@ -2249,6 +2288,8 @@ let _ovSelectedCats=null; // null = all
 let _ovPanelEl=null;
 let _ovSort='number'; // 'number' or 'altersklasse'
 let _ovSortPanelEl=null;
+let _ovSelectedTeams=null; // null = all teams
+let _ovTeamsPanelEl=null;
 
 function _ovSortLabel(key,l){
   l=l||lang;
@@ -2314,15 +2355,141 @@ function _buildOvSortPanelContent(panel){
   });
 }
 
+function _getOvTeamsPanel(){
+  if(!_ovTeamsPanelEl){
+    _ovTeamsPanelEl=document.createElement('div');
+    _ovTeamsPanelEl.style.cssText='display:none;position:fixed;background:#161616;border:1px solid #444;border-radius:10px;padding:6px 4px;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,.9)';
+    document.body.appendChild(_ovTeamsPanelEl);
+  }
+  return _ovTeamsPanelEl;
+}
+
+function toggleOvTeamsMenu(e){
+  if(e)e.stopPropagation();
+  const panel=_getOvTeamsPanel();
+  if(panel.style.display==='none'){
+    _buildOvTeamsPanelContent(panel);
+    const r=document.getElementById('ov-teams-btn').getBoundingClientRect();
+    panel.style.top=(r.bottom+4)+'px';
+    panel.style.left=r.left+'px';
+    panel.style.width='180px';
+    panel.style.display='block';
+  } else {
+    panel.style.display='none';
+  }
+}
+
+function _buildOvTeamsPanelContent(panel){
+  // Filter teams by selected categories first
+  const availableTeams=(!_ovSelectedCats||_ovSelectedCats.length===0)?
+    state.teams:
+    state.teams.filter(t=>_ovSelectedCats.includes(t.category));
+  
+  if(!availableTeams.length){
+    panel.innerHTML='<div style="padding:10px;color:#666;font-size:12px">Keine Teams verfügbar</div>';
+    return;
+  }
+  
+  // Sort teams (Herren first, then by name)
+  const sortedTeams=_ovSortTeams(availableTeams);
+  const allSelected=!_ovSelectedTeams;
+  
+  panel.innerHTML='';
+  
+  // "All teams" option
+  const allLbl=document.createElement('label');
+  allLbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:#fff;font-weight:600';
+  allLbl.addEventListener('mouseover',function(){allLbl.style.background='#222';});
+  allLbl.addEventListener('mouseout',function(){allLbl.style.background='transparent';});
+  const allCb=document.createElement('input');
+  allCb.type='checkbox';
+  allCb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
+  allCb.checked=allSelected;
+  allCb.id='_ov_teams_all';
+  allCb.addEventListener('change',function(){
+    _ovSelectedTeams=allCb.checked?null:[];
+    _updateOvTeamsLabel();
+    _buildOvTeamsPanelContent(panel);
+    renderOverview();
+  });
+  const allSpan=document.createElement('span');
+  allSpan.textContent=lang==='de'?'Alle Teams':lang==='es'?'Todos los equipos':'All teams';
+  allLbl.appendChild(allCb);
+  allLbl.appendChild(allSpan);
+  panel.appendChild(allLbl);
+  
+  // Divider
+  const div=document.createElement('div');
+  div.style.cssText='border-top:1px solid #333;margin:3px 6px';
+  panel.appendChild(div);
+  
+  // Individual teams
+  for(const team of sortedTeams){
+    const lbl=document.createElement('label');
+    lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:#aaa';
+    lbl.addEventListener('mouseover',function(){lbl.style.background='#222';});
+    lbl.addEventListener('mouseout',function(){lbl.style.background='transparent';});
+    const cb=document.createElement('input');
+    cb.type='checkbox';
+    cb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
+    cb.checked=allSelected||!!(_ovSelectedTeams&&_ovSelectedTeams.includes(team.id));
+    cb.dataset.teamId=team.id;
+    cb.addEventListener('change',function(){
+      const checked=[..._ovTeamsPanelEl.querySelectorAll('input[data-team-id]:checked')].map(i=>i.dataset.teamId);
+      _ovSelectedTeams=checked.length===sortedTeams.length?null:checked;
+      const allCb=_ovTeamsPanelEl.querySelector('#_ov_teams_all');
+      if(allCb)allCb.checked=!_ovSelectedTeams;
+      _updateOvTeamsLabel();
+      _buildOvTeamsPanelContent(panel);
+      renderOverview();
+    });
+    const span=document.createElement('span');
+    span.textContent=team.name;
+    lbl.appendChild(cb);
+    lbl.appendChild(span);
+    panel.appendChild(lbl);
+  }
+}
+
+function _updateOvTeamsLabel(){
+  const lbl=document.getElementById('ov-teams-label');
+  if(!lbl)return;
+  if(!_ovSelectedTeams){
+    lbl.textContent=lang==='de'?'Alle Teams':lang==='es'?'Todos los equipos':'All teams';
+  } else if(!_ovSelectedTeams.length){
+    lbl.textContent=lang==='de'?'Keine':lang==='es'?'Ninguno':'None';
+  } else if(_ovSelectedTeams.length===1){
+    const team=teamById(_ovSelectedTeams[0]);
+    lbl.textContent=team?team.name:'?';
+  } else {
+    lbl.textContent=`${_ovSelectedTeams.length} Teams`;
+  }
+}
+
+document.addEventListener('click',function(e){
+  if(!_ovTeamsPanelEl||_ovTeamsPanelEl.style.display==='none')return;
+  const wrap=document.getElementById('ov-teams-wrap');
+  if(!_ovTeamsPanelEl.contains(e.target)&&(!wrap||!wrap.contains(e.target))){
+    _ovTeamsPanelEl.style.display='none';
+  }
+});
+
 function _ovSortTeams(teams){
   const ts=[...teams];
+  // Herren always before Damen
+  const isDamen=c=>/^Damen/i.test(c);
+  const genderRank=c=>isDamen(c)?1:0;
   if(_ovSort==='altersklasse'){
     return ts.sort((a,b)=>{
+      const ga=genderRank(a.category),gb=genderRank(b.category);
+      if(ga!==gb)return ga-gb;
       if(a.category!==b.category)return a.category.localeCompare(b.category);
       return teamNumber(a)-teamNumber(b);
     });
   }
   return ts.sort((a,b)=>{
+    const ga=genderRank(a.category),gb=genderRank(b.category);
+    if(ga!==gb)return ga-gb;
     const na=teamNumber(a),nb=teamNumber(b);
     if(na!==nb)return na-nb;
     return a.category.localeCompare(b.category);
@@ -2406,7 +2573,7 @@ function _buildOvPanelContent(panel){
 function _updateOvMultiCatLabel(){
   const lbl=document.getElementById('ov-multicat-label');
   if(!lbl)return;
-  if(!_ovSelectedCats)lbl.textContent=lang==='de'?'Alle Kategorien':lang==='es'?'Todas las categorías':'All categories';
+  if(!_ovSelectedCats)lbl.textContent=lang==='de'?'Alle Altersklassen':lang==='es'?'Todas las categorías':'All age groups';
   else if(!_ovSelectedCats.length)lbl.textContent=lang==='de'?'Keine':lang==='es'?'Ninguna':'None';
   else lbl.textContent=_ovSelectedCats.join(', ');
 }
@@ -2430,7 +2597,11 @@ function renderOverview(){
 
 function renderOverviewMatches(selectedCats){
   const el=document.getElementById('overview-content');
-  const teams=_ovSortTeams((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
+  let teams=_ovSortTeams((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
+  // Apply team filter
+  if(_ovSelectedTeams&&_ovSelectedTeams.length>0){
+    teams=teams.filter(t=>_ovSelectedTeams.includes(t.id));
+  }
   const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
   if(!matches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
   const dates=[...new Set(matches.map(m=>m.date))].sort();
@@ -2477,8 +2648,8 @@ function renderOverviewMatches(selectedCats){
       const filled=mainSlots.filter(Boolean).length;
       const complete=filled>=sz;
       const partial=filled>0&&!complete;
-      const bg=complete?'#1a2e26':partial?'#2d2215':'#1a1a1a';
-      const col=complete?'var(--court)':partial?'var(--warn)':'var(--muted)';
+      const bg=complete?'#1a2e26':partial?'#2e2a15':'#1a1a1a';
+      const col=complete?'var(--court)':partial?'#ffd700':'var(--muted)';
       const icon=complete?'✓':partial?'⏳':'·';
       const ersatzPid=slots[sz]||null;
       let playersHtml='';
@@ -2555,17 +2726,48 @@ function renderOverviewMatches(selectedCats){
   html+='</tr>';
 
   html+='</tbody></table>';
-  html+=`<div style="margin-top:10px;display:flex;gap:12px;font-size:11px;flex-wrap:wrap">
-    <span style="color:var(--court)">■ Vollständig</span>
-    <span style="color:var(--warn)">■ Teilweise</span>
-    <span style="color:var(--muted)">■ Offen</span>
+  html+=`<div style="margin-top:16px;padding:12px;background:#1a1a1a;border-radius:8px;border:1px solid var(--border2)">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:11px">
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="color:var(--court);font-size:14px">●</span>
+          <span style="color:var(--muted)">Vollständig aufgestellt</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="color:#ffd700;font-size:14px">●</span>
+          <span style="color:var(--muted)">Teilweise aufgestellt</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="color:var(--muted);font-size:14px">●</span>
+          <span style="color:var(--muted)">Noch offen</span>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="color:#52c97a;font-size:14px">✓</span>
+          <span style="color:var(--muted)">Ja (Prio I)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="color:rgba(82,201,122,.7);font-size:14px">(✓)</span>
+          <span style="color:var(--muted)">Prio II</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="color:var(--warn);font-size:14px">!</span>
+          <span style="color:var(--muted)">Notfall</span>
+        </div>
+      </div>
+    </div>
   </div>`;
   el.innerHTML=html;
 }
 
 function renderOverviewPlayers(selectedCats){
   const el=document.getElementById('overview-content');
-  const teams=_ovSortTeams((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
+  let teams=_ovSortTeams((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
+  // Apply team filter
+  if(_ovSelectedTeams&&_ovSelectedTeams.length>0){
+    teams=teams.filter(t=>_ovSelectedTeams.includes(t.id));
+  }
   const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
   if(!matches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
   const dates=[...new Set(matches.map(m=>m.date))].sort();
@@ -2575,7 +2777,7 @@ function renderOverviewPlayers(selectedCats){
   // Legend — always on top
   const legendLabels={es:['Aufstellung','Ersatz','Disponible','Si necesario','No','★ Stammmannschaft'],de:['Aufstellung','Ersatz','Verfügbar','Im Notfall','Nein','★ Stammmannschaft'],en:['Lineup','Ersatz','Available','If needed','No','★ Stammmannschaft']};
   const ll=legendLabels[lang]||legendLabels.de;
-  const legendColors=['var(--court)','var(--muted)','#52c97a','var(--warn)','var(--danger)','#d4a017'];
+  const legendColors=['var(--court)','var(--muted)','#52c97a','#ffd700','var(--danger)','#d4a017'];
   let html=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:8px 12px;background:#181818;border-radius:8px;font-size:11px">
     ${ll.map((l,i)=>`<span style="color:${legendColors[i]}">■ ${l}</span>`).join('')}
   </div>`;
@@ -2977,6 +3179,404 @@ async function deleteAllMatches(){
     await loadAll();
     statusEl.textContent=tr('deletedMsg');
   }catch(e){setSync('err',tr('syncErr'));console.error(e);}
+}
+
+
+// ── STATISTIKEN ──
+let _statsSelectedCats=null;
+let _statsPanelEl=null;
+let _statsSort='date'; // 'date' or 'team'
+let _statsSortPanelEl=null;
+let _statsMode='matches'; // 'matches' or 'lkanalysis'
+
+function setStatsMode(mode){
+  _statsMode=mode;
+  document.getElementById('stats-btn-matches').style.color=mode==='matches'?'var(--court)':'var(--muted)';
+  document.getElementById('stats-btn-matches').style.borderBottomColor=mode==='matches'?'var(--court)':'transparent';
+  document.getElementById('stats-btn-lkanalysis').style.color=mode==='lkanalysis'?'var(--court)':'var(--muted)';
+  document.getElementById('stats-btn-lkanalysis').style.borderBottomColor=mode==='lkanalysis'?'var(--court)':'transparent';
+  
+  // Show/hide sort controls based on mode
+  const sortWrap=document.getElementById('stats-sort-wrap');
+  const multicatWrap=document.getElementById('stats-multicat');
+  if(mode==='lkanalysis'){
+    sortWrap.style.display='none';
+    multicatWrap.style.display='flex';
+  } else {
+    sortWrap.style.display='flex';
+    multicatWrap.style.display='flex';
+  }
+  
+  renderStatistiken();
+}
+
+function _statsSortLabel(key,l){
+  l=l||lang;
+  if(key==='date')return l==='de'?'Nach Datum':l==='es'?'Por fecha':'By date';
+  return l==='de'?'Nach Mannschaft':l==='es'?'Por equipo':'By team';
+}
+
+function _getStatsPanel(){
+  if(!_statsPanelEl){
+    _statsPanelEl=document.createElement('div');
+    _statsPanelEl.style.cssText='display:none;position:fixed;background:#161616;border:1px solid #444;border-radius:10px;padding:6px 4px;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,.9)';
+    document.body.appendChild(_statsPanelEl);
+  }
+  return _statsPanelEl;
+}
+
+function toggleStatsMultiCat(e){
+  if(e)e.stopPropagation();
+  const panel=_getStatsPanel();
+  if(panel.style.display==='none'){
+    _buildStatsPanelContent(panel);
+    const r=document.getElementById('stats-multicat-btn').getBoundingClientRect();
+    panel.style.top=(r.bottom+4)+'px';
+    panel.style.left=r.left+'px';
+    panel.style.width='160px';
+    panel.style.display='block';
+  } else {
+    panel.style.display='none';
+  }
+}
+
+function _buildStatsPanelContent(panel){
+  const cats=[...new Set(state.teams.map(t=>t.category))].sort();
+  panel.innerHTML='';
+  const allSelected=!_statsSelectedCats;
+  ['__all__',...cats].forEach(function(c){
+    const isAll=c==='__all__';
+    const lbl=document.createElement('label');
+    lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:'+(isAll?'#fff':'#aaa')+';font-weight:'+(isAll?'600':'400');
+    lbl.addEventListener('mouseover',function(){lbl.style.background='#222';});
+    lbl.addEventListener('mouseout',function(){lbl.style.background='transparent';});
+    const cb=document.createElement('input');
+    cb.type='checkbox';
+    cb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
+    cb.checked=isAll?allSelected:(allSelected||!!(_statsSelectedCats&&_statsSelectedCats.includes(c)));
+    if(isAll)cb.id='_stats_mc_all';
+    else cb.dataset.cat=c;
+    cb.addEventListener('change',function(){
+      if(isAll){
+        _statsSelectedCats=cb.checked?null:[];
+      } else {
+        const checked=[..._statsPanelEl.querySelectorAll('input[data-cat]:checked')].map(function(i){return i.dataset.cat;});
+        _statsSelectedCats=checked.length===cats.length?null:checked;
+        const allCb=_statsPanelEl.querySelector('#_stats_mc_all');
+        if(allCb)allCb.checked=!_statsSelectedCats;
+      }
+      _updateStatsMultiCatLabel();
+      _buildStatsPanelContent(panel);
+      renderStatistiken();
+    });
+    const span=document.createElement('span');
+    span.textContent=isAll?(lang==='de'?'Alle':lang==='es'?'Todas':'All'):c;
+    lbl.appendChild(cb);
+    lbl.appendChild(span);
+    panel.appendChild(lbl);
+    if(isAll){
+      const div=document.createElement('div');
+      div.style.cssText='border-top:1px solid #333;margin:3px 6px';
+      panel.appendChild(div);
+    }
+  });
+}
+
+function _updateStatsMultiCatLabel(){
+  const lbl=document.getElementById('stats-multicat-label');
+  if(!lbl)return;
+  if(!_statsSelectedCats)lbl.textContent=lang==='de'?'Alle Altersklassen':lang==='es'?'Todas las categorías':'All age groups';
+  else if(!_statsSelectedCats.length)lbl.textContent=lang==='de'?'Keine':lang==='es'?'Ninguna':'None';
+  else lbl.textContent=_statsSelectedCats.join(', ');
+}
+
+function _getStatsSortPanel(){
+  if(!_statsSortPanelEl){
+    _statsSortPanelEl=document.createElement('div');
+    _statsSortPanelEl.style.cssText='display:none;position:fixed;background:#161616;border:1px solid #444;border-radius:10px;padding:6px 4px;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,.9);white-space:nowrap';
+    document.body.appendChild(_statsSortPanelEl);
+  }
+  return _statsSortPanelEl;
+}
+
+function toggleStatsSortMenu(e){
+  if(e)e.stopPropagation();
+  const panel=_getStatsSortPanel();
+  if(panel.style.display==='none'){
+    _buildStatsSortPanelContent(panel);
+    const r=document.getElementById('stats-sort-btn').getBoundingClientRect();
+    panel.style.top=(r.bottom+4)+'px';
+    panel.style.left=r.left+'px';
+    panel.style.display='block';
+  } else {
+    panel.style.display='none';
+  }
+}
+
+function _buildStatsSortPanelContent(panel){
+  panel.innerHTML='';
+  ['date','team'].forEach(function(key){
+    const lbl=document.createElement('label');
+    lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:#aaa';
+    lbl.addEventListener('mouseover',function(){lbl.style.background='#222';});
+    lbl.addEventListener('mouseout',function(){lbl.style.background='transparent';});
+    const cb=document.createElement('input');
+    cb.type='radio';cb.name='_statssort';
+    cb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
+    cb.checked=_statsSort===key;
+    cb.addEventListener('change',function(){
+      if(cb.checked){
+        _statsSort=key;
+        document.getElementById('stats-sort-label').textContent=_statsSortLabel(key);
+        panel.style.display='none';
+        renderStatistiken();
+      }
+    });
+    const span=document.createElement('span');
+    span.textContent=_statsSortLabel(key);
+    lbl.appendChild(cb);
+    lbl.appendChild(span);
+    panel.appendChild(lbl);
+  });
+}
+
+document.addEventListener('click',function(e){
+  if(!_statsPanelEl||_statsPanelEl.style.display==='none')return;
+  const wrap=document.getElementById('stats-multicat');
+  if(!_statsPanelEl.contains(e.target)&&(!wrap||!wrap.contains(e.target))){
+    _statsPanelEl.style.display='none';
+  }
+});
+
+document.addEventListener('click',function(e){
+  if(!_statsSortPanelEl||_statsSortPanelEl.style.display==='none')return;
+  const wrap=document.getElementById('stats-sort-wrap');
+  if(!_statsSortPanelEl.contains(e.target)&&(!wrap||!wrap.contains(e.target))){
+    _statsSortPanelEl.style.display='none';
+  }
+});
+
+function renderStatistiken(){
+  _updateStatsMultiCatLabel();
+  if(_statsMode==='matches'){
+    renderStatsMatches();
+  } else if(_statsMode==='lkanalysis'){
+    renderStatsLKAnalysis();
+  }
+}
+
+function renderStatsMatches(){
+  const el=document.getElementById('stats-content');
+  const selectedCats=_statsSelectedCats;
+  let teams=((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
+  // Apply team filter (reuse overview filter state)
+  if(_ovSelectedTeams&&_ovSelectedTeams.length>0){
+    teams=teams.filter(t=>_ovSelectedTeams.includes(t.id));
+  }
+  if(!teams.length){el.innerHTML='<div class="empty">Keine Teams</div>';return;}
+  
+  const allMatches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId));
+  if(!allMatches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
+  
+  // Sort matches
+  const matches=allMatches.sort((a,b)=>{
+    if(_statsSort==='date'){
+      if(a.date!==b.date)return a.date.localeCompare(b.date);
+      const teamA=teamById(a.teamId);const teamB=teamById(b.teamId);
+      return (teamA?.name||'').localeCompare(teamB?.name||'');
+    }
+    const teamA=teamById(a.teamId);const teamB=teamById(b.teamId);
+    if((teamA?.name||'')!==(teamB?.name||''))return (teamA?.name||'').localeCompare(teamB?.name||'');
+    return a.date.localeCompare(b.date);
+  });
+  
+  let html='<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  html+='<thead><tr style="border-bottom:2px solid var(--border2)">';
+  html+='<th style="text-align:left;padding:8px 12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Datum</th>';
+  html+='<th style="text-align:left;padding:8px 12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Partie</th>';
+  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Antw.</th>';
+  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Ja</th>';
+  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Prio II</th>';
+  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Notfall</th>';
+  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Nein</th>';
+  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">LK ⌀<br>Aufstellung</th>';
+  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Stammsp.<br>Verfügbar</th>';
+  html+='</tr></thead><tbody>';
+  
+  let totalMatches=0,totalResponses=0,totalPlayers=0,totalAvailLK=0,totalAvailCount=0;
+  
+  for(const m of matches){
+    const team=teamById(m.teamId);
+    if(!team)continue;
+    const teamPlayers=state.players.filter(p=>p.teamIds.includes(m.teamId));
+    const stammPlayers=teamPlayers.filter(p=>state.mainTeam[p.id]?.[m.teamId]);
+    const avail=state.availability[m.id]||{};
+    
+    let responded=0,ja=0,prio2=0,notfall=0,nein=0;
+    let stammAvailable=0;
+    
+    for(const p of teamPlayers){
+      const status=avail[p.id]||'';
+      if(status)responded++;
+      if(status==='yes')ja++;
+      else if(status==='conditional')prio2++;
+      else if(status==='notfall')notfall++;
+      else if(status==='no')nein++;
+    }
+    
+    for(const p of stammPlayers){
+      const status=avail[p.id]||'';
+      if(status==='yes'||status==='conditional'||status==='notfall'){
+        stammAvailable++;
+      }
+    }
+    
+    // Calculate percentages over responses, not total players
+    const jaPct=responded>0?Math.round(ja/responded*100):0;
+    const prio2Pct=responded>0?Math.round(prio2/responded*100):0;
+    const notfallPct=responded>0?Math.round(notfall/responded*100):0;
+    const neinPct=responded>0?Math.round(nein/responded*100):0;
+    
+    // Calculate lineup average LK
+    const teamSize=team.is_4er?4:6;
+    const lineup=state.lineups[m.id]||[];
+    const mainLineup=lineup.slice(0,teamSize).filter(Boolean);
+    const lineupLKs=mainLineup.map(pid=>{
+      const p=state.players.find(pl=>pl.id===pid);
+      return p?(p.lk||99):99;
+    });
+    const avgLineupLK=lineupLKs.length?Math.round(lineupLKs.reduce((a,b)=>a+b,0)/lineupLKs.length*10)/10:'—';
+    
+    html+=`<tr style="border-bottom:1px solid var(--border2)">
+      <td style="padding:6px 12px;white-space:nowrap">${fmtDate(m.date)}</td>
+      <td style="padding:6px 12px">${team.name} vs ${(m.opponent||'').substring(0,20)}</td>
+      <td style="padding:6px 8px;text-align:center">${responded}/${teamPlayers.length}</td>
+      <td style="padding:6px 8px;text-align:center;color:#52c97a">${ja} (${jaPct}%)</td>
+      <td style="padding:6px 8px;text-align:center;color:rgba(82,201,122,.7)">${prio2} (${prio2Pct}%)</td>
+      <td style="padding:6px 8px;text-align:center;color:var(--warn)">${notfall} (${notfallPct}%)</td>
+      <td style="padding:6px 8px;text-align:center;color:var(--danger)">${nein} (${neinPct}%)</td>
+      <td style="padding:6px 8px;text-align:center">${avgLineupLK}</td>
+      <td style="padding:6px 8px;text-align:center">${stammAvailable}/${stammPlayers.length}</td>
+    </tr>`;
+    
+    totalMatches++;
+    totalResponses+=responded;
+    totalPlayers+=teamPlayers.length;
+    if(typeof avgLineupLK==='number'){totalAvailLK+=avgLineupLK;totalAvailCount++;}
+  }
+  
+  html+='</tbody></table>';
+  
+  const avgResponseRate=totalPlayers>0?Math.round(totalResponses/totalPlayers*100):'—';
+  const overallAvgLK=totalAvailCount>0?Math.round(totalAvailLK/totalAvailCount*10)/10:'—';
+  
+  html+=`<div style="margin-top:20px;padding:12px;background:#222;border-radius:8px;font-size:12px;color:var(--muted)">
+    <strong style="color:var(--white)">${totalMatches}</strong> Spiele analysiert · 
+    <strong style="color:var(--white)">${avgResponseRate}%</strong> Antwortquote · 
+    LK ⌀ Aufstellung: <strong style="color:var(--white)">${overallAvgLK}</strong>
+  </div>`;
+  
+  el.innerHTML=html;
+}
+
+function renderStatsLKAnalysis(){
+  const el=document.getElementById('stats-content');
+  const selectedCats=_statsSelectedCats;
+  let teams=((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
+  // Apply team filter (reuse overview filter state)
+  if(_ovSelectedTeams&&_ovSelectedTeams.length>0){
+    teams=teams.filter(t=>_ovSelectedTeams.includes(t.id));
+  }
+  if(!teams.length){el.innerHTML='<div class="empty">Keine Teams</div>';return;}
+  
+  // Sort teams by name for consistent display
+  const sortedTeams=teams.sort((a,b)=>{
+    // Herren before Damen
+    const isDamenA=/^Damen/i.test(a.category);
+    const isDamenB=/^Damen/i.test(b.category);
+    if(isDamenA!==isDamenB)return isDamenA?1:-1;
+    return a.name.localeCompare(b.name);
+  });
+  
+  let html='<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  html+='<thead><tr style="border-bottom:2px solid var(--border2)">';
+  html+='<th style="text-align:left;padding:8px 12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Team</th>';
+  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 1</th>';
+  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 2</th>';
+  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 3</th>';
+  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 4</th>';
+  
+  // Check if any team has 6-player format
+  const has6Players=sortedTeams.some(t=>!t.is_4er);
+  if(has6Players){
+    html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 5</th>';
+    html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 6</th>';
+  }
+  
+  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">LK ⌀ Total</th>';
+  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Spiele</th>';
+  html+='</tr></thead><tbody>';
+  
+  for(const team of sortedTeams){
+    const teamMatches=state.matches.filter(m=>m.teamId===team.id);
+    if(!teamMatches.length)continue;
+    
+    const teamSize=team.is_4er?4:6;
+    const positionLKs=Array(teamSize).fill(null).map(()=>[]);
+    let totalGames=0;
+    
+    // Collect LK data for each position across all matches
+    for(const match of teamMatches){
+      const lineup=state.lineups[match.id]||[];
+      const mainLineup=lineup.slice(0,teamSize).filter(Boolean);
+      
+      if(mainLineup.length===teamSize){
+        totalGames++;
+        for(let pos=0;pos<teamSize;pos++){
+          const playerId=mainLineup[pos];
+          const player=state.players.find(p=>p.id===playerId);
+          if(player){
+            positionLKs[pos].push(player.lk||99);
+          }
+        }
+      }
+    }
+    
+    // Calculate averages for each position
+    const positionAverages=positionLKs.map(lks=>{
+      return lks.length>0?Math.round(lks.reduce((a,b)=>a+b,0)/lks.length*10)/10:'—';
+    });
+    
+    // Calculate overall team average
+    const allLKs=positionLKs.flat();
+    const teamAverage=allLKs.length>0?Math.round(allLKs.reduce((a,b)=>a+b,0)/allLKs.length*10)/10:'—';
+    
+    html+=`<tr style="border-bottom:1px solid var(--border2)">
+      <td style="padding:8px 12px;font-weight:600">${team.name}</td>`;
+    
+    // Add position columns
+    for(let i=0;i<teamSize;i++){
+      html+=`<td style="padding:6px 8px;text-align:center">${positionAverages[i]}</td>`;
+    }
+    
+    // Fill empty columns for 4-player teams if table has 6 columns
+    if(teamSize===4&&has6Players){
+      html+=`<td style="padding:6px 8px;text-align:center;color:var(--muted)">—</td>`;
+      html+=`<td style="padding:6px 8px;text-align:center;color:var(--muted)">—</td>`;
+    }
+    
+    html+=`<td style="padding:6px 8px;text-align:center;font-weight:600">${teamAverage}</td>`;
+    html+=`<td style="padding:6px 8px;text-align:center;color:var(--muted)">${totalGames}</td>`;
+    html+=`</tr>`;
+  }
+  
+  html+='</tbody></table>';
+  
+  html+=`<div style="margin-top:20px;padding:12px;background:#222;border-radius:8px;font-size:12px;color:var(--muted)">
+    📊 <strong>LK-Analyse:</strong> Durchschnittliche Leistungsklassen pro Position basierend auf tatsächlich gespielten Aufstellungen.
+  </div>`;
+  
+  el.innerHTML=html;
 }
 
 // Init drop zones after DOM ready
