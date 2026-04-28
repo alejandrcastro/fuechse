@@ -704,27 +704,45 @@ function renderAvailPanel(){
       ${(()=>{
         let badgeLabel=s==='yes'?tr('badgeYes'):s==='notfall'?tr('badgeNotfall'):s==='no'?tr('badgeNo'):'—';
         let extraBadge='';
+        
+        // Original conditional/FREI logic
         if(s==='conditional'){
           const yesMatch=state.matches.find(om=>om.id!==match.id&&om.date===match.date&&state.availability[om.id]?.[p.id]==='yes');
           const yesTeam=yesMatch?teamById(yesMatch.teamId):null;
-          badgeLabel=yesTeam?`(Ja → ${yesTeam.name})`:'(Ja)';
-          // Check if the Ja-match is full and player is NOT in lineup there
-          if(yesMatch&&yesTeam){
-            const ySz=teamSize(yesTeam);
-            const ySlots=state.lineups[yesMatch.id]||[];
-            const yMain=ySlots.slice(0,ySz);
-            const yFull=yMain.filter(Boolean).length>=ySz;
-            const yErsatz=ySlots[ySz]||null;
-            const inYLineup=yMain.includes(p.id)||yErsatz===p.id;
-            if(yFull&&!inYLineup){
-              const freiTitle=lang==='de'?`Aufstellung von ${yesTeam.name} ist voll, Spieler nicht aufgestellt — frei für dieses Spiel`:lang==='es'?`La alineación de ${yesTeam.name} está completa, jugador no alineado — libre para este partido`:`${yesTeam.name} lineup is full, player not in lineup — free for this match`;
-              extraBadge=`<span title="${freiTitle}" style="background:#2a2a2a;color:#bbb;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">FREI</span>`;
+          badgeLabel=yesTeam?'(Ja → '+yesTeam.name+')':'(Ja)';
+          
+          // Check if Prio II player is in another lineup on same day
+          const conflictMatch=state.matches.find(om=>
+            om.id!==match.id&&om.date===match.date&&
+            (state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(p.id)
+          );
+          const conflictTeam=conflictMatch?teamById(conflictMatch.teamId):null;
+          
+          if(conflictTeam){
+            const teamShort=conflictTeam.name.replace('Herren','H').replace('Damen','D').replace('Senioren','Sen').replace('Seniorinnen','SenF').trim();
+            const bereitTitle=lang==='de'?'Bereits aufgestellt in '+conflictTeam.name:lang==='es'?'Ya alineado en '+conflictTeam.name:'Already in lineup for '+conflictTeam.name;
+            extraBadge='<span title="'+bereitTitle+'" style="background:#2a2a2a;color:#bbb;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Bereits aufgestellt ('+teamShort+')</span>';
+          } else if(yesMatch&&yesTeam){
+            try{
+              const ySz=teamSize(yesTeam);
+              const ySlots=state.lineups[yesMatch.id]||[];
+              const yMain=ySlots.slice(0,ySz);
+              const yFull=yMain.filter(Boolean).length>=ySz;
+              const yErsatz=ySlots[ySz]||null;
+              const inYLineup=yMain.includes(p.id)||yErsatz===p.id;
+              if(yFull&&!inYLineup){
+                const freiTitle=lang==='de'?'Aufstellung von '+yesTeam.name+' ist voll, Spieler nicht aufgestellt — frei für dieses Spiel':lang==='es'?'La alineación de '+yesTeam.name+' está completa, jugador no alineado — libre para este partido':yesTeam.name+' lineup is full, player not in lineup — free for this match';
+                extraBadge='<span title="'+freiTitle+'" style="background:#2a2a2a;color:#bbb;border:1px solid #52b78844;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help;box-shadow:0 0 0 1px #52b78822">FREI</span>';
+              }
+            }catch(e){
+              console.error('FREI badge error:',e);
             }
           }
         }
+        
         const bg=s==='yes'?'#1a2e26':s==='conditional'?'rgba(82,201,122,.1)':s==='notfall'?'#2e2a1a':s==='no'?'#2d1a1a':'#252525';
         const col=s==='yes'?'var(--court)':s==='conditional'?'#52c97a':s==='notfall'?'var(--warn)':s==='no'?'var(--danger)':'var(--muted)';
-        return`<span class="avail-badge" style="background:${bg};color:${col};border-radius:10px;padding:2px 8px;font-size:11px;font-weight:600">${badgeLabel}</span>${extraBadge}`;
+        return'<span class="avail-badge" style="background:'+bg+';color:'+col+';border-radius:10px;padding:2px 8px;font-size:11px;font-weight:600">'+badgeLabel+'</span>'+extraBadge;
       })()}
     </div>`;
   }
@@ -1481,7 +1499,8 @@ function renderKapOverviewMatches(selectedCats){
   }
   const catFirstNameCounts={};
   for(const cp of allCatPlayers){const fn=getFirstName(cp);catFirstNameCounts[fn]=(catFirstNameCounts[fn]||0)+1;}
-  function shortPN(p){
+  // ── HELPER FUNCTIONS ──
+function shortPN(p){
     if(!p)return'—';
     const fn=getFirstName(p);
     if(catFirstNameCounts[fn]>1)return`${fn} ${getLastInitials(p)}`;
