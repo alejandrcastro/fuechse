@@ -422,8 +422,10 @@ function isPlayerBlockedForLineup(playerId,teamId){
 function getStammkaderTeam(playerId,catGroup){
   const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
   if(!catTeams.length)return null;
-  const p=playerById(playerId);
-  const rankInCat=p?.rank??null;
+  // Use category-specific rank from rankByTeam (no fallback - player must have a rank in this category)
+  const playerRanks=state.rankByTeam[playerId]||{};
+  let rankInCat=null;
+  for(const t of catTeams){const r=playerRanks[t.id];if(r!=null){rankInCat=r;break;}}
   if(rankInCat==null)return null;
   let remaining=rankInCat;
   for(const t of catTeams){const gs=teamSize(t);if(remaining<=gs)return t;remaining-=gs;}
