@@ -139,7 +139,25 @@ select option{background:#1b2926}
 .block-panel-title{font-size:12px;font-weight:600;color:var(--danger);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
 .warn-panel{background:#1e1a0e;border:1px solid var(--warn)44;border-radius:10px;padding:12px 15px;margin-bottom:10px}
 .warn-panel-title{font-size:12px;font-weight:600;color:var(--warn);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
-@media(max-width:640px){main{padding:12px}header{padding:10px 12px}.tabs{padding:0 12px}.lineup-grid{grid-template-columns:1fr}}
+@media(max-width:640px){
+  main{padding:12px}
+  header{padding:10px 12px}
+  .tabs{padding:0 12px}
+  .lineup-grid{grid-template-columns:1fr}
+  .sa-grid{grid-template-columns:1fr!important;min-height:auto!important}
+  .sa-sidebar{border-right:none!important;border-bottom:1px solid var(--border2);padding:12px!important;max-height:none}
+  #sa-content-wrap{padding:12px!important}
+  #sa-team-sidebar{display:flex;flex-wrap:wrap;gap:6px}
+  #sa-team-sidebar .team-btn,#sa-team-sidebar button{flex:0 0 auto}
+  /* Make tables scrollable on mobile */
+  table{font-size:11px}
+  /* Reduce padding in match cards */
+  .lineup-slot{padding:8px!important}
+  /* Stack header buttons */
+  .section-header{flex-wrap:wrap;gap:6px}
+  /* Smaller fonts for mobile */
+  h1,h2{font-size:18px}
+}
 .drag-handle{color:var(--muted);font-size:14px;cursor:grab;padding:0 4px;user-select:none;flex-shrink:0}
 .drag-handle:hover{color:var(--court)}
 .lineup-slot[draggable]{cursor:default}
@@ -417,9 +435,9 @@ window.doLogin=async function(){
 
 <!-- SPIELE & AUFSTELLUNG (integrated) -->
 <div class="section" id="sec-spieleadmin" style="padding:0;max-width:none">
-  <div style="display:grid;grid-template-columns:240px 1fr;gap:0;min-height:calc(100vh - 120px)">
+  <div class="sa-grid" style="display:grid;grid-template-columns:240px 1fr;gap:0;min-height:calc(100vh - 120px)">
     <!-- Sidebar -->
-    <div style="border-right:1px solid var(--border2);padding:18px 14px;overflow-y:auto">
+    <div class="sa-sidebar" style="border-right:1px solid var(--border2);padding:18px 14px;overflow-y:auto">
       <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Mannschaften</div>
       <div style="margin-bottom:10px">
         <button onclick="document.getElementById('sa-add-form').style.display=document.getElementById('sa-add-form').style.display==='none'?'block':'none'"
@@ -688,7 +706,7 @@ const T={
     parsedMsg:(n,f)=>`${n} Spieler in ${f} PDF${f>1?'s':''}.`,importedMsg:(n,t)=>`✓ ${n} importiert. ${t} insgesamt.`,addedPlayers:n=>`+${n} weitere...`,
     matchAlert:'Bitte Mannschaft, Gegner und Datum angeben.',lkViolation:(i,a,j,b)=>`⚠️ Pos. ${i} (${a}) schlechter als Pos. ${j} (${b})`,
     lineupValid:'✓ Aufstellung regelkonform',lineupNote:'TVBB: Einzel vor Spielbeginn. Doppel max. 10 Min.',
-    blockedInLineup:(name,team)=>`⛔ ${name} gesperrt — 2× gespielt in ${team}`,
+    blockedInLineup:(name,team)=>`⛔ ${name} ist gesperrt für ${team}`,
     assignTeam:'Mannschaften',saveAssign:'Speichern',noTeam:'Keine',
     players:'Spieler',teams:'Mannschaften',matches:'Spiele',
     matchesPlayed:'Spiele gespielt',blockedFrom:'gesperrt unter',warnOneMatch:'1 Spiel — nächste Sperre',
@@ -727,7 +745,7 @@ const T={
     parsedMsg:(n,f)=>`${n} jugadores en ${f} PDF${f>1?'s':''}.`,importedMsg:(n,t)=>`✓ ${n} importados. ${t} en total.`,addedPlayers:n=>`+${n} más...`,
     matchAlert:'Completá equipo, rival y fecha.',lkViolation:(i,a,j,b)=>`⚠️ Pos. ${i} (${a}) peor que pos. ${j} (${b})`,
     lineupValid:'✓ Alineación válida',lineupNote:'TVBB: Singles antes del inicio. Dobles máximo 10 min después.',
-    blockedInLineup:(name,team)=>`⛔ ${name} bloqueado — ya jugó 2 veces en ${team}`,
+    blockedInLineup:(name,team)=>`⛔ ${name} está bloqueado para ${team}`,
     assignTeam:'Equipos',saveAssign:'Guardar',noTeam:'Sin equipo',
     players:'Jugadores',teams:'Equipos',matches:'Partidos',
     matchesPlayed:'partidos jugados',blockedFrom:'bloqueado en equipos inferiores a',warnOneMatch:'1 partido — próximo bloqueo',
@@ -765,7 +783,7 @@ const T={
     parsedMsg:(n,f)=>`${n} players in ${f} PDF${f>1?'s':''}.`,importedMsg:(n,t)=>`✓ ${n} imported. ${t} total.`,addedPlayers:n=>`+${n} more...`,
     matchAlert:'Please fill in team, opponent and date.',lkViolation:(i,a,j,b)=>`⚠️ Pos. ${i} (${a}) worse than pos. ${j} (${b})`,
     lineupValid:'✓ Valid lineup',lineupNote:'TVBB: Singles before match start. Doubles max 10 min.',
-    blockedInLineup:(name,team)=>`⛔ ${name} blocked — played 2× in ${team}`,
+    blockedInLineup:(name,team)=>`⛔ ${name} is blocked for ${team}`,
     assignTeam:'Teams',saveAssign:'Save',noTeam:'No team',
     players:'Players',teams:'Teams',matches:'Matches',
     matchesPlayed:'matches played',blockedFrom:'blocked below',warnOneMatch:'1 match — next blocks',
@@ -798,9 +816,10 @@ function teamSize(t){return t&&(t.is_4er||t.season==='Winter')?4:6}
 function getStammkaderTeam(playerId, catGroup){
   const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
   if(!catTeams.length)return null;
-  // p.rank is the global rank from the DB — source of truth, always use this first
-  const p=playerById(playerId);
-  const rankInCat=p?.rank??null;
+  // Use category-specific rank from rankByTeam (no fallback - player must have a rank in this category)
+  const playerRanks=state.rankByTeam[playerId]||{};
+  let rankInCat=null;
+  for(const t of catTeams){const r=playerRanks[t.id];if(r!=null){rankInCat=r;break;}}
   if(rankInCat==null)return null;
   let remaining=rankInCat;
   for(const t of catTeams){const gs=teamSize(t);if(remaining<=gs)return t;remaining-=gs;}
@@ -847,6 +866,13 @@ function isPlayerBlockedForTeam(playerId,teamId){
   return status.blocked.some(b=>b.id===teamId);
 }
 
+// For lineup display only — same logic but separate function for consistency with kapitaen
+function isPlayerBlockedForLineup(playerId,teamId){
+  const team=teamById(teamId);if(!team)return false;
+  const status=getPlayerBlockStatus(playerId,team.category);
+  return status.blocked.some(b=>b.id===teamId);
+}
+
 function blockReasonForTeam(playerId,teamId){
   const team=teamById(teamId);if(!team)return'';
   const status=getPlayerBlockStatus(playerId,team.category);
@@ -873,7 +899,7 @@ async function loadAll(){
     ]);
     state.teams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
     state.players=players.map(p=>({id:p.id,name:p.name,rawName:p.raw_name,idnr:p.idnr,lk:p.lk,lkStr:p.lk_str,year:p.year,teamIds:[],gender:p.gender||'M',rank:p.rank}));
-    state.matches=matches.map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue}));
+    state.matches=matches.map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue,counted:m.counted||false,ersatzCounted:m.ersatz_counted||false}));
     state.availability={};
     for(const r of avRows){if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
     state.lineups={};
@@ -1657,22 +1683,39 @@ function renderBlocking(){
 // ── LINEUP ──
 async function confirmMatchPlayed(matchId){
   const match=state.matches.find(m=>m.id===matchId);if(!match)return;
-  const lineup=(state.lineups[matchId]||[]).filter(Boolean);
-  if(!lineup.length)return;
+  const team=teamById(match.teamId);
+  const size=teamSize(team);
+  const slots=state.lineups[matchId]||[];
+  // Main lineup players (excluding Ersatz at position size)
+  const lineup=slots.slice(0,size).filter(Boolean);
+  // Check if Ersatz should also count
+  const ersatzCheckbox=document.getElementById(`ersatz-played-${matchId}`);
+  const includeErsatz=ersatzCheckbox&&ersatzCheckbox.checked;
+  const ersatzPid=slots[size];
+  const allPlayers=includeErsatz&&ersatzPid?[...lineup,ersatzPid]:lineup;
+  if(!allPlayers.length)return;
+  if(match.counted){
+    alert(lang==='de'?'Dieses Spiel wurde bereits gezählt':lang==='es'?'Este partido ya fue contado':'This match was already counted');
+    return;
+  }
   const btn=document.getElementById(`confirm-btn-${matchId}`);
   const statusEl=document.getElementById(`confirm-status-${matchId}`);
   if(btn){btn.disabled=true;btn.textContent='...';}
   setSync('ing',tr('syncIng'));
   try{
-    for(const playerId of lineup){
+    for(const playerId of allPlayers){
       if(!state.matchCounts[playerId])state.matchCounts[playerId]={};
       const cur=state.matchCounts[playerId][match.teamId]||0;
       const next=cur+1;
       state.matchCounts[playerId][match.teamId]=next;
       await sbUpsert('player_match_counts',[{player_id:playerId,team_id:match.teamId,matches_played:next}]);
     }
+    // Mark match as counted (store ersatz inclusion in counted field as JSON if needed)
+    match.counted=true;
+    match.ersatzCounted=includeErsatz;
+    await sbUpsert('matches',[{id:matchId,counted:true,ersatz_counted:includeErsatz}]);
     setSync('ok',tr('syncOk'));
-    if(statusEl)statusEl.textContent=`✓ ${lineup.length} Spieler +1`;
+    if(statusEl)statusEl.textContent=`✓ ${allPlayers.length} Spieler +1`;
     setTimeout(()=>{if(statusEl)statusEl.textContent='';},3000);
     renderBlocking();
     renderLineup();
@@ -1681,7 +1724,42 @@ async function confirmMatchPlayed(matchId){
     if(statusEl)statusEl.textContent='Fehler: '+e.message;
     console.error(e);
   }finally{
-    if(btn){btn.disabled=false;btn.textContent='✔ Spiel bestätigen & Zähler +1';}
+    if(btn){btn.disabled=false;btn.textContent=match.counted?'✓ Bereits gezählt':'✔ Spiel bestätigen & Zähler +1';}
+  }
+}
+
+async function undoMatchCount(matchId){
+  const match=state.matches.find(m=>m.id===matchId);if(!match)return;
+  if(!match.counted){
+    alert(lang==='de'?'Dieses Spiel wurde noch nicht gezählt':lang==='es'?'Este partido no fue contado todavía':'This match has not been counted yet');
+    return;
+  }
+  if(!confirm(lang==='de'?'Zähler für dieses Spiel zurücksetzen?':lang==='es'?'¿Deshacer el contador de este partido?':'Undo count for this match?'))return;
+  const team=teamById(match.teamId);
+  const size=teamSize(team);
+  const slots=state.lineups[matchId]||[];
+  const lineup=slots.slice(0,size).filter(Boolean);
+  const ersatzPid=slots[size];
+  // Use the same ersatzCounted state that was used when counting
+  const allPlayers=match.ersatzCounted&&ersatzPid?[...lineup,ersatzPid]:lineup;
+  setSync('ing',tr('syncIng'));
+  try{
+    for(const playerId of allPlayers){
+      if(!state.matchCounts[playerId])state.matchCounts[playerId]={};
+      const cur=state.matchCounts[playerId][match.teamId]||0;
+      const next=Math.max(0,cur-1);
+      state.matchCounts[playerId][match.teamId]=next;
+      await sbUpsert('player_match_counts',[{player_id:playerId,team_id:match.teamId,matches_played:next}]);
+    }
+    match.counted=false;
+    match.ersatzCounted=false;
+    await sbUpsert('matches',[{id:matchId,counted:false,ersatz_counted:false}]);
+    setSync('ok',tr('syncOk'));
+    renderBlocking();
+    renderLineup();
+  }catch(e){
+    setSync('err',tr('syncErr'));
+    console.error(e);
   }
 }
 
@@ -1751,12 +1829,12 @@ function renderLineup(){
   for(let i=0;i<size-1;i++){
     const p1=lineup[i]?playerById(lineup[i]):null;
     const p2=lineup[i+1]?playerById(lineup[i+1]):null;
-    if(p1&&p2&&(p1.rank||999)>(p2.rank||999))
+    if(p1&&p2&&playerRankInTeam(p1.id,match.teamId)>playerRankInTeam(p2.id,match.teamId))
       warnings.push(T[lang].lkViolation(i+1,p1.lkStr,i+2,p2.lkStr));
   }
   const blockedWarnings=lineup.filter(Boolean).map(pid=>{
     const p=playerById(pid);if(!p)return null;
-    if(isPlayerBlockedForTeam(pid,match.teamId))return T[lang].blockedInLineup(p.name,team?.name||'?');
+    if(isPlayerBlockedForLineup(pid,match.teamId))return T[lang].blockedInLineup(p.name,team?.name||'?');
     return null;
   }).filter(Boolean);
   el.innerHTML=`<div class="card">
@@ -1773,8 +1851,8 @@ function renderLineup(){
       ${Array.from({length:size},(_,i)=>{
         const pid=lineup[i]||'';const p=pid?playerById(pid):null;
         const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
-        const rankOk=!p||!prev||(p.rank||999)>=(prev.rank||999);
-        const isBlocked=pid?isPlayerBlockedForTeam(pid,match.teamId):false;
+        const rankOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
+        const isBlocked=pid?isPlayerBlockedForLineup(pid,match.teamId):false;
         return`<div class="lineup-slot ${p?(isBlocked?'blocked-slot':rankOk?'ok':'warning'):''}">
           <div class="lineup-pos">${i+1}</div>
           <select style="flex:1;background:#181818;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:4px 8px;font-size:11px;font-family:'DM Sans',sans-serif" onchange="setLineupPlayer('${matchId}',${i},this.value)">
@@ -1804,7 +1882,7 @@ function renderLineup(){
       // ── ERSATZ SLOT ──
       const ersatzPid=lineup[size]||'';
       const ersatzP=ersatzPid?playerById(ersatzPid):null;
-      const isBlocked=ersatzPid?isPlayerBlockedForTeam(ersatzPid,match.teamId):false;
+      const isBlocked=ersatzPid?isPlayerBlockedForLineup(ersatzPid,match.teamId):false;
       // Check if ersatz is in another team's lineup or as ersatz same day
       let ersatzWarn='';
       if(ersatzPid){
@@ -1846,8 +1924,16 @@ function renderLineup(){
     <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="sortLineup('${matchId}')" style="font-size:12px">↕ Sort</button>
       ${lineup.slice(0,size).filter(Boolean).length>=size
-        ?`<button class="btn btn-primary" onclick="confirmMatchPlayed('${matchId}')" id="confirm-btn-${matchId}">✔ Spiel bestätigen &amp; Zähler +1</button>
-          <span id="confirm-status-${matchId}" style="font-size:11px;color:var(--muted)"></span>`
+        ?match.counted
+          ?`<button class="btn btn-outline" id="confirm-btn-${matchId}" disabled style="opacity:.7">✓ Bereits gezählt${match.ersatzCounted?' (inkl. Ersatz)':''}</button>
+            <button class="btn btn-outline btn-sm" onclick="undoMatchCount('${matchId}')" style="font-size:12px;color:var(--danger);border-color:var(--danger)44">↶ Rückgängig</button>
+            <span id="confirm-status-${matchId}" style="font-size:11px;color:var(--muted)"></span>`
+          :`${lineup[size]?`<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer">
+              <input type="checkbox" id="ersatz-played-${matchId}" style="accent-color:var(--court);cursor:pointer">
+              Ersatz hat gespielt
+            </label>`:''}
+            <button class="btn btn-primary" onclick="confirmMatchPlayed('${matchId}')" id="confirm-btn-${matchId}">✔ Spiel bestätigen &amp; Zähler +1</button>
+            <span id="confirm-status-${matchId}" style="font-size:11px;color:var(--muted)"></span>`
         :''}
     </div>
   </div>`;
@@ -2060,12 +2146,12 @@ function renderSALineup(){
   for(let i=0;i<size-1;i++){
     const p1=lineup[i]?playerById(lineup[i]):null;
     const p2=lineup[i+1]?playerById(lineup[i+1]):null;
-    if(p1&&p2&&(p1.rank||999)>(p2.rank||999))
+    if(p1&&p2&&playerRankInTeam(p1.id,match.teamId)>playerRankInTeam(p2.id,match.teamId))
       warnings.push(T[lang].lkViolation(i+1,p1.lkStr,i+2,p2.lkStr));
   }
   const blockedW=lineup.slice(0,size).filter(Boolean).map(pid=>{
     const p=playerById(pid);if(!p)return null;
-    if(isPlayerBlockedForTeam(pid,match.teamId))return T[lang].blockedInLineup(p.name,team?.name||'?');
+    if(isPlayerBlockedForLineup(pid,match.teamId))return T[lang].blockedInLineup(p.name,team?.name||'?');
     return null;
   }).filter(Boolean);
   const doubleW=lineup.slice(0,size).filter(Boolean).map(pid=>{
@@ -2101,8 +2187,8 @@ function renderSALineup(){
     const pid=lineup[i]||'';
     const p=pid?playerById(pid):null;
     const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
-    const rankOk=!p||!prev||(p.rank||999)>=(prev.rank||999);
-    const isBlocked=pid?isPlayerBlockedForTeam(pid,match.teamId):false;
+    const rankOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
+    const isBlocked=pid?isPlayerBlockedForLineup(pid,match.teamId):false;
     const cls=p?(isBlocked?'blocked-slot':rankOk?'ok':'warning'):'';
     html+=`<div class="lineup-slot ${cls}" draggable="true" data-slot-index="${i}"
       ondragstart="saDragStart(event,${i})" ondragover="saDragOver(event)" ondragleave="saDragLeave(event)"
@@ -2117,7 +2203,7 @@ function renderSALineup(){
   // Ersatz
   const ersatzPid=lineup[size]||'';
   const ersatzP=ersatzPid?playerById(ersatzPid):null;
-  const ersatzBlocked=ersatzPid?isPlayerBlockedForTeam(ersatzPid,match.teamId):false;
+  const ersatzBlocked=ersatzPid?isPlayerBlockedForLineup(ersatzPid,match.teamId):false;
   let ersatzWarn='';
   if(ersatzPid){
     const otherL=state.matches.find(om=>om.id!==_saMatchId&&om.date===match.date&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(ersatzPid));
@@ -2140,6 +2226,23 @@ function renderSALineup(){
   const filledCount=lineup.slice(0,size).filter(Boolean).length;
   const confirmWrap=document.getElementById('sa-confirm-wrap');
   confirmWrap.style.display=filledCount>=size?'flex':'none';
+  if(filledCount>=size){
+    if(match.counted){
+      confirmWrap.innerHTML=`
+        <button class="btn btn-outline" id="sa-confirm-btn" disabled style="opacity:.7">✓ Bereits gezählt${match.ersatzCounted?' (inkl. Ersatz)':''}</button>
+        <button class="btn btn-outline btn-sm" onclick="saUndoMatchCount()" style="font-size:12px;color:var(--danger);border-color:var(--danger)44">↶ Rückgängig</button>
+        <span id="sa-confirm-status" style="font-size:11px;color:var(--muted)"></span>`;
+    } else {
+      const hasErsatz=!!lineup[size];
+      confirmWrap.innerHTML=`
+        ${hasErsatz?`<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer">
+          <input type="checkbox" id="sa-ersatz-played" style="accent-color:var(--court);cursor:pointer">
+          Ersatz hat gespielt
+        </label>`:''}
+        <button class="btn btn-primary" onclick="saConfirmMatch()" id="sa-confirm-btn">✔ Spiel bestätigen &amp; Zähler +1</button>
+        <span id="sa-confirm-status" style="font-size:11px;color:var(--muted)"></span>`;
+    }
+  }
 
   if(!blockedW.length&&!warnings.length&&filledCount>=size){
     document.getElementById('sa-warnings').innerHTML+=`<div style="background:#1a2d22;border:1px solid var(--court)33;border-radius:8px;padding:6px 12px;margin-bottom:8px;font-size:12px;color:var(--court)">${tr('lineupValid')}</div>`;
@@ -2205,25 +2308,69 @@ async function saSortLineup(){
 
 async function saConfirmMatch(){
   const match=state.matches.find(m=>m.id===_saMatchId);if(!match)return;
-  const lineup=(state.lineups[_saMatchId]||[]).filter(Boolean);
-  if(!lineup.length)return;
+  const team=teamById(match.teamId);
+  const size=teamSize(team);
+  const slots=state.lineups[_saMatchId]||[];
+  const lineup=slots.slice(0,size).filter(Boolean);
+  const ersatzCheckbox=document.getElementById('sa-ersatz-played');
+  const includeErsatz=ersatzCheckbox&&ersatzCheckbox.checked;
+  const ersatzPid=slots[size];
+  const allPlayers=includeErsatz&&ersatzPid?[...lineup,ersatzPid]:lineup;
+  if(!allPlayers.length)return;
+  if(match.counted){
+    alert(lang==='de'?'Dieses Spiel wurde bereits gezählt':lang==='es'?'Este partido ya fue contado':'This match was already counted');
+    return;
+  }
   const btn=document.getElementById('sa-confirm-btn');
   const statusEl=document.getElementById('sa-confirm-status');
   if(btn){btn.disabled=true;btn.textContent='...';}
   setSync('ing',tr('syncIng'));
   try{
-    for(const playerId of lineup){
+    for(const playerId of allPlayers){
       if(!state.matchCounts[playerId])state.matchCounts[playerId]={};
       const cur=state.matchCounts[playerId][match.teamId]||0;
       state.matchCounts[playerId][match.teamId]=cur+1;
       await sbUpsert('player_match_counts',[{player_id:playerId,team_id:match.teamId,matches_played:cur+1}]);
     }
+    match.counted=true;
+    match.ersatzCounted=includeErsatz;
+    await sbUpsert('matches',[{id:_saMatchId,counted:true,ersatz_counted:includeErsatz}]);
     setSync('ok',tr('syncOk'));
-    if(statusEl)statusEl.textContent=`✓ ${lineup.length} Spieler +1`;
+    if(statusEl)statusEl.textContent=`✓ ${allPlayers.length} Spieler +1`;
     setTimeout(()=>{if(statusEl)statusEl.textContent='';},3000);
     renderBlocking();renderSALineup();
   }catch(e){setSync('err',tr('syncErr'));console.error(e);}
-  finally{if(btn){btn.disabled=false;btn.textContent='✔ Spiel bestätigen & Zähler +1';}}
+  finally{if(btn){btn.disabled=false;btn.textContent=match.counted?'✓ Bereits gezählt':'✔ Spiel bestätigen & Zähler +1';}}
+}
+
+async function saUndoMatchCount(){
+  const match=state.matches.find(m=>m.id===_saMatchId);if(!match)return;
+  if(!match.counted){
+    alert(lang==='de'?'Dieses Spiel wurde noch nicht gezählt':lang==='es'?'Este partido no fue contado todavía':'This match has not been counted yet');
+    return;
+  }
+  if(!confirm(lang==='de'?'Zähler für dieses Spiel zurücksetzen?':lang==='es'?'¿Deshacer el contador de este partido?':'Undo count for this match?'))return;
+  const team=teamById(match.teamId);
+  const size=teamSize(team);
+  const slots=state.lineups[_saMatchId]||[];
+  const lineup=slots.slice(0,size).filter(Boolean);
+  const ersatzPid=slots[size];
+  const allPlayers=match.ersatzCounted&&ersatzPid?[...lineup,ersatzPid]:lineup;
+  setSync('ing',tr('syncIng'));
+  try{
+    for(const playerId of allPlayers){
+      if(!state.matchCounts[playerId])state.matchCounts[playerId]={};
+      const cur=state.matchCounts[playerId][match.teamId]||0;
+      const next=Math.max(0,cur-1);
+      state.matchCounts[playerId][match.teamId]=next;
+      await sbUpsert('player_match_counts',[{player_id:playerId,team_id:match.teamId,matches_played:next}]);
+    }
+    match.counted=false;
+    match.ersatzCounted=false;
+    await sbUpsert('matches',[{id:_saMatchId,counted:false,ersatz_counted:false}]);
+    setSync('ok',tr('syncOk'));
+    renderBlocking();renderSALineup();
+  }catch(e){setSync('err',tr('syncErr'));console.error(e);}
 }
 
 // ── SA AVAILABILITY ──
