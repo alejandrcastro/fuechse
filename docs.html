@@ -178,6 +178,7 @@ li[data-lang].visible{display:list-item}
   <div class="nav-section" data-t="nav_dev">Entwicklung</div>
   <a href="#conventions" data-t="nav_conv">Konventionen</a>
   <a href="#helpers">Helper-Funktionen</a>
+  <a href="#updates" data-t="nav_updates">Updates</a>
 </nav>
 
 <!-- MAIN -->
@@ -501,20 +502,40 @@ li[data-lang].visible{display:list-item}
     </ul>
   </section>
 
-  <section id="helpers">
-    <h3 data-t="h_helpers"></h3>
-    <table>
-      <tr><th data-t="th_fn"></th><th data-t="th_desc"></th></tr>
-      <tr><td><code>teamSize(team)</code></td><td data-t="fn_teamsize"></td></tr>
-      <tr><td><code>teamNumber(team)</code></td><td data-t="fn_teamnumber"></td></tr>
-      <tr><td><code>getPlayerBlockStatus(id, cat)</code></td><td data-t="fn_blockstatus"></td></tr>
-      <tr><td><code>isPlayerBlockedForLineup(id, teamId)</code></td><td data-t="fn_blockedlineup"></td></tr>
-      <tr><td><code>getStammkaderTeam(id, cat)</code></td><td data-t="fn_skteam"></td></tr>
-      <tr><td><code>initials(name)</code></td><td data-t="fn_initials"></td></tr>
-      <tr><td><code>fmtDate(d)</code></td><td data-t="fn_fmtdate"></td></tr>
-      <tr><td><code>tr(key)</code></td><td data-t="fn_tr"></td></tr>
-      <tr><td><code>uid()</code></td><td data-t="fn_uid"></td></tr>
-    </table>
+  <hr class="divider">
+
+  <!-- RECENT UPDATES -->
+  <section id="updates">
+    <h2 data-t="h_updates"></h2>
+    <p data-t="updates_intro"></p>
+    
+    <h3 data-t="up_count_title"></h3>
+    <p data-t="up_count_p1"></p>
+    <ul>
+      <li data-t="up_count_li1"></li>
+      <li data-t="up_count_li2"></li>
+      <li data-t="up_count_li3"></li>
+    </ul>
+    
+    <h3 data-t="up_badges_title"></h3>
+    <p data-t="up_badges_p1"></p>
+    <ul>
+      <li><strong>FREI</strong> — <span data-t="up_badge_frei"></span></li>
+      <li><strong>Bereits aufgestellt (HII)</strong> — <span data-t="up_badge_bereit"></span></li>
+    </ul>
+    
+    <h3 data-t="up_filters_title"></h3>
+    <p data-t="up_filters_p1"></p>
+    
+    <h3 data-t="up_rules_title"></h3>
+    <ul>
+      <li data-t="up_rules_li1"></li>
+      <li data-t="up_rules_li2"></li>
+      <li data-t="up_rules_li3"></li>
+    </ul>
+    
+    <h3 data-t="up_colors_title"></h3>
+    <p data-t="up_colors_p1"></p>
   </section>
 
 </main>
@@ -685,6 +706,32 @@ const T = {
     fn_fmtdate:'Formatiert "YYYY-MM-DD" → "DD.MM.YYYY"',
     fn_tr:'Übersetzung mit Fallback auf DE',
     fn_uid:'Erzeugt eine eindeutige ID (Timestamp + Zufallszahl)',
+    
+    nav_updates:'Neuerungen',
+    h_updates:'Aktuelle Neuerungen',
+    updates_intro:'Übersicht über die wichtigsten zuletzt hinzugefügten Funktionen.',
+    
+    up_count_title:'Zähler-Bestätigung mit Ersatz-Option',
+    up_count_p1:'Spiele können jetzt einmalig gezählt werden, mit optionaler Ersatz-Berücksichtigung. Schutz gegen doppelte Zählung.',
+    up_count_li1:'Checkbox "Ersatz hat gespielt" — bei Aktivierung wird auch der Ersatz mitgezählt',
+    up_count_li2:'Button "✓ Bereits gezählt" zeigt den Status nach der Bestätigung an',
+    up_count_li3:'Button "↶ Rückgängig" macht die Zählung rückgängig (mit Bestätigungsdialog)',
+    
+    up_badges_title:'Konflikt-Badges in der Aufstellung',
+    up_badges_p1:'Neue Badges für Prio II-Spieler erleichtern die Aufstellungsplanung:',
+    up_badge_frei:'Spieler ist nicht in einer anderen Aufstellung — frei verfügbar (grauer Hintergrund mit grünem Rand)',
+    up_badge_bereit:'Spieler ist bereits in einer anderen Aufstellung am selben Tag — Kurzform des Teams in Klammern',
+    
+    up_filters_title:'Granulare Filter (Overview & Statistiken)',
+    up_filters_p1:'Dreistufiges Filtersystem: Altersklassen (Multi-Select) → Teams (gefiltert nach gewählten Altersklassen) → Sortierung. Herren werden immer vor Damen sortiert.',
+    
+    up_rules_title:'Regel-Korrekturen',
+    up_rules_li1:'Stammkader/Sperren verwenden jetzt den kategorie-spezifischen Rang aus rankByTeam statt des globalen p.rank',
+    up_rules_li2:'Rang-Warnungen verwenden playerRankInTeam für korrekte Behandlung von Herren 30, Damen, Senioren etc.',
+    up_rules_li3:'LK > 20-Regel ist eine lokale Vereinsregel — sie dient dazu, die Kader der höheren Mannschaften (Herren I/II) kürzer zu halten und neue Spieler in den Einsteiger-Mannschaften (ab Mannschaft 3) zu konzentrieren, sofern nicht ausdrücklich vom Verein und den Trainern anders festgelegt. Sie erzeugt keine Warnungen in der Aufstellung, sondern erscheint nur in der Sperren-Übersicht',
+    
+    up_colors_title:'Farbschema',
+    up_colors_p1:'Konsistente Farbgebung: Grün (Vollständig/Ja), Gelb #ffd700 (Teilweise/Offen), Orange (Notfall), Rot (Nein/Gesperrt), Grau (subtile Info-Badges).',
   },
 
   es: {
@@ -851,6 +898,32 @@ const T = {
     fn_fmtdate:'Formatea "YYYY-MM-DD" → "DD.MM.YYYY"',
     fn_tr:'Traducción con fallback a DE',
     fn_uid:'Genera un ID único (timestamp + random)',
+    
+    nav_updates:'Novedades',
+    h_updates:'Novedades recientes',
+    updates_intro:'Resumen de las funcionalidades más importantes agregadas recientemente.',
+    
+    up_count_title:'Contador con opción de Ersatz',
+    up_count_p1:'Los partidos ahora se pueden contar una sola vez, con opción de incluir al Ersatz. Protección contra doble conteo.',
+    up_count_li1:'Checkbox "Ersatz hat gespielt" — si está marcado, también cuenta al Ersatz',
+    up_count_li2:'Botón "✓ Bereits gezählt" indica el estado después de confirmar',
+    up_count_li3:'Botón "↶ Rückgängig" deshace el conteo (con diálogo de confirmación)',
+    
+    up_badges_title:'Badges de conflicto en la alineación',
+    up_badges_p1:'Nuevos badges para jugadores Prio II facilitan la planificación de alineaciones:',
+    up_badge_frei:'El jugador no está en otra alineación — disponible (fondo gris con borde verde)',
+    up_badge_bereit:'El jugador ya está en otra alineación el mismo día — nombre corto del equipo entre paréntesis',
+    
+    up_filters_title:'Filtros granulares (Overview y Estadísticas)',
+    up_filters_p1:'Sistema de filtros de tres niveles: Altersklassen (multi-select) → Teams (filtrados por categorías seleccionadas) → Ordenamiento. Herren siempre antes que Damen.',
+    
+    up_rules_title:'Correcciones de reglas',
+    up_rules_li1:'Stammkader/Sperren ahora usan el rank específico por categoría desde rankByTeam en lugar del p.rank global',
+    up_rules_li2:'Las warnings de rango usan playerRankInTeam para manejo correcto de Herren 30, Damen, Senioren etc.',
+    up_rules_li3:'La regla LK > 20 es una regla local del club — sirve para mantener más cortos los planteles de los equipos superiores (Herren I/II) y concentrar a los jugadores nuevos en los equipos de iniciación (a partir del equipo 3), a menos que el club y los entrenadores lo declaren explícitamente de otra forma. No genera warnings en alineaciones, solo aparece en la vista Sperren',
+    
+    up_colors_title:'Esquema de colores',
+    up_colors_p1:'Colores consistentes: Verde (Vollständig/Ja), Amarillo #ffd700 (Teilweise/Offen), Naranja (Notfall), Rojo (Nein/Gesperrt), Gris (badges de info sutiles).',
   },
 
   en: {
@@ -1017,6 +1090,32 @@ const T = {
     fn_fmtdate:'Formats "YYYY-MM-DD" → "DD.MM.YYYY"',
     fn_tr:'Translation with fallback to DE',
     fn_uid:'Generates a unique ID (timestamp + random)',
+    
+    nav_updates:'Updates',
+    h_updates:'Recent Updates',
+    updates_intro:'Overview of the most important features added recently.',
+    
+    up_count_title:'Match counter with Ersatz option',
+    up_count_p1:'Matches can now be counted only once, with optional Ersatz inclusion. Protection against double counting.',
+    up_count_li1:'Checkbox "Ersatz hat gespielt" — when checked, also counts the Ersatz player',
+    up_count_li2:'Button "✓ Bereits gezählt" shows status after confirmation',
+    up_count_li3:'Button "↶ Rückgängig" undoes the count (with confirmation dialog)',
+    
+    up_badges_title:'Conflict badges in lineup view',
+    up_badges_p1:'New badges for Prio II players make lineup planning easier:',
+    up_badge_frei:'Player is not in any other lineup — available (gray background with green border)',
+    up_badge_bereit:'Player is already in another lineup the same day — team short name in parentheses',
+    
+    up_filters_title:'Granular filters (Overview & Statistics)',
+    up_filters_p1:'Three-level filter system: Altersklassen (multi-select) → Teams (filtered by selected categories) → Sorting. Herren always sorted before Damen.',
+    
+    up_rules_title:'Rule corrections',
+    up_rules_li1:'Stammkader/Sperren now use category-specific rank from rankByTeam instead of the global p.rank',
+    up_rules_li2:'Rank warnings use playerRankInTeam for correct handling of Herren 30, Damen, Senioren etc.',
+    up_rules_li3:'LK > 20 rule is a local club rule — its purpose is to keep the rosters of higher-ranked teams (Herren I/II) shorter and to concentrate new players in the entry-level teams (Mannschaft 3 onwards), unless explicitly declared otherwise by the club and the coaches. It does not generate warnings in lineups, only appears in the Sperren overview',
+    
+    up_colors_title:'Color scheme',
+    up_colors_p1:'Consistent colors: Green (Vollständig/Ja), Yellow #ffd700 (Teilweise/Offen), Orange (Notfall), Red (Nein/Gesperrt), Gray (subtle info badges).',
   }
 };
 
