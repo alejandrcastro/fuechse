@@ -142,8 +142,8 @@ input:focus,select:focus{border-color:var(--court)}
       <div class="sub">Kapitän-App</div>
     </div>
     <div class="login-field">
-      <label>Email</label>
-      <input id="login-email" type="email" autocomplete="email" placeholder="email@fuechse-berlin-reinickendorf.de"
+      <label>Benutzername</label>
+      <input id="login-email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Benutzername"
         onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
     </div>
     <div class="login-field" style="margin-bottom:20px">
@@ -337,8 +337,14 @@ function _rlFail(errEl){
 }
 function _rlSuccess(){_rl.attempts=0;_rl.lockedUntil=0;}
 
+// ── USERNAMES ── Supabase Auth needs an email, so a username "herren" logs in as "herren@login.fuechse-berlin-reinickendorf.de".
+// Create users in Supabase → Authentication → Add user, with that address and "Auto Confirm User". No mail is ever sent.
+const LOGIN_DOMAIN='login.fuechse-berlin-reinickendorf.de';
+function usernameToEmail(u){u=(u||'').trim().toLowerCase();if(!u.includes('@'))u=u.replace(/\s+/g,''); // "Herren 30 II" → herren30ii
+  return u.includes('@')?u:`${u}@${LOGIN_DOMAIN}`;}
+function emailToUsername(e){e=(e||'').toLowerCase();return e.endsWith('@'+LOGIN_DOMAIN)?e.slice(0,-(LOGIN_DOMAIN.length+1)):e;}
 async function doLogin(){
-  const email=document.getElementById('login-email').value.trim();
+  const email=usernameToEmail(document.getElementById('login-email').value);
   const pass=document.getElementById('login-pass').value;
   const err=document.getElementById('login-err');
   const btn=document.getElementById('login-btn');
@@ -380,11 +386,12 @@ async function sbUpsert(t,d){
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
 function initials(n){return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
 function fmtDate(d){if(!d)return'';const[y,m,day]=d.split('-');return`${day}.${m}.${y}`}
-function teamById(id){return state.teams.find(t=>t.id===id)}
+function teamById(id){return (state.allTeams||state.teams).find(t=>t.id===id)} // allTeams: conflicts across blocks stay visible
 function playerById(id){return state.players.find(p=>p.id===id)}
 function teamSize(t){return t&&(t.is_4er||t.season==='Winter')?4:6}
 function catGender(cat){if(!cat)return'M';const j=cat.match(/^U\d+\s*(m|w)?$/);if(j)return j[1]==='w'?'F':j[1]==='m'?'M':'X';return cat.toLowerCase().startsWith('damen')?'F':'M';}
 // ── CATEGORY ORDER: Herren (0) → Damen (1) → Jugend U.. (2); Jugend: U18 → U10, m → w → gemischt ──
+function blockOf(cat){return['Herren','Damen','Jugend'][catGroup(cat)];}
 function catGroup(cat){cat=cat||'';if(/^U\d+/.test(cat))return 2;return /^Damen/i.test(cat)?1:0;}
 function catAge(cat){cat=cat||'';const j=cat.match(/^U(\d+)\s*(m|w)?/);if(j)return(100-parseInt(j[1]))+(j[2]==='m'?0:j[2]==='w'?0.1:0.2);return parseInt(cat.replace(/^(Herren|Damen)\s*/,''))||0;}
 function catCmp(a,b){return catGroup(a)-catGroup(b)||catAge(a)-catAge(b);}
@@ -460,7 +467,7 @@ function setSync(s,m){const b=document.getElementById('sync-badge');b.className=
 const T={
   de:{
     tabSpiele:'Spiele & Aufstellung',tabOverview:'Overview',tabSperren:'Sperren',
-    logout:'Abmelden',teamsTitle:'Mannschaften',loading:'Laden...',
+    logout:'Abmelden',teamsTitle:'Mannschaften',loading:'Laden...',noAccess:'Keine Mannschaften freigegeben. Bitte beim Sportwart melden.',
     groupYes:'✓ Ja',groupConditional:'(Ja) — Prio II',groupNotfall:'Im Notfall',groupNo:'✗ Nein',groupNone:'— Keine Angabe',
     badgeYes:'✓ Ja',badgeNotfall:'Im Notfall',badgeNo:'Nein',
     dropYes:'── ✓ Ja',dropConditional:'── (Ja)',dropNotfall:'── Im Notfall',dropNo:'── ✗ Nein',dropNone:'── ?',
@@ -478,7 +485,7 @@ const T={
   },
   es:{
     tabSpiele:'Partidos & Alineación',tabOverview:'Overview',tabSperren:'Bloqueos',
-    logout:'Cerrar sesión',teamsTitle:'Equipos',loading:'Cargando...',
+    logout:'Cerrar sesión',teamsTitle:'Equipos',loading:'Cargando...',noAccess:'No tenés equipos habilitados. Hablá con el Sportwart.',
     groupYes:'✓ Sí',groupConditional:'(Sí) — Prio II',groupNotfall:'Si es necesario',groupNo:'✗ No',groupNone:'— Sin respuesta',
     badgeYes:'✓ Sí',badgeNotfall:'Si es necesario',badgeNo:'No',
     dropYes:'── ✓ Sí',dropConditional:'── (Sí)',dropNotfall:'── Si es necesario',dropNo:'── ✗ No',dropNone:'── ?',
@@ -496,7 +503,7 @@ const T={
   },
   en:{
     tabSpiele:'Matches & Lineup',tabOverview:'Overview',tabSperren:'Blocks',
-    logout:'Log out',teamsTitle:'Teams',loading:'Loading...',
+    logout:'Log out',teamsTitle:'Teams',loading:'Loading...',noAccess:'No teams assigned to you. Please contact the Sportwart.',
     groupYes:'✓ Yes',groupConditional:'(Yes) — Prio II',groupNotfall:'If needed',groupNo:'✗ No',groupNone:'— No answer',
     badgeYes:'✓ Yes',badgeNotfall:'If needed',badgeNo:'No',
     dropYes:'── ✓ Yes',dropConditional:'── (Yes)',dropNotfall:'── If needed',dropNo:'── ✗ No',dropNone:'── ?',
@@ -559,8 +566,17 @@ async function loadAll(){
       sbGet('lineups',''),
       sbGet('player_match_counts','')
     ]);
-    state.teams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
-    const _activeTeamIds=new Set(state.teams.map(t=>t.id));
+    state.allTeams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
+    const _activeTeamIds=new Set(state.allTeams.map(t=>t.id));
+    // ── ACCESS BLOCKS ── table captain_access(username, blocks text[]): 'Herren' | 'Damen' | 'Jugend'
+    // Only filters what the captain SEES; all season teams/matches stay loaded so same-day conflicts still show.
+    state.blocks=[];
+    try{
+      const username=emailToUsername(_session?.user?.email);
+      const acc=await sbGet('captain_access',`username=eq.${encodeURIComponent(username)}`);
+      state.blocks=acc[0]?.blocks||[];
+    }catch(e){console.error('captain_access',e);}
+    state.teams=state.allTeams.filter(t=>state.blocks.includes(blockOf(t.category)));
     state.players=players.map(p=>({id:p.id,name:p.name,idnr:p.idnr,lk:p.lk,lkStr:p.lk_str,year:p.year,teamIds:[],gender:p.gender||'M',rank:p.rank}));
     state.matches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue}));
     state.availability={};
@@ -597,6 +613,10 @@ async function loadAll(){
 
 // ── SIDEBAR ──
 function renderTeamSidebar(){
+  if(!state.teams.length&&state.allTeams?.length){
+    document.getElementById('team-list-sidebar').innerHTML=`<div style="padding:12px;font-size:12px;color:var(--muted)">${tr('noAccess')}</div>`;
+    return;
+  }
   const byCat={};
   for(const t of state.teams){
     const c=t.category||'Herren';

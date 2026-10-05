@@ -176,10 +176,10 @@ select option{background:#1b2926}
       <div style="font-size:.7rem;color:#666;letter-spacing:.1em;text-transform:uppercase;margin-top:2px">Club Manager · Admin</div>
     </div>
     <div style="margin-bottom:12px">
-      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#666;display:block;margin-bottom:5px">Email</label>
-      <input id="login-user" type="email" autocomplete="off"
+      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#666;display:block;margin-bottom:5px">Benutzername</label>
+      <input id="login-user" type="text" autocomplete="username" autocapitalize="none" spellcheck="false"
         style="width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none"
-        placeholder="sportwart@fuechse-berlin-reinickendorf.de"
+        placeholder="Benutzername"
         onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
     </div>
     <div style="margin-bottom:20px">
@@ -207,7 +207,7 @@ select option{background:#1b2926}
 
     // Check existing session
     _sb.auth.getSession().then(({data:{session}})=>{
-      if(session){
+      if(session&&isAdminUser(session)){
         window._sbAuth._session=session;
         document.getElementById('login-overlay').style.display='none';
         if(typeof loadAll==='function')loadAll();
@@ -239,8 +239,17 @@ function _rlFail(errEl){
   setTimeout(()=>{if(Date.now()>=_rl.lockedUntil)errEl.textContent='';},3000);
 }
 function _rlSuccess(){_rl.attempts=0;_rl.lockedUntil=0;}
+// ── USERNAMES ── Supabase Auth needs an email, so a username "herren" logs in as "herren@login.fuechse-berlin-reinickendorf.de".
+// Create users in Supabase → Authentication → Add user, with that address and "Auto Confirm User". No mail is ever sent.
+const LOGIN_DOMAIN='login.fuechse-berlin-reinickendorf.de';
+function usernameToEmail(u){u=(u||'').trim().toLowerCase();if(!u.includes('@'))u=u.replace(/\s+/g,''); // "Herren 30 II" → herren30ii
+  return u.includes('@')?u:`${u}@${LOGIN_DOMAIN}`;}
+function emailToUsername(e){e=(e||'').toLowerCase();return e.endsWith('@'+LOGIN_DOMAIN)?e.slice(0,-(LOGIN_DOMAIN.length+1)):e;}
+// ── ADMIN ACCESS ── only these usernames may open admin.html (visual check, like the Kapitän blocks)
+const ADMIN_USERS=['admin','christian','svenja'];
+function isAdminUser(session){return ADMIN_USERS.includes(emailToUsername(session?.user?.email));}
 window.doLogin=async function(){
-      const email=document.getElementById('login-user').value.trim();
+      const email=usernameToEmail(document.getElementById('login-user').value);
       const pass=document.getElementById('login-pass').value;
       const err=document.getElementById('login-error');
       const btn=document.getElementById('login-btn');
@@ -252,6 +261,11 @@ window.doLogin=async function(){
       if(error){
         _rlFail(err);
         document.getElementById('login-pass').value='';
+      } else if(!isAdminUser(data.session)){
+        // Valid captain login, but no admin access (session is kept so kapitaen.html still works)
+        window._sbAuth._session=null;
+        document.getElementById('login-pass').value='';
+        err.textContent='Kein Zugang zum Admin-Bereich';
       } else {
         const o=document.getElementById('login-overlay');
         o.style.opacity='0';o.style.transition='opacity .3s';
