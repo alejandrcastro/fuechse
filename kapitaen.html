@@ -285,6 +285,8 @@ input:focus,select:focus{border-color:var(--court)}
 <script>
 const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
 const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
+// ── ACTIVE SEASON ── change manually each season (also in admin.html and index.html)
+const ACTIVE_SEASON='W2026';
 
 let _sbClient=null;
 let _session=null;
@@ -381,7 +383,11 @@ function fmtDate(d){if(!d)return'';const[y,m,day]=d.split('-');return`${day}.${m
 function teamById(id){return state.teams.find(t=>t.id===id)}
 function playerById(id){return state.players.find(p=>p.id===id)}
 function teamSize(t){return t&&(t.is_4er||t.season==='Winter')?4:6}
-function catGender(cat){if(!cat)return'M';return cat.toLowerCase().startsWith('damen')?'F':'M'}
+function catGender(cat){if(!cat)return'M';const j=cat.match(/^U\d+\s*(m|w)?$/);if(j)return j[1]==='w'?'F':j[1]==='m'?'M':'X';return cat.toLowerCase().startsWith('damen')?'F':'M';}
+// ── CATEGORY ORDER: Herren (0) → Damen (1) → Jugend U.. (2); Jugend: U18 → U10, m → w → gemischt ──
+function catGroup(cat){cat=cat||'';if(/^U\d+/.test(cat))return 2;return /^Damen/i.test(cat)?1:0;}
+function catAge(cat){cat=cat||'';const j=cat.match(/^U(\d+)\s*(m|w)?/);if(j)return(100-parseInt(j[1]))+(j[2]==='m'?0:j[2]==='w'?0.1:0.2);return parseInt(cat.replace(/^(Herren|Damen)\s*/,''))||0;}
+function catCmp(a,b){return catGroup(a)-catGroup(b)||catAge(a)-catAge(b);}
 function teamNumber(team){
   const n=parseInt(team.teamNumber||team.team_number||0);
   if(n>0&&n<10)return n;
@@ -546,16 +552,17 @@ async function loadAll(){
   setSync('ing','⟳');
   try{
     const[teams,players,matches,avRows,lineupRows,countRows]=await Promise.all([
-      sbGet('teams','order=category,team_number'),
-      sbGet('players','order=lk'),
+      sbGet('teams',`season_id=eq.${ACTIVE_SEASON}&order=category,team_number`),
+      sbGet('players',`season_id=eq.${ACTIVE_SEASON}&order=lk`),
       sbGet('matches','order=date'),
       sbGet('availability',''),
       sbGet('lineups',''),
       sbGet('player_match_counts','')
     ]);
     state.teams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
+    const _activeTeamIds=new Set(state.teams.map(t=>t.id));
     state.players=players.map(p=>({id:p.id,name:p.name,idnr:p.idnr,lk:p.lk,lkStr:p.lk_str,year:p.year,teamIds:[],gender:p.gender||'M',rank:p.rank}));
-    state.matches=matches.map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue}));
+    state.matches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue}));
     state.availability={};
     for(const r of avRows){if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
     state.lineups={};
@@ -573,6 +580,7 @@ async function loadAll(){
     state.rankByTeam={};
     state.mainTeam={};
     for(const r of ptRows){
+      if(!_activeTeamIds.has(r.team_id))continue; // other seasons stay archived
       const p=state.players.find(x=>x.id===r.player_id);
       if(p&&!p.teamIds.includes(r.team_id))p.teamIds.push(r.team_id);
       if(r.rank!=null){if(!state.rankByTeam[r.player_id])state.rankByTeam[r.player_id]={};state.rankByTeam[r.player_id][r.team_id]=r.rank;}
@@ -597,9 +605,7 @@ function renderTeamSidebar(){
   }
   let html='';
   for(const[cat,teams] of Object.entries(byCat).sort((a,b)=>{
-    const isDamenA=/^Damen/i.test(a[0]);
-    const isDamenB=/^Damen/i.test(b[0]);
-    if(isDamenA!==isDamenB)return isDamenA?1:-1;
+    const cc=catCmp(a[0],b[0]);if(cc)return cc;
     return a[0].localeCompare(b[0]);
   })){
     html+=`<div style="font-size:10px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;padding-left:4px">${cat}</div>`;
@@ -1261,14 +1267,13 @@ document.addEventListener('click',function(e){
 
 function _kapOvSortTeams(teams){
   const ts=[...teams];
-  // Herren always before Damen
-  const isDamen=c=>/^Damen/i.test(c);
-  const genderRank=c=>isDamen(c)?1:0;
+  // Herren → Damen → Jugend
+  const genderRank=c=>catGroup(c);
   if(_kapOvSort==='altersklasse'){
     return ts.sort((a,b)=>{
       const ga=genderRank(a.category),gb=genderRank(b.category);
       if(ga!==gb)return ga-gb;
-      if(a.category!==b.category)return a.category.localeCompare(b.category);
+      if(a.category!==b.category)return catCmp(a.category,b.category)||a.category.localeCompare(b.category);
       return teamNumber(a)-teamNumber(b);
     });
   }

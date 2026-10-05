@@ -129,6 +129,8 @@ select option{background:#1b2926}
 @keyframes spin{to{transform:rotate(360deg)}}
 .g-m{background:#1a1a2e;color:#7eb8e0;border:1px solid #4ea8de44;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
 .g-f{background:#2d1a2d;color:#c77dff;border:1px solid #c77dff44;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+.g-x{font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;border:1px solid transparent;background:linear-gradient(90deg,#1a1a2e 50%,#2d1a2d 50%) padding-box,linear-gradient(90deg,#4ea8de44 50%,#c77dff44 50%) border-box}
+.g-x>span{background:linear-gradient(90deg,#7eb8e0 50%,#c77dff 50%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .player-view{display:none;position:fixed;inset:0;background:var(--dark);z-index:300;overflow-y:auto;padding:18px}
 .player-view.open{display:block}
 .pv-header{display:flex;align-items:center;gap:10px;margin-bottom:18px}
@@ -409,6 +411,12 @@ window.doLogin=async function(){
           <option value="Damen 40">Damen 40</option>
           <option value="Damen 50">Damen 50</option>
           <option value="Damen 60">Damen 60</option>
+          <option value="U18m">U18m</option>
+          <option value="U18w">U18w</option>
+          <option value="U15m">U15m</option>
+          <option value="U15w">U15w</option>
+          <option value="U12">U12</option>
+          <option value="U10">U10</option>
         </select>
       </div>
       <div class="form-group"><label data-i18n="teamNumber"></label><input id="t-num" type="number" min="1" value="1" style="width:70px"></div>
@@ -636,6 +644,10 @@ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/p
 
 const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
 const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
+// ── ACTIVE SEASON ── change manually each season (also in kapitaen.html and index.html)
+// Format: 'S2026' = Sommer 2026, 'W2026' = Winter 2026/27. Older seasons stay archived in the DB.
+const ACTIVE_SEASON='W2026';
+const ACTIVE_SEASON_KIND=ACTIVE_SEASON.startsWith('W')?'Winter':'Sommer';
 const HDR={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 function getHDR(){
   // Use session JWT if available, otherwise fall back to publishable key
@@ -651,7 +663,17 @@ async function sbDelete(t,f){const r=await fetch(`${SB_URL}/rest/v1/${t}?${f}`,{
 function setSync(s,m){const b=document.getElementById('sync-badge');b.className='sync-badge sync-'+s;b.textContent=m;}
 
 // ── CATEGORY HELPERS ──
-function catGender(cat){if(!cat)return'M';const c=cat.toLowerCase();if(c.startsWith('damen'))return'F';return'M';}
+function catGender(cat){if(!cat)return'M';const j=cat.match(/^U\d+\s*(m|w)?$/);if(j)return j[1]==='w'?'F':j[1]==='m'?'M':'X';return cat.toLowerCase().startsWith('damen')?'F':'M';}
+// ── CATEGORY ORDER: Herren (0) → Damen (1) → Jugend U.. (2); Jugend: U18 → U10, m → w → gemischt ──
+// Gender badge: M (blue), F (purple), X = MIXED (half blue / half purple)
+function genderBadge(g){if(g==='X')return'<span class="g-x"><span>MIXED</span></span>';return g==='F'?'<span class="g-f">F</span>':'<span class="g-m">M</span>';}
+// ── IMPORT CUT (local club rule): players with LK worse than this are NOT assigned to Herren I on import,
+// unless Herren I is their own Stammkader team. Only affects which lists a player lands in.
+const H1_MAX_LK=18;
+function skipForImport(teamCategory,teamNumber,isStammTeam,lk){return !isStammTeam&&teamCategory==='Herren'&&teamNumber===1&&lk!=null&&lk>H1_MAX_LK;}
+function catGroup(cat){cat=cat||'';if(/^U\d+/.test(cat))return 2;return /^Damen/i.test(cat)?1:0;}
+function catAge(cat){cat=cat||'';const j=cat.match(/^U(\d+)\s*(m|w)?/);if(j)return(100-parseInt(j[1]))+(j[2]==='m'?0:j[2]==='w'?0.1:0.2);return parseInt(cat.replace(/^(Herren|Damen)\s*/,''))||0;}
+function catCmp(a,b){return catGroup(a)-catGroup(b)||catAge(a)-catAge(b);}
 function teamNumber(team){
   // state.teams stores teamNumber (camelCase), DB rows have team_number (snake_case)
   const n=parseInt(team.teamNumber||team.team_number||0);
@@ -663,8 +685,8 @@ function teamNumber(team){
   return 1;
 }
 function teamSortKey(t){
-  const g=t.category.startsWith('Damen')?1:0;
-  const age=parseInt(t.category.replace(/^(Herren|Damen)\s*/,''))||0;
+  const g=catGroup(t.category);
+  const age=catAge(t.category);
   return[g,age,teamNumber(t)];
 }
 function teamSortCmp(a,b){
@@ -683,10 +705,10 @@ const T={
     teamsUploadBtn:'ResultReport PDF hochladen',teamsUploadSub:'Ergebnistabellen · erkennt Herren, Damen, Senioren...',
     teamsImportedMsg:(n)=>`✓ ${n} Mannschaften importiert.`,
     matchesImportTitle:'Spiele importieren',matchesImportSub:'Begegnungen PDF — erstellt alle Spiele automatisch',
-    matchesUploadBtn:'Begegnungen PDF hochladen',matchesUploadSub:'Spielliste · filtert Junioren automatisch',
+    matchesUploadBtn:'Begegnungen PDF hochladen',matchesUploadSub:'Spielliste · Erwachsene und Jugend',
     matchesImportedMsg:(n)=>`✓ ${n} Spiele importiert.`,
     deleteAllMatches:'🗑 Alle Spiele löschen',deleteAllConfirm:'Alle Spiele wirklich löschen? Dies kann nicht rückgängig gemacht werden.',
-    deletedMsg:'✓ Alle Spiele gelöscht.',matchesParsedMsg:(n)=>`${n} Erwachsenenspiele gefunden.`,
+    deletedMsg:'✓ Alle Spiele gelöscht.',matchesParsedMsg:(n)=>`${n} Spiele gefunden.`,
     teamsParsedMsg:(n)=>`${n} Mannschaften gefunden.`,
     noTeamMatch:'Mannschaft nicht gefunden — bitte zuerst Mannschaften importieren.',
     previewTitle:'Vorschau',confirmImport:'Alle importieren',cancel:'Abbrechen',
@@ -722,10 +744,10 @@ const T={
     teamsUploadBtn:'Subir ResultReport PDF',teamsUploadSub:'Ergebnistabellen · detecta Herren, Damen, Senioren...',
     teamsImportedMsg:(n)=>`✓ ${n} equipos importados.`,
     matchesImportTitle:'Importar partidos',matchesImportSub:'Begegnungen PDF del TVBB — crea todos los partidos automáticamente',
-    matchesUploadBtn:'Subir Begegnungen PDF',matchesUploadSub:'Lista de partidos · filtra juveniles automáticamente',
+    matchesUploadBtn:'Subir Begegnungen PDF',matchesUploadSub:'Lista de partidos · adultos y juveniles',
     matchesImportedMsg:(n)=>`✓ ${n} partidos importados.`,
     deleteAllMatches:'🗑 Borrar todos los partidos',deleteAllConfirm:'¿Borrar TODOS los partidos? Esto no se puede deshacer.',
-    deletedMsg:'✓ Todos los partidos borrados.',matchesParsedMsg:(n)=>`${n} partidos adultos encontrados.`,
+    deletedMsg:'✓ Todos los partidos borrados.',matchesParsedMsg:(n)=>`${n} partidos encontrados.`,
     teamsParsedMsg:(n)=>`${n} equipos encontrados.`,
     noTeamMatch:'Equipo no encontrado — importá los equipos primero.',
     previewTitle:'Vista previa',confirmImport:'Importar todos',cancel:'Cancelar',
@@ -761,10 +783,10 @@ const T={
     teamsUploadBtn:'Upload ResultReport PDF',teamsUploadSub:'Ergebnistabellen · detects Herren, Damen, Seniors...',
     teamsImportedMsg:(n)=>`✓ ${n} teams imported.`,
     matchesImportTitle:'Import matches',matchesImportSub:'Begegnungen PDF — creates all matches automatically',
-    matchesUploadBtn:'Upload Begegnungen PDF',matchesUploadSub:'Match list · filters juniors automatically',
+    matchesUploadBtn:'Upload Begegnungen PDF',matchesUploadSub:'Match list · adults and juniors',
     matchesImportedMsg:(n)=>`✓ ${n} matches imported.`,
     deleteAllMatches:'🗑 Delete all matches',deleteAllConfirm:'Delete ALL matches? This cannot be undone.',
-    deletedMsg:'✓ All matches deleted.',matchesParsedMsg:(n)=>`${n} adult matches found.`,
+    deletedMsg:'✓ All matches deleted.',matchesParsedMsg:(n)=>`${n} matches found.`,
     teamsParsedMsg:(n)=>`${n} teams found.`,noTeamMatch:'Team not found — please import teams first.',
     previewTitle:'Preview',confirmImport:'Import all',cancel:'Cancel',
     playersTitle:'Players',playersSub:'Club roster — sorted by LK',
@@ -890,16 +912,17 @@ async function loadAll(){
   setSync('ing',tr('syncIng'));
   try{
     const[teams,players,matches,avRows,lineupRows,countRows]=await Promise.all([
-      sbGet('teams','order=category,team_number'),
-      sbGet('players','order=lk'),
+      sbGet('teams',`season_id=eq.${ACTIVE_SEASON}&order=category,team_number`),
+      sbGet('players',`season_id=eq.${ACTIVE_SEASON}&order=lk`),
       sbGet('matches','order=date'),
       sbGet('availability',''),
       sbGet('lineups',''),
       sbGet('player_match_counts','')
     ]);
     state.teams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
+    const _activeTeamIds=new Set(state.teams.map(t=>t.id));
     state.players=players.map(p=>({id:p.id,name:p.name,rawName:p.raw_name,idnr:p.idnr,lk:p.lk,lkStr:p.lk_str,year:p.year,teamIds:[],gender:p.gender||'M',rank:p.rank}));
-    state.matches=matches.map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue,counted:m.counted||false,ersatzCounted:m.ersatz_counted||false}));
+    state.matches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue,counted:m.counted||false,ersatzCounted:m.ersatz_counted||false}));
     state.availability={};
     for(const r of avRows){if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
     state.lineups={};
@@ -917,6 +940,7 @@ async function loadAll(){
     state.rankByTeam={};
     state.mainTeam={};
     for(const r of ptRows){
+      if(!_activeTeamIds.has(r.team_id))continue; // other seasons stay archived
       const p=state.players.find(x=>x.id===r.player_id);
       if(p&&!p.teamIds.includes(r.team_id))p.teamIds.push(r.team_id);
       if(r.rank!=null){if(!state.rankByTeam[r.player_id])state.rankByTeam[r.player_id]={};state.rankByTeam[r.player_id][r.team_id]=r.rank;}
@@ -989,27 +1013,41 @@ async function parsePDF(file){
 
 function extractPlayers(text){
   const teams={};
-  const tPat=/(Herren\s*(?:\d+\s*)?(?:II|III|IV|V|VI|VII)?|Damen\s*(?:\d+\s*)?(?:II|III|IV|V)?)\s*(?:\(4er\))?\s*\|\s*([^\n\r]+)/gi;
+  // Team headers come one after another on the same line ("Herren (4er) | Verbandsliga I  MF: …  Herren II (4er) | …"),
+  // so the liga capture must stop at "MF:", the next header or the player table ("Ra.")
+  // Jugend headers: "U18m", "U18 w II", "U12 III", "Midcourt U10 m w"
+  const tPat=/(Herren\s*(?:\d+\s*)?(?:II|III|IV|V|VI|VII)?|Damen\s*(?:\d+\s*)?(?:II|III|IV|V)?|(?:Midcourt\s+)?U\s?\d+\s*(?:m\s*w|m|w)?\s*(?:II|III|IV|V)?)\s*(?:\(4er\))?\s*\|\s*([^|\n\r]+?)(?=\s+MF:|\s+(?:Herren|Damen|Midcourt|U\s?\d+)\b|\s+Ra\.|[\n\r]|$)/gi;
   let tm;
   while((tm=tPat.exec(text))!==null){
-    const raw=tm[1].trim().replace(/\s+/,' ');
-    const catMatch=raw.match(/^(Herren|Damen)(?:\s+(\d+))?/i);
-    const baseCat=catMatch?catMatch[1].charAt(0).toUpperCase()+catMatch[1].slice(1).toLowerCase():'Herren';
-    const ageGroup=catMatch&&catMatch[2]?catMatch[2]:null;
-    const category=ageGroup?`${baseCat} ${ageGroup}`:baseCat;
+    let raw=tm[1].trim().replace(/\s+/g,' ');
     const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
     const romanMatch=raw.match(/\s(VIII|VII|VI|IV|V|III|II|I)$/);
     const tnum=romanMatch?roman[romanMatch[1]]:1;
+    let category;
+    const jm=raw.match(/^(?:Midcourt\s+)?U\s?(\d+)\s*(m\s*w|m|w)?/i);
+    if(jm){
+      // Same names as the ResultReport import: U18m, U18w, U12, U10 (+ II, III…)
+      const g=(jm[2]||'').replace(/\s/g,'').toLowerCase();
+      category=`U${jm[1]}${g==='m'?'m':g==='w'?'w':''}`;
+      raw=category+(romanMatch?' '+romanMatch[1]:'');
+    }else{
+      const catMatch=raw.match(/^(Herren|Damen)(?:\s+(\d+))?/i);
+      const baseCat=catMatch?catMatch[1].charAt(0).toUpperCase()+catMatch[1].slice(1).toLowerCase():'Herren';
+      const ageGroup=catMatch&&catMatch[2]?catMatch[2]:null;
+      category=ageGroup?`${baseCat} ${ageGroup}`:baseCat;
+    }
     const liga=tm[2].trim().replace(/MF:.*/,'').trim();
     if(!teams[raw])teams[raw]={liga,id:uid(),is4:tm[0].includes('(4er)'),category,tnum,gender:catGender(category)};
   }
-  const teamArr=Object.entries(teams).map(([name,v])=>({id:v.id,name,liga:v.liga,season:'Sommer',is_4er:v.is4||false,category:v.category,team_number:v.tnum,gender:v.gender}));
+  const teamArr=Object.entries(teams).map(([name,v])=>({id:v.id,name,liga:v.liga,season:ACTIVE_SEASON_KIND,is_4er:v.is4||false,category:v.category,team_number:v.tnum,gender:v.gender}));
   const players=[];
-  const pPat=/(\d{1,3})\s+([A-ZÄÖÜa-zäöüß][A-ZÄÖÜa-zäöüß\s,.\-\']+?)\s+\((\d{4})\)\s+(?:[A-Z]{2,3}\*?\s+)?(\d{7,9})\s+(LK[\d,]+)/g;
+  // Names may contain any Latin accent (Nicolás, Sören, Hoßfeld…)
+  const pPat=/(\d{1,3})\s+([A-Za-zÀ-ÖØ-öø-ÿĀ-ž][A-Za-zÀ-ÖØ-öø-ÿĀ-ž\s,.\-\']+?)\s+\((\d{4})\)\s+(?:[A-Z]{2,3}\*?\s+)?(\d{7,9})\s+(LK[\d,]+|-)/g; // "-" = no LK yet (common in Jugend)
   let m;
   while((m=pPat.exec(text))!==null){
     const rank=parseInt(m[1]),name=m[2].trim(),year=m[3],idnr=m[4];
-    const lkStr=m[5],lk=parseFloat(lkStr.replace('LK','').replace(',','.'));
+    const lkStr=m[5]==='-'?'–':m[5];
+    const lk=m[5]==='-'?null:parseFloat(m[5].replace('LK','').replace(',','.'));
     // Walk teams in order to find which team this rank belongs to
     let _rem=rank,_t=null;
     for(const _team of teamArr){const _gs=(_team.is_4er||_team.season==='Winter')?4:6;if(_rem<=_gs){_t=_team;break;}_rem-=_gs;}
@@ -1022,13 +1060,24 @@ function extractPlayers(text){
 
 function showPreview(data){
   if(!data||!data.players.length){document.getElementById('preview-section').style.display='none';return;}
+  // Show what confirmImport will store: each team gets its Stammkader players AND everyone ranked below
+  // (Herren = all, Herren II = all minus first block, Herren III = all minus first two blocks, …)
+  const tIdx={};
+  for(const cat of [...new Set(data.teams.map(t=>t.category))]){
+    data.teams.filter(t=>t.category===cat).sort((a,b)=>a.team_number-b.team_number).forEach((t,i)=>{tIdx[t.name]=i;});
+  }
   const byTeam={};
-  for(const p of data.players){const k=p.teamName||'?';if(!byTeam[k])byTeam[k]=[];byTeam[k].push(p);}
+  for(const t of [...data.teams].sort((a,b)=>catCmp(a.category,b.category)||a.team_number-b.team_number)){
+    byTeam[t.name]=data.players.filter(p=>p.teamCategory===t.category&&(tIdx[p.teamName]??-1)>=tIdx[t.name]
+      &&!skipForImport(t.category,t.team_number,p.teamName===t.name,p.lk)).sort((a,b)=>a.rank-b.rank);
+  }
+  const _known=new Set(Object.keys(byTeam));
+  for(const p of data.players){const k=p.teamName||'?';if(!_known.has(k))(byTeam[k]=byTeam[k]||[]).push(p);}
   let html='';
   for(const[team,ps]of Object.entries(byTeam)){
     const g=ps[0]?.gender||'M';
     html+=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:8px">
-      <div class="team-section-header">${team} <span class="${g==='F'?'g-f':'g-m'}">${g==='F'?'F':'M'}</span> · ${ps.length} ${tr('players')}</div>
+      <div class="team-section-header">${team} ${genderBadge(g)} · ${ps.length} ${tr('players')}</div>
       ${ps.slice(0,5).map(p=>`<div class="player-row" style="border-radius:0;border:none;border-bottom:1px solid #2e4a4233;margin:0">
         <span style="color:var(--muted);min-width:18px;font-size:11px">${p.rank}</span>
         <div class="player-avatar">${initials(p.name.includes(',')?p.name.split(',')[1].trim()+' '+p.name.split(',')[0]:p.name)}</div>
@@ -1050,23 +1099,25 @@ async function confirmImport(){
   try{
     // Insert NEW teams; update season for existing ones if PDF says (4er)
     const teamsToInsert=data.teams.filter(t=>!state.teams.find(x=>x.name===t.name));
-    if(teamsToInsert.length)await sbUpsert('teams',teamsToInsert.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category,team_number:t.team_number,gender:t.gender})));
+    if(teamsToInsert.length)await sbUpsert('teams',teamsToInsert.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category,team_number:t.team_number,gender:t.gender,season_id:ACTIVE_SEASON})));
     // Update is_4er for existing teams detected as (4er) in PDF
     for(const t of data.teams.filter(x=>x.is_4er)){const ex=state.teams.find(x=>x.name===t.name);if(ex&&!ex.is_4er)await fetch(`${SB_URL}/rest/v1/teams?id=eq.${ex.id}`,{method:'PATCH',headers:getHDR(),body:JSON.stringify({is_4er:true})});}
 
-    const freshTeams=await sbGet('teams','');
-    state.teams=freshTeams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
+    const freshTeams=await sbGet('teams',`season_id=eq.${ACTIVE_SEASON}`);
+    state.teams=freshTeams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
     const playersToInsert=[];
     const playersToUpdate=[];  // existing players whose LK may have changed
     const ptInsert=[];
     for(const p of data.players){
       const dn=p.name.includes(',')?p.name.split(',')[1].trim()+' '+p.name.split(',')[0].trim():p.name;
       const teamId=state.teams.find(x=>x.name===p.teamName)?.id||null;
+      // state.players only holds ACTIVE_SEASON players → a new season creates fresh player rows
       const existing=state.players.find(x=>x.idnr===p.idnr);
-      if(!existing){
+      const pending=playersToInsert.find(x=>x.idnr===p.idnr); // same player in several lists of this import
+      if(!existing&&!pending){
         // New player
-        playersToInsert.push({id:uid(),name:dn,raw_name:p.name,idnr:p.idnr,lk:p.lk,lk_str:p.lkStr,year:p.year,gender:p.gender||'M',rank:p.rank});
-      } else if(existing.lk!==p.lk){
+        playersToInsert.push({id:uid(),name:dn,raw_name:p.name,idnr:p.idnr,lk:p.lk,lk_str:p.lkStr,year:p.year,gender:p.gender||'M',rank:p.rank,season_id:ACTIVE_SEASON});
+      } else if(existing&&existing.lk!==p.lk){
         // Existing player with updated LK — update it
         playersToUpdate.push({id:existing.id,lk:p.lk,lk_str:p.lkStr});
       }
@@ -1079,13 +1130,10 @@ async function confirmImport(){
         const stammIdx=catTeams.findIndex(t=>t.id===teamId);
         // Calculate GLOBAL rank within the category (sum of all team sizes before this team + local rank)
         // e.g. if Herren I=6, Herren II=6, and player is rank 3 in Herren III -> global rank = 6+6+3 = 15
-        let globalRank=p.rank||null;
-        if(globalRank!=null&&stammIdx>0){
-          for(let si=0;si<stammIdx;si++){
-            globalRank+=teamSize(catTeams[si]);
-          }
-        }
+        // "Ra." in the Namentliche Mannschaftsmeldung is already the rank within the whole category (1…N)
+        const globalRank=p.rank||null;
         let assignTo=stammIdx>=0?catTeams.slice(0,stammIdx+1):[{id:teamId}];
+        assignTo=assignTo.filter(at=>!skipForImport(at.category,teamNumber(at),at.id===teamId,p.lk));
 
         for(const at of assignTo){
           ptInsert.push({player_id:pid2,team_id:at.id,rank:globalRank});
@@ -1116,7 +1164,7 @@ function renderPlayers(){
   const filterGender=document.getElementById('filter-gender')?.value||'';
   const search=(document.getElementById('search-players')?.value||'').toLowerCase();
   const onlyBlocked=document.getElementById('filter-blocked')?.checked||false;
-  let players=[...state.players].sort((a,b)=>a.lk-b.lk);
+  let players=[...state.players].sort((a,b)=>(a.lk??99)-(b.lk??99));
   if(filterTeam)players=players.filter(p=>p.teamIds.includes(filterTeam));
   if(filterGender)players=players.filter(p=>p.gender===filterGender);
   if(search)players=players.filter(p=>p.name.toLowerCase().includes(search)||(p.rawName||'').toLowerCase().includes(search));
@@ -1140,7 +1188,7 @@ function renderPlayers(){
       <div style="flex:1;min-width:100px"><div class="player-name">${p.name}</div><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">${teamChips}</div></div>
       <span class="year-badge">${p.year||'—'}</span>
       <span class="lk-badge">${p.lkStr||'LK?'}</span>
-      <span class="${p.gender==='F'?'g-f':'g-m'}">${p.gender==='F'?'F':'M'}</span>
+      ${genderBadge(p.gender)}
       ${blockedChips}${warnChips}
       <button class="btn btn-outline btn-sm" onclick="openAssignModal('${p.id}')">${tr('assignTeam')}</button>
     </div>`;
@@ -1157,7 +1205,7 @@ async function addTeam(){
   const is_4er=document.getElementById('t-is4er')?.checked||false;
   const gender=catGender(category);
   if(!name)return;
-  const newTeam={id:uid(),name,liga,season,is_4er,category,team_number:teamNum,gender};
+  const newTeam={id:uid(),name,liga,season,is_4er,category,team_number:teamNum,gender,season_id:ACTIVE_SEASON};
   try{await sbUpsert('teams',[newTeam]);}catch(e){console.error(e);}
   document.getElementById('t-name').value='';document.getElementById('t-liga').value='';
   await loadAll();
@@ -1172,12 +1220,8 @@ function renderTeams(){
     const cur=filterSel.value;
     filterSel.innerHTML=`<option value="">${tr('allTeams')}</option>`+
       [...state.teams].sort((a,b)=>{
-        // Sort: gender (Herren before Damen), then age (0 = base category first, then 30, 40...), then team number
-        const ga=a.category.startsWith('Damen')?1:0,gb=b.category.startsWith('Damen')?1:0;
-        if(ga!==gb)return ga-gb;
-        const aa=parseInt(a.category.replace(/^(Herren|Damen)\s*/,''))||0;
-        const ab=parseInt(b.category.replace(/^(Herren|Damen)\s*/,''))||0;
-        if(aa!==ab)return aa-ab;
+        // Sort: Herren → Damen → Jugend, then age group, then team number
+        const cc=catCmp(a.category,b.category);if(cc)return cc;
         return teamNumber(a)-teamNumber(b);
       }).map(t=>`<option value="${t.id}"${cur===t.id?' selected':''}>${t.name}</option>`).join('');
     filterSel.value=cur;
@@ -1188,7 +1232,7 @@ function renderTeams(){
   for(const t of teamsToShow){const c=t.category||'Herren';if(!byCat[c])byCat[c]=[];byCat[c].push(t);}
   if(!Object.keys(byCat).length){el.innerHTML=`<div class="empty">${tr('noTeam')}</div>`;return;}
   let html='';
-  for(const[cat,teams]of Object.entries(byCat).sort(([a],[b])=>{const ga=a.startsWith("Damen")?1:0,gb=b.startsWith("Damen")?1:0;if(ga!==gb)return ga-gb;const aa=parseInt(a.replace(/^(Herren|Damen)\s*/,""))||0,ab=parseInt(b.replace(/^(Herren|Damen)\s*/,""))||0;return aa-ab;})){
+  for(const[cat,teams]of Object.entries(byCat).sort(([a],[b])=>catCmp(a,b))){
     const sorted=teams.sort((a,b)=>teamNumber(a)-teamNumber(b));
     html+=`<div style="margin-bottom:6px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${cat}</div>`;
     for(const t of sorted){
@@ -1201,13 +1245,13 @@ function renderTeams(){
         if(!p.teamIds.includes(t.id))return false;
         const r=playerRankInTeam(p.id,t.id);
         return r===999||r>=rankStart4display;
-      })].sort((a,b)=>playerRankInTeam(a.id,t.id)-playerRankInTeam(b.id,t.id)||a.lk-b.lk);
+      })].sort((a,b)=>playerRankInTeam(a.id,t.id)-playerRankInTeam(b.id,t.id)||(a.lk??99)-(b.lk??99));
       html+=`<div class="card" style="margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
           <div>
             <div style="display:flex;align-items:center;gap:7px">
               <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--court)">${t.name}</span>
-              <span class="${t.gender==='F'?'g-f':'g-m'}">${t.gender==='F'?'F':'M'}</span>
+              ${genderBadge(t.gender)}
             </div>
             <div style="font-size:11px;color:var(--muted)">${t.liga} · ${t.season} · #${teamNumber(t)}</div>
           </div>
@@ -1287,7 +1331,7 @@ async function toggleMainTeam(playerId, teamId){
 function openAssignModal(playerId){
   const p=playerById(playerId);
   document.getElementById('assign-modal-title').textContent=p.name;
-  const compatible=state.teams.filter(t=>t.gender===p.gender||t.gender===undefined);
+  const compatible=state.teams.filter(t=>t.gender===p.gender||t.gender===undefined||t.gender==='X'||p.gender==='X');
   const byCat={};
   for(const t of compatible){const c=t.category||'?';if(!byCat[c])byCat[c]=[];byCat[c].push(t);}
   let html=`<div style="margin-bottom:12px;font-size:12px;color:var(--muted)">Mannschaften auswählen:</div>`;
@@ -2056,10 +2100,7 @@ function renderSATeamSidebar(){
   const byCat={};
   for(const t of state.teams){const c=t.category||'Herren';if(!byCat[c])byCat[c]=[];byCat[c].push(t);}
   let html='';
-  for(const[cat,teams] of Object.entries(byCat).sort(([a],[b])=>{
-    const ga=a.startsWith('Damen')?1:0,gb=b.startsWith('Damen')?1:0;if(ga!==gb)return ga-gb;
-    const aa=parseInt(a.replace(/^(Herren|Damen)\s*/,''))||0,ab=parseInt(b.replace(/^(Herren|Damen)\s*/,''))||0;return aa-ab;
-  })){
+  for(const[cat,teams] of Object.entries(byCat).sort(([a],[b])=>catCmp(a,b))){
     html+=`<div style="font-size:10px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;padding-left:4px">${cat}</div>`;
     for(const t of teams.sort((a,b)=>teamNumber(a)-teamNumber(b))){
       const active=_saTeamId===t.id;
@@ -2623,14 +2664,13 @@ document.addEventListener('click',function(e){
 
 function _ovSortTeams(teams){
   const ts=[...teams];
-  // Herren always before Damen
-  const isDamen=c=>/^Damen/i.test(c);
-  const genderRank=c=>isDamen(c)?1:0;
+  // Herren → Damen → Jugend
+  const genderRank=c=>catGroup(c);
   if(_ovSort==='altersklasse'){
     return ts.sort((a,b)=>{
       const ga=genderRank(a.category),gb=genderRank(b.category);
       if(ga!==gb)return ga-gb;
-      if(a.category!==b.category)return a.category.localeCompare(b.category);
+      if(a.category!==b.category)return catCmp(a.category,b.category)||a.category.localeCompare(b.category);
       return teamNumber(a)-teamNumber(b);
     });
   }
@@ -3007,6 +3047,9 @@ const LIGA_CAT_MAP={
 const JUVENILE_RE=/^(U\d+|Mid\b)/i;
 
 function ligaToCategory(liga){
+  // Jugend: "U18m …", "U18 w …", "U12 …", "Midcourt U10 m w …" → U18m / U18w / U12 / U10
+  const j=liga.match(/^(?:Midcourt\s+|Mid\s+)?U\s?(\d+)\s*(m\s*w|m|w)?(?=\s|$)/i);
+  if(j){const g=(j[2]||'').replace(/\s/g,'').toLowerCase();return`U${j[1]}${g==='m'?'m':g==='w'?'w':''}`;}
   if(LIGA_CAT_MAP[liga])return LIGA_CAT_MAP[liga];
   for(const[key,val]of Object.entries(LIGA_CAT_MAP)){if(liga.startsWith(key))return val;}
   if(/^H\d+/.test(liga)){const m=liga.match(/^H(\d+)/);return`Herren ${m[1]}`;}
@@ -3101,8 +3144,13 @@ async function parseResultReportPDF(file){
         for (const item of items) {
           if (!item.s.includes('Gruppe')) continue;
           const ci = colIdx(item.x);
-          // Ignorar juveniles
-          if (/^(U\d+|Midcourt|Mid\b)/i.test(item.s)) { active[ci] = null; continue; }
+          // Jugend: "U18m VL I Gruppe A", "U18 w VOL Gruppe B", "U12 VL II Gruppe A", "Midcourt U10 m w VL I Gruppe B"
+          const jm = item.s.match(/^(?:Midcourt\s+)?U(\d+)\s*(m\s*w|m|w)?\s+(.+?)\s+Gruppe\s+[A-Z]$/);
+          if (jm) {
+            const jg = (jm[2] || '').replace(/\s/g, '');
+            active[ci] = {category: `U${jm[1]}${jg === 'm' ? 'm' : jg === 'w' ? 'w' : ''}`, liga: jm[3].trim()};
+            continue;
+          }
           // Parsear adultos: "Herren 70 Ostliga Gruppe B" → cat="Herren 70", liga="Ostliga"
           const m = item.s.match(/^(Herren(?:\s+\d+)?|Damen(?:\s+\d+)?)\s+(.+?)\s+Gruppe\s+[A-Z]$/);
           active[ci] = m ? {category: m[1].trim(), liga: m[2].trim()} : null;
@@ -3135,8 +3183,9 @@ async function parseResultReportPDF(file){
           category: col.category,
           liga: col.liga,
           team_number: tnum,
-          season: 'Sommer',
-          gender: col.category.startsWith('Damen') ? 'F' : 'M'
+          season: ACTIVE_SEASON_KIND,
+          season_id: ACTIVE_SEASON,
+          gender: catGender(col.category)
         });
       }
     }
@@ -3154,7 +3203,7 @@ function showTeamsPreview(teams){
   let html='';
   for(const[cat,ts]of Object.entries(byCat)){
     html+=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:8px">
-      <div class="team-section-header">${cat} <span class="${catGender(cat)==='F'?'g-f':'g-m'}">${catGender(cat)==='F'?'F':'M'}</span> · ${ts.length}</div>
+      <div class="team-section-header">${cat} ${genderBadge(catGender(cat))} · ${ts.length}</div>
       ${ts.map(t=>`<div class="player-row" style="border-radius:0;border:none;border-bottom:1px solid #2e4a4233;margin:0">
         <span class="player-name">${t.name}</span>
         <span style="font-size:11px;color:var(--muted)">${t.liga}</span>
@@ -3250,7 +3299,6 @@ function parseBegegnungenItems(allItems){
     const dm=dateText.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}:\d{2})/);
     if(dm){curDate=`${dm[3]}-${dm[2]}-${dm[1]}`;curTime=dm[4];}
     if(!curDate||!ligaText)continue;
-    if(JUVENILE.test(ligaText))continue;
     if(!heimText.includes('Reinickendorf')&&!gastText.includes('Reinickendorf'))continue;
     if(statusText.includes('zurückgezogen'))continue;
     const isHome=heimText.includes('Reinickendorf');
@@ -3317,11 +3365,12 @@ async function confirmMatchesImport(){
 }
 
 async function deleteAllMatches(){
-  if(!confirm(tr('deleteAllConfirm')))return;
+  if(!confirm(`${tr('deleteAllConfirm')} (${ACTIVE_SEASON})`))return;
   const statusEl=document.getElementById('matches-parse-status');
   statusEl.textContent='...';
   setSync('ing',tr('syncIng'));
   try{
+    // state.matches only holds matches of ACTIVE_SEASON teams — archived seasons are untouched
     for(const m of state.matches)await sbDelete('matches',`id=eq.${m.id}`);
     await loadAll();
     statusEl.textContent=tr('deletedMsg');
@@ -3638,10 +3687,9 @@ function renderStatsLKAnalysis(){
   
   // Sort teams by name for consistent display
   const sortedTeams=teams.sort((a,b)=>{
-    // Herren before Damen
-    const isDamenA=/^Damen/i.test(a.category);
-    const isDamenB=/^Damen/i.test(b.category);
-    if(isDamenA!==isDamenB)return isDamenA?1:-1;
+    // Herren → Damen → Jugend
+    const ga=catGroup(a.category),gb=catGroup(b.category);
+    if(ga!==gb)return ga-gb;
     return a.name.localeCompare(b.name);
   });
   

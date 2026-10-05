@@ -219,6 +219,8 @@ input::placeholder{color:var(--muted)}
 <script>
 const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
 const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
+// ── ACTIVE SEASON ── change manually each season (also in admin.html and kapitaen.html)
+const ACTIVE_SEASON='W2026';
 const _b='17aa79be6d26e795'; // sync badge config ref
 const HDR={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 
@@ -323,9 +325,13 @@ function teamNumber(team){
   if(r)return roman[r[1]]||1;
   return 1;
 }
+// ── CATEGORY ORDER: Herren (0) → Damen (1) → Jugend U.. (2); Jugend: U18 → U10, m → w → gemischt ──
+function catGroup(cat){cat=cat||'';if(/^U\d+/.test(cat))return 2;return /^Damen/i.test(cat)?1:0;}
+function catAge(cat){cat=cat||'';const j=cat.match(/^U(\d+)\s*(m|w)?/);if(j)return(100-parseInt(j[1]))+(j[2]==='m'?0:j[2]==='w'?0.1:0.2);return parseInt(cat.replace(/^(Herren|Damen)\s*/,''))||0;}
+function catCmp(a,b){return catGroup(a)-catGroup(b)||catAge(a)-catAge(b);}
 function teamSortKey(t){
-  const g=t.category.startsWith('Damen')?1:0;
-  const age=parseInt(t.category.replace(/^(Herren|Damen)\s*/,''))||0;
+  const g=catGroup(t.category);
+  const age=catAge(t.category);
   return[g,age,teamNumber(t)];
 }
 function teamSortCmp(a,b){
@@ -373,16 +379,17 @@ async function loadAll(){
   document.getElementById('find-status').textContent=tr('findStatus');
   try{
     const[teams,players,matches,avRows,countRows]=await Promise.all([
-      sbGet('teams','order=category,team_number'),
-      sbGet('players','order=lk'),
+      sbGet('teams',`season_id=eq.${ACTIVE_SEASON}&order=category,team_number`),
+      sbGet('players',`season_id=eq.${ACTIVE_SEASON}&order=lk`),
       sbGet('matches','order=date'),
       sbGet('availability',''),
       sbGet('player_match_counts','')
     ]);
     // Map teams same as admin — camelCase teamNumber so teamNumber() works correctly
     state.teams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender}));
+    const _activeTeamIds=new Set(state.teams.map(t=>t.id));
     state.players=players.map(p=>({...p,lkStr:p.lk_str,rawName:p.raw_name,year:p.year}));
-    state.matches=matches.map(m=>({...m,teamId:m.team_id}));
+    state.matches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({...m,teamId:m.team_id}));
     state.availability={};
     for(const r of avRows){if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
     state.matchCounts={};
@@ -395,6 +402,7 @@ async function loadAll(){
       if(batch.length<1000)break;
       ptOffset+=1000;
     }
+    ptRows=ptRows.filter(r=>_activeTeamIds.has(r.team_id)); // other seasons stay archived
     state.playerTeams=ptRows;
     state.rankByTeam={};
     state.mainTeam={};
@@ -552,13 +560,8 @@ function renderMatchList(){
   const teamIds=getPlayerTeamIds(p.id);
   document.getElementById('selected-player-name').textContent=p.name;
   const teams=teamIds.map(tid=>teamById(tid)).filter(Boolean).sort((a,b)=>{
-    // Gender first (Herren before Damen), then age group (0,30,40...), then team number (1,2,3...)
-    const gA=a.category.startsWith('Damen')?1:0;
-    const gB=b.category.startsWith('Damen')?1:0;
-    if(gA!==gB)return gA-gB;
-    const ageA=parseInt(a.category.replace(/^(Herren|Damen)\s*/,''))||0;
-    const ageB=parseInt(b.category.replace(/^(Herren|Damen)\s*/,''))||0;
-    if(ageA!==ageB)return ageA-ageB;
+    // Herren → Damen → Jugend, then age group, then team number (1,2,3...)
+    const cc=catCmp(a.category,b.category);if(cc)return cc;
     return teamNumber(a)-teamNumber(b);
   });
   document.getElementById('player-info-card').innerHTML=`<div class="player-card">
@@ -590,8 +593,8 @@ function renderMatchList(){
     const blocked=isBlocked(p.id,m.team_id);
     const yes=avail==='yes',conditional=avail==='conditional',notfall=avail==='notfall',no=avail==='no';
     return`<div class="match-item" style="flex-direction:column;gap:10px;cursor:default">
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="text-align:center;min-width:40px">
+      <div style="display:flex;align-items:center;gap:12px;align-self:stretch">
+        <div style="text-align:center;width:44px;flex-shrink:0">
           <div class="match-date">${d.day}</div>
           <div class="match-month">${d.month}</div>
         </div>
@@ -604,7 +607,7 @@ function renderMatchList(){
           📅 .ics
         </button>
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:nowrap">
+      <div style="display:flex;gap:6px;flex-wrap:nowrap;align-self:stretch">
         <button onclick="quickAvail('${m.id}','yes',event)"
           style="flex:1;padding:8px 6px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;
             border:${avail==='conditional'?'1px dashed var(--court)':'1px solid '+( avail==='yes'?'var(--court)':'#2e4a42')};
