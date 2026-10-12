@@ -343,6 +343,14 @@ const LOGIN_DOMAIN='login.fuechse-berlin-reinickendorf.de';
 function usernameToEmail(u){u=(u||'').trim().toLowerCase();if(!u.includes('@'))u=u.replace(/\s+/g,''); // "Herren 30 II" → herren30ii
   return u.includes('@')?u:`${u}@${LOGIN_DOMAIN}`;}
 function emailToUsername(e){e=(e||'').toLowerCase();return e.endsWith('@'+LOGIN_DOMAIN)?e.slice(0,-(LOGIN_DOMAIN.length+1)):e;}
+// ── EDIT RIGHTS ── team logins (username = team name without spaces, e.g. "herrenii" = Herren II)
+// may only edit their own team's Aufstellung. SUPER_USERS may edit everything. Visual check only.
+const SUPER_USERS=['admin','christian','svenja'];
+function currentUsername(){return emailToUsername(_session?.user?.email);}
+function teamLogin(team){return (team?.name||'').toLowerCase().replace(/\s+/g,'');}
+function canEditTeam(teamId){const u=currentUsername();return SUPER_USERS.includes(u)||teamLogin(teamById(teamId))===u;}
+function canEditMatch(matchId){const m=state.matches.find(x=>x.id===matchId);return !!m&&canEditTeam(m.teamId);}
+function denyEdit(){if(canEditMatch(selectedMatchId))return false;setSync('err',tr('readOnly'));setTimeout(()=>setSync('ok','● sync'),2500);renderLineupSlots();return true;}
 async function doLogin(){
   const email=usernameToEmail(document.getElementById('login-email').value);
   const pass=document.getElementById('login-pass').value;
@@ -391,7 +399,6 @@ function playerById(id){return state.players.find(p=>p.id===id)}
 function teamSize(t){return t&&(t.is_4er||t.season==='Winter')?4:6}
 function catGender(cat){if(!cat)return'M';const j=cat.match(/^U\d+\s*(m|w)?$/);if(j)return j[1]==='w'?'F':j[1]==='m'?'M':'X';return cat.toLowerCase().startsWith('damen')?'F':'M';}
 // ── CATEGORY ORDER: Herren (0) → Damen (1) → Jugend U.. (2); Jugend: U18 → U10, m → w → gemischt ──
-function blockOf(cat){return['Herren','Damen','Jugend'][catGroup(cat)];}
 function catGroup(cat){cat=cat||'';if(/^U\d+/.test(cat))return 2;return /^Damen/i.test(cat)?1:0;}
 function catAge(cat){cat=cat||'';const j=cat.match(/^U(\d+)\s*(m|w)?/);if(j)return(100-parseInt(j[1]))+(j[2]==='m'?0:j[2]==='w'?0.1:0.2);return parseInt(cat.replace(/^(Herren|Damen)\s*/,''))||0;}
 function catCmp(a,b){return catGroup(a)-catGroup(b)||catAge(a)-catAge(b);}
@@ -467,7 +474,7 @@ function setSync(s,m){const b=document.getElementById('sync-badge');b.className=
 const T={
   de:{
     tabSpiele:'Spiele & Aufstellung',tabOverview:'Overview',tabSperren:'Sperren',
-    logout:'Abmelden',teamsTitle:'Mannschaften',loading:'Laden...',noAccess:'Keine Mannschaften freigegeben. Bitte beim Sportwart melden.',
+    logout:'Abmelden',teamsTitle:'Mannschaften',loading:'Laden...',readOnly:'Nur ansehen – du kannst nur die Aufstellung deiner eigenen Mannschaft bearbeiten.',
     groupYes:'✓ Ja',groupConditional:'(Ja) — Prio II',groupNotfall:'Im Notfall',groupNo:'✗ Nein',groupNone:'— Keine Angabe',
     badgeYes:'✓ Ja',badgeNotfall:'Im Notfall',badgeNo:'Nein',
     dropYes:'── ✓ Ja',dropConditional:'── (Ja)',dropNotfall:'── Im Notfall',dropNo:'── ✗ Nein',dropNone:'── ?',
@@ -485,7 +492,7 @@ const T={
   },
   es:{
     tabSpiele:'Partidos & Alineación',tabOverview:'Overview',tabSperren:'Bloqueos',
-    logout:'Cerrar sesión',teamsTitle:'Equipos',loading:'Cargando...',noAccess:'No tenés equipos habilitados. Hablá con el Sportwart.',
+    logout:'Cerrar sesión',teamsTitle:'Equipos',loading:'Cargando...',readOnly:'Solo lectura: solo podés editar la alineación de tu propio equipo.',
     groupYes:'✓ Sí',groupConditional:'(Sí) — Prio II',groupNotfall:'Si es necesario',groupNo:'✗ No',groupNone:'— Sin respuesta',
     badgeYes:'✓ Sí',badgeNotfall:'Si es necesario',badgeNo:'No',
     dropYes:'── ✓ Sí',dropConditional:'── (Sí)',dropNotfall:'── Si es necesario',dropNo:'── ✗ No',dropNone:'── ?',
@@ -503,7 +510,7 @@ const T={
   },
   en:{
     tabSpiele:'Matches & Lineup',tabOverview:'Overview',tabSperren:'Blocks',
-    logout:'Log out',teamsTitle:'Teams',loading:'Loading...',noAccess:'No teams assigned to you. Please contact the Sportwart.',
+    logout:'Log out',teamsTitle:'Teams',loading:'Loading...',readOnly:'View only – you can only edit your own team\'s lineup.',
     groupYes:'✓ Yes',groupConditional:'(Yes) — Prio II',groupNotfall:'If needed',groupNo:'✗ No',groupNone:'— No answer',
     badgeYes:'✓ Yes',badgeNotfall:'If needed',badgeNo:'No',
     dropYes:'── ✓ Yes',dropConditional:'── (Yes)',dropNotfall:'── If needed',dropNo:'── ✗ No',dropNone:'── ?',
@@ -568,15 +575,8 @@ async function loadAll(){
     ]);
     state.allTeams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
     const _activeTeamIds=new Set(state.allTeams.map(t=>t.id));
-    // ── ACCESS BLOCKS ── table captain_access(username, blocks text[]): 'Herren' | 'Damen' | 'Jugend'
-    // Only filters what the captain SEES; all season teams/matches stay loaded so same-day conflicts still show.
-    state.blocks=[];
-    try{
-      const username=emailToUsername(_session?.user?.email);
-      const acc=await sbGet('captain_access',`username=eq.${encodeURIComponent(username)}`);
-      state.blocks=acc[0]?.blocks||[];
-    }catch(e){console.error('captain_access',e);}
-    state.teams=state.allTeams.filter(t=>state.blocks.includes(blockOf(t.category)));
+    // ── ACCESS ── everyone SEES all teams; editing (Aufstellung) only for the own team, see canEditTeam()
+    state.teams=state.allTeams;
     state.players=players.map(p=>({id:p.id,name:p.name,idnr:p.idnr,lk:p.lk,lkStr:p.lk_str,year:p.year,teamIds:[],gender:p.gender||'M',rank:p.rank}));
     state.matches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue}));
     state.availability={};
@@ -613,10 +613,6 @@ async function loadAll(){
 
 // ── SIDEBAR ──
 function renderTeamSidebar(){
-  if(!state.teams.length&&state.allTeams?.length){
-    document.getElementById('team-list-sidebar').innerHTML=`<div style="padding:12px;font-size:12px;color:var(--muted)">${tr('noAccess')}</div>`;
-    return;
-  }
   const byCat={};
   for(const t of state.teams){
     const c=t.category||'Herren';
@@ -801,6 +797,7 @@ function onSlotDragEnd(e){
   _dragSrcIndex=null;
 }
 async function onSlotDrop(e,destIndex){
+  if(denyEdit())return;
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over');
   if(_dragSrcIndex===null||_dragSrcIndex===destIndex)return;
@@ -875,7 +872,10 @@ function renderLineupSlots(){
     }
     return opts;
   }
-  let slotsHtml='';
+  const ro=!canEditTeam(match.teamId); // read-only for other teams
+  const dis=ro?'disabled':'';
+  ['auto-btn','sort-btn'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display=ro?'none':'';});
+  let slotsHtml=ro?`<div style="background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:6px 12px;margin-bottom:10px;font-size:12px;color:var(--muted)">🔒 ${tr('readOnly')}</div>`:'';
   for(let i=0;i<size;i++){
     const pid=lineup[i]||'';
     const p=pid?playerById(pid):null;
@@ -883,7 +883,7 @@ function renderLineupSlots(){
     const rankOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
     const isBlocked=pid?isPlayerBlockedForLineup(pid,match.teamId):false;
     const cls=p?(isBlocked?'blocked-slot':rankOk?'ok':'warning'):'';
-    slotsHtml+=`<div class="lineup-slot ${cls}" draggable="true" data-slot-index="${i}"
+    slotsHtml+=`<div class="lineup-slot ${cls}" ${ro?'':'draggable="true"'} data-slot-index="${i}"
       ondragstart="onSlotDragStart(event,${i})"
       ondragover="onSlotDragOver(event)"
       ondragleave="onSlotDragLeave(event)"
@@ -891,7 +891,7 @@ function renderLineupSlots(){
       ondragend="onSlotDragEnd(event)">
       <span class="drag-handle" title="Ziehen zum Umsortieren">⠿</span>
       <div class="lineup-pos">${i+1}</div>
-      <select onchange="setSlot(${i},this.value)">${buildOpts(pid)}</select>
+      <select ${dis} onchange="setSlot(${i},this.value)">${buildOpts(pid)}</select>
     </div>`;
   }
 
@@ -910,7 +910,7 @@ function renderLineupSlots(){
     <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Ersatz</div>
     <div class="lineup-slot ${ersatzP?(ersatzBlocked?'blocked-slot':'ok'):''}" style="opacity:.85;border-style:dashed">
       <div class="lineup-pos" style="color:var(--muted)">E</div>
-      <select onchange="setSlot(${size},this.value)">${buildOpts(ersatzPid)}</select>
+      <select ${dis} onchange="setSlot(${size},this.value)">${buildOpts(ersatzPid)}</select>
     </div>
     ${ersatzWarn?`<div class="warn-banner" style="margin-top:6px;font-size:11px">${ersatzWarn}</div>`:''}
   </div>`;
@@ -936,6 +936,7 @@ function renderLineupSlots(){
 }
 
 async function sortLineupKap(){
+  if(denyEdit())return;
   if(!selectedMatchId)return;
   const match=state.matches.find(m=>m.id===selectedMatchId);if(!match)return;
   const lineup=state.lineups[selectedMatchId]||[];
@@ -952,6 +953,7 @@ async function sortLineupKap(){
 }
 
 async function setSlot(pos,playerId){
+  if(denyEdit())return;
   if(!selectedMatchId)return;
   if(!state.lineups[selectedMatchId])state.lineups[selectedMatchId]=[];
   state.lineups[selectedMatchId][pos]=playerId||null;
@@ -1070,6 +1072,7 @@ function renderBlocking(){
 }
 
 async function runAutoLineup(){
+  if(denyEdit())return;
   const match=state.matches.find(m=>m.id===selectedMatchId);if(!match)return;
   const team=teamById(match.teamId);
   const size=teamSize(team);
