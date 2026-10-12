@@ -170,6 +170,7 @@ input:focus,select:focus{border-color:var(--court)}
       <button class="lang-btn" onclick="setLang('es')">ES</button>
       <button class="lang-btn" onclick="setLang('en')">EN</button>
     </div>
+    <span id="who-badge" style="display:none;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid var(--court);color:var(--court);white-space:nowrap"></span>
     <span class="sync-badge sync-ing" id="sync-badge">⟳</span>
     <button class="logout-btn" id="btn-logout" onclick="doLogout()">Abmelden</button>
   </div>
@@ -349,6 +350,31 @@ const SUPER_USERS=['admin','christian','svenja'];
 function currentUsername(){return emailToUsername(_session?.user?.email);}
 function teamLogin(team){return (team?.name||'').toLowerCase().replace(/\s+/g,'');}
 function canEditTeam(teamId){const u=currentUsername();return SUPER_USERS.includes(u)||teamLogin(teamById(teamId))===u;}
+// Jugend team logins ("u18m", "u12iii", …) only see the Jugend block (teams still loaded for same-day conflicts)
+function isJugendLogin(){return /^u\d+/.test(currentUsername());}
+const SUPER_LABELS={admin:'Admin',christian:'Christian',svenja:'Svenja'};
+function renderWhoBadge(){
+  const el=document.getElementById('who-badge');if(!el)return;
+  const u=currentUsername();
+  const own=(state.allTeams||[]).find(t=>teamLogin(t)===u);
+  const label=SUPER_LABELS[u]||own?.name||u;
+  if(!label){el.style.display='none';return;}
+  el.textContent=`👤 ${label}`;
+  el.title=SUPER_USERS.includes(u)?tr('whoAll'):tr('whoOwn');
+  el.style.display='';
+}
+// Sperren + Overview scope: team logins only see their own block (Herren / Damen / Jugend); SUPER_USERS see all
+function scopeGroup(){
+  const u=currentUsername();
+  if(SUPER_USERS.includes(u))return null;
+  const own=(state.allTeams||[]).find(t=>teamLogin(t)===u);
+  if(own)return catGroup(own.category);
+  if(/^u\d+/.test(u))return 2;
+  if(u.startsWith('damen'))return 1;
+  if(u.startsWith('herren'))return 0;
+  return null;
+}
+function scopeTeams(){const g=scopeGroup();return g==null?state.teams:state.teams.filter(t=>catGroup(t.category)===g);}
 function canEditMatch(matchId){const m=state.matches.find(x=>x.id===matchId);return !!m&&canEditTeam(m.teamId);}
 function denyEdit(){if(canEditMatch(selectedMatchId))return false;setSync('err',tr('readOnly'));setTimeout(()=>setSync('ok','● sync'),2500);renderLineupSlots();return true;}
 async function doLogin(){
@@ -413,7 +439,7 @@ function teamNumber(team){
 function playerRankInTeam(playerId,teamId){
   const team=teamById(teamId);if(!team)return 999;
   const cat=team.category;
-  const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  const catTeams=(state.allTeams||state.teams).filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
   // Use the rank from the first team in the category where the player has a rank entry
   // This is the player's global position in the Namentliche Mannschaftsmeldung for this category
   const playerRanks=state.rankByTeam[playerId]||{};
@@ -440,7 +466,7 @@ function isPlayerBlockedForLineup(playerId,teamId){
   return status.blocked.some(b=>b.id===teamId);
 }
 function getStammkaderTeam(playerId,catGroup){
-  const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  const catTeams=(state.allTeams||state.teams).filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
   if(!catTeams.length)return null;
   // Use category-specific rank from rankByTeam (no fallback - player must have a rank in this category)
   const playerRanks=state.rankByTeam[playerId]||{};
@@ -453,7 +479,7 @@ function getStammkaderTeam(playerId,catGroup){
 }
 function getPlayerBlockStatus(playerId,catGroup){
   const counts=state.matchCounts[playerId]||{};
-  const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  const catTeams=(state.allTeams||state.teams).filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
   const stammkaderTeam=getStammkaderTeam(playerId,catGroup);
   const stammkaderTeamNum=stammkaderTeam?teamNumber(stammkaderTeam):null;
   const stammkaderBlocked=stammkaderTeamNum!==null?catTeams.filter(t=>teamNumber(t)>stammkaderTeamNum):[];
@@ -474,7 +500,7 @@ function setSync(s,m){const b=document.getElementById('sync-badge');b.className=
 const T={
   de:{
     tabSpiele:'Spiele & Aufstellung',tabOverview:'Overview',tabSperren:'Sperren',
-    logout:'Abmelden',teamsTitle:'Mannschaften',loading:'Laden...',readOnly:'Nur ansehen – du kannst nur die Aufstellung deiner eigenen Mannschaft bearbeiten.',
+    logout:'Abmelden',teamsTitle:'Mannschaften',loading:'Laden...',readOnly:'Nur ansehen – du kannst nur die Aufstellung deiner eigenen Mannschaft bearbeiten.',whoAll:'Angemeldet · darf alle Mannschaften bearbeiten',whoOwn:'Angemeldet · darf nur die eigene Mannschaft bearbeiten',
     groupYes:'✓ Ja',groupConditional:'(Ja) — Prio II',groupNotfall:'Im Notfall',groupNo:'✗ Nein',groupNone:'— Keine Angabe',
     badgeYes:'✓ Ja',badgeNotfall:'Im Notfall',badgeNo:'Nein',
     dropYes:'── ✓ Ja',dropConditional:'── (Ja)',dropNotfall:'── Im Notfall',dropNo:'── ✗ Nein',dropNone:'── ?',
@@ -492,7 +518,7 @@ const T={
   },
   es:{
     tabSpiele:'Partidos & Alineación',tabOverview:'Overview',tabSperren:'Bloqueos',
-    logout:'Cerrar sesión',teamsTitle:'Equipos',loading:'Cargando...',readOnly:'Solo lectura: solo podés editar la alineación de tu propio equipo.',
+    logout:'Cerrar sesión',teamsTitle:'Equipos',loading:'Cargando...',readOnly:'Solo lectura: solo podés editar la alineación de tu propio equipo.',whoAll:'Sesión iniciada · puede editar todos los equipos',whoOwn:'Sesión iniciada · solo puede editar su propio equipo',
     groupYes:'✓ Sí',groupConditional:'(Sí) — Prio II',groupNotfall:'Si es necesario',groupNo:'✗ No',groupNone:'— Sin respuesta',
     badgeYes:'✓ Sí',badgeNotfall:'Si es necesario',badgeNo:'No',
     dropYes:'── ✓ Sí',dropConditional:'── (Sí)',dropNotfall:'── Si es necesario',dropNo:'── ✗ No',dropNone:'── ?',
@@ -510,7 +536,7 @@ const T={
   },
   en:{
     tabSpiele:'Matches & Lineup',tabOverview:'Overview',tabSperren:'Blocks',
-    logout:'Log out',teamsTitle:'Teams',loading:'Loading...',readOnly:'View only – you can only edit your own team\'s lineup.',
+    logout:'Log out',teamsTitle:'Teams',loading:'Loading...',readOnly:'View only – you can only edit your own team\'s lineup.',whoAll:'Logged in · can edit all teams',whoOwn:'Logged in · can only edit own team',
     groupYes:'✓ Yes',groupConditional:'(Yes) — Prio II',groupNotfall:'If needed',groupNo:'✗ No',groupNone:'— No answer',
     badgeYes:'✓ Yes',badgeNotfall:'If needed',badgeNo:'No',
     dropYes:'── ✓ Yes',dropConditional:'── (Yes)',dropNotfall:'── If needed',dropNo:'── ✗ No',dropNone:'── ?',
@@ -575,8 +601,9 @@ async function loadAll(){
     ]);
     state.allTeams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
     const _activeTeamIds=new Set(state.allTeams.map(t=>t.id));
-    // ── ACCESS ── everyone SEES all teams; editing (Aufstellung) only for the own team, see canEditTeam()
-    state.teams=state.allTeams;
+    // ── ACCESS ── everyone SEES all teams (Jugend logins: only Jugend); editing only for the own team, see canEditTeam()
+    state.teams=isJugendLogin()?state.allTeams.filter(t=>catGroup(t.category)===2):state.allTeams;
+    renderWhoBadge();
     state.players=players.map(p=>({id:p.id,name:p.name,idnr:p.idnr,lk:p.lk,lkStr:p.lk_str,year:p.year,teamIds:[],gender:p.gender||'M',rank:p.rank}));
     state.matches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue}));
     state.availability={};
@@ -994,7 +1021,7 @@ function showKapTab(tab){
 
 // ── BLOCKING VIEW (read-only) ──
 function renderBlocking(){
-  const cats=[...new Set(state.teams.map(t=>t.category))].sort();
+  const cats=[...new Set(scopeTeams().map(t=>t.category))].sort();
   const catSel=document.getElementById('block-cat-filter');
   const defaultCat=cats.includes('Herren')?'Herren':'';
   const curCat=catSel?.value||defaultCat;
@@ -1008,10 +1035,11 @@ function renderBlocking(){
   </div>`;
   let anyEntry=false;
   for(const cat of catsToShow){
-    const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+    const catTeams=scopeTeams().filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
     if(!catTeams.length)continue;
     const groupSize=teamSize(catTeams[0]);
-    const catPlayers=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>(a.rank||999)-(b.rank||999));
+    // Sort by the rank in THIS category's Meldung (p.rank is only the rank of the first list the player was imported from)
+    const catPlayers=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>playerRankInTeam(a.id,catTeams[0].id)-playerRankInTeam(b.id,catTeams[0].id));
     if(!catPlayers.length)continue;
     anyEntry=true;
     html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court);letter-spacing:1px;margin:14px 0 8px">${cat}</div>`;
@@ -1196,8 +1224,8 @@ function toggleTeamsMenu(e){
 function _buildTeamsPanelContent(panel){
   // Filter teams by selected categories first
   const availableTeams=(!_kapOvSelectedCats||_kapOvSelectedCats.length===0)?
-    state.teams:
-    state.teams.filter(t=>_kapOvSelectedCats.includes(t.category));
+    scopeTeams():
+    scopeTeams().filter(t=>_kapOvSelectedCats.includes(t.category));
   
   if(!availableTeams.length){
     panel.innerHTML='<div style="padding:10px;color:#666;font-size:12px">Keine Teams verfügbar</div>';
@@ -1344,7 +1372,7 @@ document.addEventListener('click',function(e){
 });
 
 function _buildPanelContent(panel){
-  const cats=[...new Set(state.teams.map(t=>t.category))].sort();
+  const cats=[...new Set(scopeTeams().map(t=>t.category))].sort();
   panel.innerHTML='';
   const allSelected=!_kapOvSelectedCats;
   ['__all__',...cats].forEach(function(c){
@@ -1485,7 +1513,7 @@ function renderKapOverview(){
   </div>`;
 
   // Single table with filtered categories
-  let teams=_kapOvSortTeams(!selected||!selected.length?state.teams:state.teams.filter(t=>selected.includes(t.category)));
+  let teams=_kapOvSortTeams(!selected||!selected.length?scopeTeams():scopeTeams().filter(t=>selected.includes(t.category)));
   // Apply team filter
   if(_kapOvSelectedTeams&&_kapOvSelectedTeams.length>0){
     teams=teams.filter(t=>_kapOvSelectedTeams.includes(t.id));
@@ -1506,7 +1534,7 @@ function goToMatchKap(matchId){
 
 function renderKapOverviewMatches(selectedCats){
   const el=document.getElementById('kap-overview-content');
-  let teams=_kapOvSortTeams((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
+  let teams=_kapOvSortTeams((!selectedCats||selectedCats.length===0)?scopeTeams():scopeTeams().filter(t=>selectedCats.includes(t.category)));
   // Apply team filter
   if(_kapOvSelectedTeams&&_kapOvSelectedTeams.length>0){
     teams=teams.filter(t=>_kapOvSelectedTeams.includes(t.id));

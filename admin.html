@@ -1678,7 +1678,8 @@ function renderBlocking(){
     const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
     if(!catTeams.length)continue;
     const groupSize=teamSize(catTeams[0]);
-    const catPlayers=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>(a.rank||999)-(b.rank||999));
+    // Sort by the rank in THIS category's Meldung (p.rank is only the rank of the first list the player was imported from)
+    const catPlayers=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>playerRankInTeam(a.id,catTeams[0].id)-playerRankInTeam(b.id,catTeams[0].id));
     if(!catPlayers.length)continue;
     anyEntry=true;
     html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court);letter-spacing:1px;margin:14px 0 8px">${cat}</div>`;
