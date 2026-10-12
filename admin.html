@@ -671,6 +671,8 @@ function getHDR(){
 }
 
 async function sbGet(t,p=''){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{headers:{...getHDR(),'Prefer':''}});if(!r.ok)throw new Error(await r.text());return r.json();}
+// Supabase returns max. 1000 rows per request → always page through big tables (stable order required)
+async function sbGetAll(t,p=''){let out=[],off=0;while(true){const b=await sbGet(t,`${p}${p?'&':''}limit=1000&offset=${off}`);out=out.concat(b);if(b.length<1000)break;off+=1000;}return out;}
 async function sbUpsert(t,d){const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...getHDR(),'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(Array.isArray(d)?d:[d])});if(!r.ok)throw new Error(await r.text());}
 async function sbDelete(t,f){const r=await fetch(`${SB_URL}/rest/v1/${t}?${f}`,{method:'DELETE',headers:getHDR()});if(!r.ok)throw new Error(await r.text());}
 
@@ -927,11 +929,11 @@ async function loadAll(){
   try{
     const[teams,players,matches,avRows,lineupRows,countRows]=await Promise.all([
       sbGet('teams',`season_id=eq.${ACTIVE_SEASON}&order=category,team_number`),
-      sbGet('players',`season_id=eq.${ACTIVE_SEASON}&order=lk`),
-      sbGet('matches','order=date'),
-      sbGet('availability',''),
-      sbGet('lineups',''),
-      sbGet('player_match_counts','')
+      sbGetAll('players',`season_id=eq.${ACTIVE_SEASON}&order=lk,id`),
+      sbGetAll('matches','order=date,id'),
+      sbGetAll('availability','order=match_id,player_id'),
+      sbGetAll('lineups','order=match_id'),
+      sbGetAll('player_match_counts','order=player_id,team_id')
     ]);
     state.teams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
     const _activeTeamIds=new Set(state.teams.map(t=>t.id));
@@ -946,7 +948,7 @@ async function loadAll(){
     // Load ALL player_teams — Supabase default limit is 1000, paginate to get all
     let ptRows=[], ptOffset=0;
     while(true){
-      const batch=await sbGet('player_teams',`limit=1000&offset=${ptOffset}`);
+      const batch=await sbGet('player_teams',`order=player_id,team_id&limit=1000&offset=${ptOffset}`);
       ptRows=ptRows.concat(batch);
       if(batch.length<1000)break;
       ptOffset+=1000;
