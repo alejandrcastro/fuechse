@@ -478,9 +478,57 @@ function _countPlayers(match,includeErsatz){
   const lineup=slots.slice(0,size).filter(Boolean);
   return includeErsatz&&slots[size]?[...lineup,slots[size]]:lineup;
 }
+// ── MATCH COUNTING (Sperren) ── always checked against the DATABASE, not the page copy:
+// another tab or a captain may already have counted/undone the match in the meantime.
+async function _patchMatchIf(id,cond,fields){
+  const r=await fetch(`${SB_URL}/rest/v1/matches?id=eq.${id}&${cond}`,{method:'PATCH',headers:{...getHDR(),'Prefer':'return=representation'},body:JSON.stringify(fields)});
+  if(!r.ok)throw new Error(await r.text());
+  return (await r.json()).length>0; // false = condition not met (already counted / already undone)
+}
+async function _freshCounts(teamId){
+  const rows=await sbGetAll('player_match_counts',`team_id=eq.${teamId}&order=player_id`);
+  const m={};for(const r of rows)m[r.player_id]=r.matches_played||0;return m;
+}
+// players: list to count. Returns 'ok' | 'already'
+async function countMatchDB(match,players,includeErsatz){
+  const claimed=await _patchMatchIf(match.id,'counted=not.is.true',{counted:true,ersatz_counted:includeErsatz,counted_players:players});
+  if(!claimed)return'already';
+  try{
+    const cur=await _freshCounts(match.teamId);
+    for(const pid of players){
+      const next=(cur[pid]||0)+1;
+      await sbUpsert('player_match_counts',[{player_id:pid,team_id:match.teamId,matches_played:next}]);
+      if(!state.matchCounts[pid])state.matchCounts[pid]={};state.matchCounts[pid][match.teamId]=next;
+    }
+  }catch(e){ // roll back the claim so it can be retried
+    await _patchMatchIf(match.id,'counted=is.true',{counted:false,ersatz_counted:false,counted_players:null}).catch(()=>{});
+    throw e;
+  }
+  match.counted=true;match.ersatzCounted=includeErsatz;match.countedPlayers=players;
+  return'ok';
+}
+// Returns 'ok' | 'already'
+async function undoCountDB(match){
+  const row=(await sbGet('matches',`id=eq.${match.id}`))[0];
+  if(!row||!row.counted)return'already';
+  const size=teamSize(teamById(match.teamId));
+  const slots=state.lineups[match.id]||[];
+  const lineup=slots.slice(0,size).filter(Boolean);
+  const players=Array.isArray(row.counted_players)?row.counted_players:(row.ersatz_counted&&slots[size]?[...lineup,slots[size]]:lineup);
+  const released=await _patchMatchIf(match.id,'counted=is.true',{counted:false,ersatz_counted:false,counted_players:null});
+  if(!released)return'already';
+  const cur=await _freshCounts(match.teamId);
+  for(const pid of players){
+    const next=Math.max(0,(cur[pid]||0)-1);
+    await sbUpsert('player_match_counts',[{player_id:pid,team_id:match.teamId,matches_played:next}]);
+    if(!state.matchCounts[pid])state.matchCounts[pid]={};state.matchCounts[pid][match.teamId]=next;
+  }
+  match.counted=false;match.ersatzCounted=false;match.countedPlayers=null;
+  return'ok';
+}
 async function kapConfirmMatch(){
   const match=state.matches.find(m=>m.id===selectedMatchId);if(!match)return;
-  if(!canEditTeam(match.teamId)||match.counted)return;
+  if(!canEditTeam(match.teamId))return;
   const size=teamSize(teamById(match.teamId));
   const players=[...document.querySelectorAll('.kap-played:checked')].map(x=>x.value);
   if(!players.length||players.length>size*2)return;
@@ -488,15 +536,8 @@ async function kapConfirmMatch(){
   const btn=document.getElementById('kap-confirm-btn');if(btn){btn.disabled=true;btn.textContent='...';}
   setSync('ing','⟳');
   try{
-    for(const pid of players){
-      if(!state.matchCounts[pid])state.matchCounts[pid]={};
-      const next=(state.matchCounts[pid][match.teamId]||0)+1;
-      state.matchCounts[pid][match.teamId]=next;
-      await sbUpsert('player_match_counts',[{player_id:pid,team_id:match.teamId,matches_played:next}]);
-    }
-    match.counted=true;match.ersatzCounted=includeErsatz;match.countedPlayers=players;
-    const r=await fetch(`${SB_URL}/rest/v1/matches?id=eq.${match.id}`,{method:'PATCH',headers:getHDR(),body:JSON.stringify({counted:true,ersatz_counted:includeErsatz,counted_players:players})});
-    if(!r.ok)throw new Error(await r.text());
+    const res=await countMatchDB(match,players,includeErsatz);
+    if(res==='already'){alert(tr('alreadyCounted'));await loadAll();if(state.matches.find(m=>m.id===selectedMatchId))selectMatch(selectedMatchId);return;}
     setSync('ok','● sync');
     renderTeamContent();renderAvailPanel();renderBlocking();
     const st=document.getElementById('kap-confirm-status');if(st)st.textContent=tr('countDone')(players.length);
@@ -506,18 +547,10 @@ async function kapUndoMatchCount(){
   const match=state.matches.find(m=>m.id===selectedMatchId);if(!match||!match.counted)return;
   if(!canEditTeam(match.teamId))return;
   if(!confirm(tr('undoConfirm')))return;
-  const players=_countPlayers(match,match.ersatzCounted);
   setSync('ing','⟳');
   try{
-    for(const pid of players){
-      if(!state.matchCounts[pid])state.matchCounts[pid]={};
-      const next=Math.max(0,(state.matchCounts[pid][match.teamId]||0)-1);
-      state.matchCounts[pid][match.teamId]=next;
-      await sbUpsert('player_match_counts',[{player_id:pid,team_id:match.teamId,matches_played:next}]);
-    }
-    match.counted=false;match.ersatzCounted=false;match.countedPlayers=null;
-    const r=await fetch(`${SB_URL}/rest/v1/matches?id=eq.${match.id}`,{method:'PATCH',headers:getHDR(),body:JSON.stringify({counted:false,ersatz_counted:false,counted_players:null})});
-    if(!r.ok)throw new Error(await r.text());
+    const res=await undoCountDB(match);
+    if(res==='already'){alert(tr('alreadyUndone'));await loadAll();if(state.matches.find(m=>m.id===selectedMatchId))selectMatch(selectedMatchId);return;}
     setSync('ok','● sync');
     renderTeamContent();renderAvailPanel();renderBlocking();
   }catch(e){console.error(e);setSync('err','✕ '+tr('moveErrSave'));}
@@ -733,7 +766,7 @@ const T={
   de:{
     tabSpiele:'Spiele & Aufstellung',tabOverview:'Overview',tabSperren:'Sperren',
     logout:'Abmelden',teamsTitle:'Mannschaften',loading:'Laden...',
-    countBtn:'Spiel bestätigen & Zähler +1',countedShort:'Gezählt',countedLabel:e=>`Bereits gezählt${e?' (inkl. Ersatz)':''}`,undoBtn:'Rückgängig',
+    countBtn:'Spiel bestätigen & Zähler +1',alreadyCounted:'Dieses Spiel wurde inzwischen schon gezählt. Die Seite wird aktualisiert.',alreadyUndone:'Dieses Spiel ist nicht mehr gezählt. Die Seite wird aktualisiert.',countedShort:'Gezählt',countedLabel:e=>`Bereits gezählt${e?' (inkl. Ersatz)':''}`,undoBtn:'Rückgängig',
     whoPlayed:'Wer hat gespielt?',tooManyPlayed:n=>`Maximal ${n} Spieler.`,morePlayed:n=>`Mehr als ${n}: nur wenn jemand nur Doppel gespielt hat. Wurde ein Spieler ersetzt, ihn abwählen.`,addDoublesPlayer:'Spieler hinzufügen (nur Doppel)',countDone:n=>`✓ ${n} Spieler +1`,undoConfirm:'Zähler für dieses Spiel zurücksetzen?',
     countedLocked:'Spiel gezählt – Aufstellung gesperrt. Zum Ändern zuerst „Rückgängig“.',countAfterMatch:'Bestätigen ist ab dem Spieltag möglich.',countNeedLineup:'Zum Bestätigen muss die Aufstellung vollständig sein.',
     playedOnSpieltag:(n,d,t)=>`⛔ ${n} hat am Spieltag ${d} bereits für ${t} gespielt (WSpO § 10 Abs. 3).`,spieltagInfo:d=>`Spieltag laut WSpO: <b>${d}</b> – wer an diesem Tag schon gespielt hat, ist gesperrt.`,
@@ -764,7 +797,7 @@ const T={
   es:{
     tabSpiele:'Partidos & Alineación',tabOverview:'Overview',tabSperren:'Bloqueos',
     logout:'Cerrar sesión',teamsTitle:'Equipos',loading:'Cargando...',
-    countBtn:'Confirmar partido y contador +1',countedShort:'Contado',countedLabel:e=>`Ya contado${e?' (incl. Ersatz)':''}`,undoBtn:'Deshacer',
+    countBtn:'Confirmar partido y contador +1',alreadyCounted:'Este partido ya fue contado mientras tanto. Se actualiza la página.',alreadyUndone:'Este partido ya no está contado. Se actualiza la página.',countedShort:'Contado',countedLabel:e=>`Ya contado${e?' (incl. Ersatz)':''}`,undoBtn:'Deshacer',
     whoPlayed:'¿Quién jugó?',tooManyPlayed:n=>`Máximo ${n} jugadores.`,morePlayed:n=>`Más de ${n}: solo si alguien jugó únicamente el dobles. Si un jugador fue reemplazado, desmarcalo.`,addDoublesPlayer:'Agregar jugador (solo dobles)',countDone:n=>`✓ ${n} jugadores +1`,undoConfirm:'¿Deshacer el contador de este partido?',
     countedLocked:'Partido contado: alineación bloqueada. Para cambiarla, primero „Deshacer“.',countAfterMatch:'Se puede confirmar a partir del día del partido.',countNeedLineup:'Para confirmar, la alineación tiene que estar completa.',
     playedOnSpieltag:(n,d,t)=>`⛔ ${n} ya jugó el Spieltag ${d} para ${t} (WSpO § 10 Abs. 3).`,spieltagInfo:d=>`Spieltag según la WSpO: <b>${d}</b>: quien ya jugó ese día está bloqueado.`,
@@ -795,7 +828,7 @@ const T={
   en:{
     tabSpiele:'Matches & Lineup',tabOverview:'Overview',tabSperren:'Blocks',
     logout:'Log out',teamsTitle:'Teams',loading:'Loading...',
-    countBtn:'Confirm match & count +1',countedShort:'Counted',countedLabel:e=>`Already counted${e?' (incl. sub)':''}`,undoBtn:'Undo',
+    countBtn:'Confirm match & count +1',alreadyCounted:'This match has been counted in the meantime. The page is refreshed.',alreadyUndone:'This match is no longer counted. The page is refreshed.',countedShort:'Counted',countedLabel:e=>`Already counted${e?' (incl. sub)':''}`,undoBtn:'Undo',
     whoPlayed:'Who played?',tooManyPlayed:n=>`Max. ${n} players.`,morePlayed:n=>`More than ${n}: only if someone played doubles only. If a player was replaced, untick him.`,addDoublesPlayer:'Add player (doubles only)',countDone:n=>`✓ ${n} players +1`,undoConfirm:'Undo count for this match?',
     countedLocked:'Match counted – lineup locked. Undo first to change it.',countAfterMatch:'Confirming is possible from match day on.',countNeedLineup:'The lineup must be complete to confirm.',
     playedOnSpieltag:(n,d,t)=>`⛔ ${n} already played on match day ${d} for ${t} (WSpO § 10 (3)).`,spieltagInfo:d=>`Match day per WSpO: <b>${d}</b> – anyone who already played that day is blocked.`,

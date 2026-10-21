@@ -1760,39 +1760,72 @@ function renderBlocking(){
 }
 
 // ── LINEUP ──
+// ── MATCH COUNTING (Sperren) ── always checked against the DATABASE, not the page copy:
+// another tab or a captain may already have counted/undone the match in the meantime.
+async function _patchMatchIf(id,cond,fields){
+  const r=await fetch(`${SB_URL}/rest/v1/matches?id=eq.${id}&${cond}`,{method:'PATCH',headers:{...getHDR(),'Prefer':'return=representation'},body:JSON.stringify(fields)});
+  if(!r.ok)throw new Error(await r.text());
+  return (await r.json()).length>0; // false = condition not met (already counted / already undone)
+}
+async function _freshCounts(teamId){
+  const rows=await sbGetAll('player_match_counts',`team_id=eq.${teamId}&order=player_id`);
+  const m={};for(const r of rows)m[r.player_id]=r.matches_played||0;return m;
+}
+// players: list to count. Returns 'ok' | 'already'
+async function countMatchDB(match,players,includeErsatz){
+  const claimed=await _patchMatchIf(match.id,'counted=not.is.true',{counted:true,ersatz_counted:includeErsatz,counted_players:players});
+  if(!claimed)return'already';
+  try{
+    const cur=await _freshCounts(match.teamId);
+    for(const pid of players){
+      const next=(cur[pid]||0)+1;
+      await sbUpsert('player_match_counts',[{player_id:pid,team_id:match.teamId,matches_played:next}]);
+      if(!state.matchCounts[pid])state.matchCounts[pid]={};state.matchCounts[pid][match.teamId]=next;
+    }
+  }catch(e){ // roll back the claim so it can be retried
+    await _patchMatchIf(match.id,'counted=is.true',{counted:false,ersatz_counted:false,counted_players:null}).catch(()=>{});
+    throw e;
+  }
+  match.counted=true;match.ersatzCounted=includeErsatz;match.countedPlayers=players;
+  return'ok';
+}
+// Returns 'ok' | 'already'
+async function undoCountDB(match){
+  const row=(await sbGet('matches',`id=eq.${match.id}`))[0];
+  if(!row||!row.counted)return'already';
+  const size=teamSize(teamById(match.teamId));
+  const slots=state.lineups[match.id]||[];
+  const lineup=slots.slice(0,size).filter(Boolean);
+  const players=Array.isArray(row.counted_players)?row.counted_players:(row.ersatz_counted&&slots[size]?[...lineup,slots[size]]:lineup);
+  const released=await _patchMatchIf(match.id,'counted=is.true',{counted:false,ersatz_counted:false,counted_players:null});
+  if(!released)return'already';
+  const cur=await _freshCounts(match.teamId);
+  for(const pid of players){
+    const next=Math.max(0,(cur[pid]||0)-1);
+    await sbUpsert('player_match_counts',[{player_id:pid,team_id:match.teamId,matches_played:next}]);
+    if(!state.matchCounts[pid])state.matchCounts[pid]={};state.matchCounts[pid][match.teamId]=next;
+  }
+  match.counted=false;match.ersatzCounted=false;match.countedPlayers=null;
+  return'ok';
+}
 async function confirmMatchPlayed(matchId){
   const match=state.matches.find(m=>m.id===matchId);if(!match)return;
   const team=teamById(match.teamId);
   const size=teamSize(team);
   const slots=state.lineups[matchId]||[];
-  // Main lineup players (excluding Ersatz at position size)
   const lineup=slots.slice(0,size).filter(Boolean);
-  // Check if Ersatz should also count
   const ersatzCheckbox=document.getElementById(`ersatz-played-${matchId}`);
-  const includeErsatz=ersatzCheckbox&&ersatzCheckbox.checked;
+  const includeErsatz=!!(ersatzCheckbox&&ersatzCheckbox.checked);
   const ersatzPid=slots[size];
   const allPlayers=includeErsatz&&ersatzPid?[...lineup,ersatzPid]:lineup;
   if(!allPlayers.length)return;
-  if(match.counted){
-    alert(lang==='de'?'Dieses Spiel wurde bereits gezählt':lang==='es'?'Este partido ya fue contado':'This match was already counted');
-    return;
-  }
   const btn=document.getElementById(`confirm-btn-${matchId}`);
   const statusEl=document.getElementById(`confirm-status-${matchId}`);
   if(btn){btn.disabled=true;btn.textContent='...';}
   setSync('ing',tr('syncIng'));
   try{
-    for(const playerId of allPlayers){
-      if(!state.matchCounts[playerId])state.matchCounts[playerId]={};
-      const cur=state.matchCounts[playerId][match.teamId]||0;
-      const next=cur+1;
-      state.matchCounts[playerId][match.teamId]=next;
-      await sbUpsert('player_match_counts',[{player_id:playerId,team_id:match.teamId,matches_played:next}]);
-    }
-    // Mark match as counted (store ersatz inclusion in counted field as JSON if needed)
-    match.counted=true;
-    match.ersatzCounted=includeErsatz;
-    await sbUpsert('matches',[{id:matchId,counted:true,ersatz_counted:includeErsatz}]);
+    const res=await countMatchDB(match,allPlayers,includeErsatz&&!!ersatzPid);
+    if(res==='already'){alert(lang==='de'?'Dieses Spiel wurde bereits gezählt (Seite wird aktualisiert)':lang==='es'?'Este partido ya fue contado (se actualiza la página)':'This match was already counted (page is refreshed)');await loadAll();return;}
     setSync('ok',tr('syncOk'));
     if(statusEl)statusEl.textContent=`✓ ${allPlayers.length} Spieler +1`;
     setTimeout(()=>{if(statusEl)statusEl.textContent='';},3000);
@@ -1809,31 +1842,11 @@ async function confirmMatchPlayed(matchId){
 
 async function undoMatchCount(matchId){
   const match=state.matches.find(m=>m.id===matchId);if(!match)return;
-  if(!match.counted){
-    alert(lang==='de'?'Dieses Spiel wurde noch nicht gezählt':lang==='es'?'Este partido no fue contado todavía':'This match has not been counted yet');
-    return;
-  }
   if(!confirm(lang==='de'?'Zähler für dieses Spiel zurücksetzen?':lang==='es'?'¿Deshacer el contador de este partido?':'Undo count for this match?'))return;
-  const team=teamById(match.teamId);
-  const size=teamSize(team);
-  const slots=state.lineups[matchId]||[];
-  const lineup=slots.slice(0,size).filter(Boolean);
-  const ersatzPid=slots[size];
-  // Use the same ersatzCounted state that was used when counting
-  // Prefer the exact list stored at confirmation (kapitaen.html); otherwise lineup (+ Ersatz)
-  const allPlayers=match.countedPlayers||(match.ersatzCounted&&ersatzPid?[...lineup,ersatzPid]:lineup);
   setSync('ing',tr('syncIng'));
   try{
-    for(const playerId of allPlayers){
-      if(!state.matchCounts[playerId])state.matchCounts[playerId]={};
-      const cur=state.matchCounts[playerId][match.teamId]||0;
-      const next=Math.max(0,cur-1);
-      state.matchCounts[playerId][match.teamId]=next;
-      await sbUpsert('player_match_counts',[{player_id:playerId,team_id:match.teamId,matches_played:next}]);
-    }
-    match.counted=false;
-    match.ersatzCounted=false;
-    await sbUpsert('matches',[{id:matchId,counted:false,ersatz_counted:false,counted_players:null}]);match.countedPlayers=null;
+    const res=await undoCountDB(match);
+    if(res==='already'){alert(lang==='de'?'Dieses Spiel ist nicht (mehr) gezählt (Seite wird aktualisiert)':lang==='es'?'Este partido ya no está contado (se actualiza la página)':'This match is no longer counted (page is refreshed)');await loadAll();return;}
     setSync('ok',tr('syncOk'));
     renderBlocking();
     renderLineup();
@@ -2396,28 +2409,17 @@ async function saConfirmMatch(){
   const slots=state.lineups[_saMatchId]||[];
   const lineup=slots.slice(0,size).filter(Boolean);
   const ersatzCheckbox=document.getElementById('sa-ersatz-played');
-  const includeErsatz=ersatzCheckbox&&ersatzCheckbox.checked;
+  const includeErsatz=!!(ersatzCheckbox&&ersatzCheckbox.checked);
   const ersatzPid=slots[size];
   const allPlayers=includeErsatz&&ersatzPid?[...lineup,ersatzPid]:lineup;
   if(!allPlayers.length)return;
-  if(match.counted){
-    alert(lang==='de'?'Dieses Spiel wurde bereits gezählt':lang==='es'?'Este partido ya fue contado':'This match was already counted');
-    return;
-  }
   const btn=document.getElementById('sa-confirm-btn');
   const statusEl=document.getElementById('sa-confirm-status');
   if(btn){btn.disabled=true;btn.textContent='...';}
   setSync('ing',tr('syncIng'));
   try{
-    for(const playerId of allPlayers){
-      if(!state.matchCounts[playerId])state.matchCounts[playerId]={};
-      const cur=state.matchCounts[playerId][match.teamId]||0;
-      state.matchCounts[playerId][match.teamId]=cur+1;
-      await sbUpsert('player_match_counts',[{player_id:playerId,team_id:match.teamId,matches_played:cur+1}]);
-    }
-    match.counted=true;
-    match.ersatzCounted=includeErsatz;
-    await sbUpsert('matches',[{id:_saMatchId,counted:true,ersatz_counted:includeErsatz}]);
+    const res=await countMatchDB(match,allPlayers,includeErsatz&&!!ersatzPid);
+    if(res==='already'){alert(lang==='de'?'Dieses Spiel wurde bereits gezählt (Seite wird aktualisiert)':lang==='es'?'Este partido ya fue contado (se actualiza la página)':'This match was already counted (page is refreshed)');await loadAll();return;}
     setSync('ok',tr('syncOk'));
     if(statusEl)statusEl.textContent=`✓ ${allPlayers.length} Spieler +1`;
     setTimeout(()=>{if(statusEl)statusEl.textContent='';},3000);
@@ -2425,33 +2427,13 @@ async function saConfirmMatch(){
   }catch(e){setSync('err',tr('syncErr'));console.error(e);}
   finally{if(btn){btn.disabled=false;btn.textContent=match.counted?'✓ Bereits gezählt':'✔ Spiel bestätigen & Zähler +1';}}
 }
-
 async function saUndoMatchCount(){
   const match=state.matches.find(m=>m.id===_saMatchId);if(!match)return;
-  if(!match.counted){
-    alert(lang==='de'?'Dieses Spiel wurde noch nicht gezählt':lang==='es'?'Este partido no fue contado todavía':'This match has not been counted yet');
-    return;
-  }
   if(!confirm(lang==='de'?'Zähler für dieses Spiel zurücksetzen?':lang==='es'?'¿Deshacer el contador de este partido?':'Undo count for this match?'))return;
-  const team=teamById(match.teamId);
-  const size=teamSize(team);
-  const slots=state.lineups[_saMatchId]||[];
-  const lineup=slots.slice(0,size).filter(Boolean);
-  const ersatzPid=slots[size];
-  // Prefer the exact list stored at confirmation (kapitaen.html); otherwise lineup (+ Ersatz)
-  const allPlayers=match.countedPlayers||(match.ersatzCounted&&ersatzPid?[...lineup,ersatzPid]:lineup);
   setSync('ing',tr('syncIng'));
   try{
-    for(const playerId of allPlayers){
-      if(!state.matchCounts[playerId])state.matchCounts[playerId]={};
-      const cur=state.matchCounts[playerId][match.teamId]||0;
-      const next=Math.max(0,cur-1);
-      state.matchCounts[playerId][match.teamId]=next;
-      await sbUpsert('player_match_counts',[{player_id:playerId,team_id:match.teamId,matches_played:next}]);
-    }
-    match.counted=false;
-    match.ersatzCounted=false;
-    await sbUpsert('matches',[{id:_saMatchId,counted:false,ersatz_counted:false,counted_players:null}]);match.countedPlayers=null;
+    const res=await undoCountDB(match);
+    if(res==='already'){alert(lang==='de'?'Dieses Spiel ist nicht (mehr) gezählt (Seite wird aktualisiert)':lang==='es'?'Este partido ya no está contado (se actualiza la página)':'This match is no longer counted (page is refreshed)');await loadAll();return;}
     setSync('ok',tr('syncOk'));
     renderBlocking();renderSALineup();
   }catch(e){setSync('err',tr('syncErr'));console.error(e);}
