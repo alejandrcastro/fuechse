@@ -257,6 +257,7 @@ input:focus,select:focus{border-color:var(--court)}
           <div id="lineup-warnings"></div>
           <div id="lineup-slots"></div>
           <div class="save-indicator" id="save-indicator"></div>
+          <div id="count-wrap" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px"></div>
         </div>
 
         <!-- Divider -->
@@ -407,7 +408,95 @@ function scopeGroup(){
 }
 function scopeTeams(){const g=scopeGroup();return g==null?state.teams:state.teams.filter(t=>catGroup(t.category)===g);}
 function canEditMatch(matchId){const m=state.matches.find(x=>x.id===matchId);return !!m&&canEditTeam(m.teamId);}
-function denyEdit(){if(canEditMatch(selectedMatchId))return false;setSync('err',tr('readOnly'));setTimeout(()=>setSync('ok','● sync'),2500);renderLineupSlots();return true;}
+function isCountedMatch(id){return !!state.matches.find(x=>x.id===id)?.counted;}
+function denyEdit(){if(canEditMatch(selectedMatchId)&&!isCountedMatch(selectedMatchId))return false;setSync('err',tr(isCountedMatch(selectedMatchId)?'countedLocked':'readOnly'));setTimeout(()=>setSync('ok','● sync'),2500);renderLineupSlots();return true;}
+// ── SPIEL BESTÄTIGEN (Zähler für Sperren) ── same logic as admin.html; captains only for their own team
+function todayISO(){return new Date().toLocaleDateString('sv-SE');}
+function renderCountWrap(match,lineup,size,filledCount,canEdit){
+  const el=document.getElementById('count-wrap');if(!el)return;
+  if(match.counted){
+    const who=(match.countedPlayers||[]).map(pid=>playerById(pid)?.name).filter(Boolean);
+    el.innerHTML=`<span class="match-status status-ready" style="font-size:12px;padding:5px 12px">✔ ${tr('countedLabel')(match.ersatzCounted)}</span>`+
+      (who.length?`<span style="font-size:11px;color:var(--muted)">${who.join(' · ')}</span>`:'')+
+      (canEdit?`<button class="auto-btn" style="background:transparent;border-color:var(--danger)55;color:var(--danger)" onclick="kapUndoMatchCount()">↶ ${tr('undoBtn')}</button>`:'');
+    return;
+  }
+  if(!canEdit){el.innerHTML='';return;}
+  if(match.date>todayISO()){el.innerHTML=`<span style="font-size:11px;color:var(--muted)">${tr('countAfterMatch')}</span>`;return;}
+  if(filledCount<size){el.innerHTML=`<span style="font-size:11px;color:var(--muted)">${tr('countNeedLineup')}</span>`;return;}
+  // "Wer hat gespielt?" — lineup checked, Ersatz unchecked; if the Ersatz came in, uncheck the player he replaced
+  const cand=[...lineup.slice(0,size).map((pid,i)=>({pid,pos:String(i+1),on:true})),...(lineup[size]?[{pid:lineup[size],pos:'E',on:false}]:[])].filter(c=>c.pid);
+  el.innerHTML=`<div style="width:100%">
+      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${tr('whoPlayed')} <span id="kap-played-count"></span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${cand.map(c=>{const p=playerById(c.pid);
+        return`<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 10px;border:1px solid var(--border2);border-radius:20px;cursor:pointer;width:auto">
+          <input type="checkbox" class="kap-played" value="${c.pid}" ${c.on?'checked':''} onchange="updatePlayedCount()" style="width:auto;accent-color:var(--court);cursor:pointer">
+          <span style="color:var(--muted);font-size:10px">${c.pos}</span> ${p?.name||'?'}</label>`;}).join('')}</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <button class="auto-btn" id="kap-confirm-btn" onclick="kapConfirmMatch()">✔ ${tr('countBtn')}</button>
+        <span id="kap-confirm-status" style="font-size:11px;color:var(--muted)"></span>
+      </div></div>`;
+  updatePlayedCount();
+}
+function updatePlayedCount(){
+  const m=state.matches.find(x=>x.id===selectedMatchId);if(!m)return;
+  const size=teamSize(teamById(m.teamId));
+  const n=document.querySelectorAll('.kap-played:checked').length;
+  const c=document.getElementById('kap-played-count');if(c){c.textContent=`(${n}/${size})`;c.style.color=n>size?'var(--danger)':n===size?'var(--court)':'var(--warn)';}
+  const b=document.getElementById('kap-confirm-btn');if(b)b.disabled=n===0||n>size;
+  const st=document.getElementById('kap-confirm-status');if(st){st.textContent=n>size?tr('tooManyPlayed')(size):'';st.style.color='var(--danger)';}
+}
+function _countPlayers(match,includeErsatz){
+  if(match.countedPlayers)return match.countedPlayers; // exact list stored at confirmation
+  const size=teamSize(teamById(match.teamId));
+  const slots=state.lineups[match.id]||[];
+  const lineup=slots.slice(0,size).filter(Boolean);
+  return includeErsatz&&slots[size]?[...lineup,slots[size]]:lineup;
+}
+async function kapConfirmMatch(){
+  const match=state.matches.find(m=>m.id===selectedMatchId);if(!match)return;
+  if(!canEditTeam(match.teamId)||match.counted)return;
+  const size=teamSize(teamById(match.teamId));
+  const players=[...document.querySelectorAll('.kap-played:checked')].map(x=>x.value);
+  if(!players.length||players.length>size)return;
+  const includeErsatz=players.includes((state.lineups[match.id]||[])[size]);
+  const btn=document.getElementById('kap-confirm-btn');if(btn){btn.disabled=true;btn.textContent='...';}
+  setSync('ing','⟳');
+  try{
+    for(const pid of players){
+      if(!state.matchCounts[pid])state.matchCounts[pid]={};
+      const next=(state.matchCounts[pid][match.teamId]||0)+1;
+      state.matchCounts[pid][match.teamId]=next;
+      await sbUpsert('player_match_counts',[{player_id:pid,team_id:match.teamId,matches_played:next}]);
+    }
+    match.counted=true;match.ersatzCounted=includeErsatz;match.countedPlayers=players;
+    const r=await fetch(`${SB_URL}/rest/v1/matches?id=eq.${match.id}`,{method:'PATCH',headers:getHDR(),body:JSON.stringify({counted:true,ersatz_counted:includeErsatz,counted_players:players})});
+    if(!r.ok)throw new Error(await r.text());
+    setSync('ok','● sync');
+    renderTeamContent();renderAvailPanel();renderBlocking();
+    const st=document.getElementById('kap-confirm-status');if(st)st.textContent=tr('countDone')(players.length);
+  }catch(e){console.error(e);setSync('err','✕ '+tr('moveErrSave'));if(btn){btn.disabled=false;btn.textContent='✔ '+tr('countBtn');}}
+}
+async function kapUndoMatchCount(){
+  const match=state.matches.find(m=>m.id===selectedMatchId);if(!match||!match.counted)return;
+  if(!canEditTeam(match.teamId))return;
+  if(!confirm(tr('undoConfirm')))return;
+  const players=_countPlayers(match,match.ersatzCounted);
+  setSync('ing','⟳');
+  try{
+    for(const pid of players){
+      if(!state.matchCounts[pid])state.matchCounts[pid]={};
+      const next=Math.max(0,(state.matchCounts[pid][match.teamId]||0)-1);
+      state.matchCounts[pid][match.teamId]=next;
+      await sbUpsert('player_match_counts',[{player_id:pid,team_id:match.teamId,matches_played:next}]);
+    }
+    match.counted=false;match.ersatzCounted=false;match.countedPlayers=null;
+    const r=await fetch(`${SB_URL}/rest/v1/matches?id=eq.${match.id}`,{method:'PATCH',headers:getHDR(),body:JSON.stringify({counted:false,ersatz_counted:false,counted_players:null})});
+    if(!r.ok)throw new Error(await r.text());
+    setSync('ok','● sync');
+    renderTeamContent();renderAvailPanel();renderBlocking();
+  }catch(e){console.error(e);setSync('err','✕ '+tr('moveErrSave'));}
+}
 // ── SPIEL VERLEGEN ── creates a new match with the new date/time and marks the original as 'verlegt'
 function openMoveModal(){
   const m=state.matches.find(x=>x.id===selectedMatchId);if(!m)return;
@@ -601,6 +690,9 @@ const T={
   de:{
     tabSpiele:'Spiele & Aufstellung',tabOverview:'Overview',tabSperren:'Sperren',
     logout:'Abmelden',teamsTitle:'Mannschaften',loading:'Laden...',
+    countBtn:'Spiel bestätigen & Zähler +1',countedShort:'Gezählt',countedLabel:e=>`Bereits gezählt${e?' (inkl. Ersatz)':''}`,undoBtn:'Rückgängig',
+    whoPlayed:'Wer hat gespielt?',tooManyPlayed:n=>`Maximal ${n} Spieler – wenn der Ersatz gespielt hat, den ausgewechselten Spieler abwählen.`,countDone:n=>`✓ ${n} Spieler +1`,undoConfirm:'Zähler für dieses Spiel zurücksetzen?',
+    countedLocked:'Spiel gezählt – Aufstellung gesperrt. Zum Ändern zuerst „Rückgängig“.',countAfterMatch:'Bestätigen ist ab dem Spieltag möglich.',countNeedLineup:'Zum Bestätigen muss die Aufstellung vollständig sein.',
     movedBadge:'VERLEGT',movedNewDate:'Neuer Termin',movedOn:(d,u)=>`verlegt am ${d}${u?` von ${u}`:''}`,newBadge:'NEU',
     movedFromInfo:(d,t)=>`<b>Verlegt</b> vom ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} Spieler haben für den neuen Termin geantwortet.`,
     moveBtn:'Verlegen',moveTitle:'Spiel verlegen',moveSub:'Es wird ein neuer Termin angelegt. Der alte bleibt als „verlegt“ sichtbar.',
@@ -627,6 +719,9 @@ const T={
   es:{
     tabSpiele:'Partidos & Alineación',tabOverview:'Overview',tabSperren:'Bloqueos',
     logout:'Cerrar sesión',teamsTitle:'Equipos',loading:'Cargando...',
+    countBtn:'Confirmar partido y contador +1',countedShort:'Contado',countedLabel:e=>`Ya contado${e?' (incl. Ersatz)':''}`,undoBtn:'Deshacer',
+    whoPlayed:'¿Quién jugó?',tooManyPlayed:n=>`Máximo ${n} jugadores: si jugó el Ersatz, desmarcá al jugador que reemplazó.`,countDone:n=>`✓ ${n} jugadores +1`,undoConfirm:'¿Deshacer el contador de este partido?',
+    countedLocked:'Partido contado: alineación bloqueada. Para cambiarla, primero „Deshacer“.',countAfterMatch:'Se puede confirmar a partir del día del partido.',countNeedLineup:'Para confirmar, la alineación tiene que estar completa.',
     movedBadge:'POSTERGADO',movedNewDate:'Nueva fecha',movedOn:(d,u)=>`movido el ${d}${u?` por ${u}`:''}`,newBadge:'NUEVO',
     movedFromInfo:(d,t)=>`<b>Movido</b> desde el ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} jugadores respondieron para la nueva fecha.`,
     moveBtn:'Mover',moveTitle:'Mover partido',moveSub:'Se crea una fecha nueva. La anterior queda visible como „verlegt“.',
@@ -653,6 +748,9 @@ const T={
   en:{
     tabSpiele:'Matches & Lineup',tabOverview:'Overview',tabSperren:'Blocks',
     logout:'Log out',teamsTitle:'Teams',loading:'Loading...',
+    countBtn:'Confirm match & count +1',countedShort:'Counted',countedLabel:e=>`Already counted${e?' (incl. sub)':''}`,undoBtn:'Undo',
+    whoPlayed:'Who played?',tooManyPlayed:n=>`Max. ${n} players – if the sub played, untick the player he replaced.`,countDone:n=>`✓ ${n} players +1`,undoConfirm:'Undo count for this match?',
+    countedLocked:'Match counted – lineup locked. Undo first to change it.',countAfterMatch:'Confirming is possible from match day on.',countNeedLineup:'The lineup must be complete to confirm.',
     movedBadge:'RESCHEDULED',movedNewDate:'New date',movedOn:(d,u)=>`moved on ${d}${u?` by ${u}`:''}`,newBadge:'NEW',
     movedFromInfo:(d,t)=>`<b>Rescheduled</b> from ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} players have answered for the new date.`,
     moveBtn:'Reschedule',moveTitle:'Reschedule match',moveSub:'A new date is created. The old one stays visible as “verlegt”.',
@@ -732,7 +830,8 @@ async function loadAll(){
     // Verlegt: the original stays as an archived card (state.movedMatches); everything else (conflicts,
     // overview, Sperren) only uses the active matches in state.matches
     const _seasonMatches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue,
-      status:m.status||null,movedTo:m.moved_to||null,movedFrom:m.moved_from||null,moveNote:m.move_note||'',movedAt:m.moved_at||null,movedBy:m.moved_by||''}));
+      status:m.status||null,movedTo:m.moved_to||null,movedFrom:m.moved_from||null,moveNote:m.move_note||'',movedAt:m.moved_at||null,movedBy:m.moved_by||'',
+      counted:m.counted||false,ersatzCounted:m.ersatz_counted||false,countedPlayers:Array.isArray(m.counted_players)?m.counted_players:null}));
     state.matches=_seasonMatches.filter(m=>m.status!=='verlegt');
     state.movedMatches=_seasonMatches.filter(m=>m.status==='verlegt');
     state.availability={};
@@ -844,7 +943,7 @@ function renderTeamContent(){
           <div class="match-title">${team.name} vs ${opp}${m.movedFrom?`<span class="status-new">${tr('newBadge')}</span>`:''}</div>
           <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${m.home}</div>
         </div>
-        <span class="match-status ${hasLineup?'status-ready':'status-open'}">${hasLineup?'✓ Aufstellung':'⏳ offen'}</span>
+        <span class="match-status ${hasLineup||m.counted?'status-ready':'status-open'}">${m.counted?'✔ '+tr('countedShort'):hasLineup?'✓ Aufstellung':'⏳ offen'}</span>
       </div>
       <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
       <div style="font-size:11px;color:var(--muted);margin-top:4px">${yes}/${tp.length} verfügbar</div>
@@ -870,7 +969,7 @@ function renderAvailPanel(){
   document.getElementById('lineup-label').textContent=`Aufstellung (${teamSize(team)} Einzel)`;
   // Verlegen: only admins/super users or the team's own login
   const mb=document.getElementById('move-btn');
-  if(mb){mb.style.display=canEditTeam(match.teamId)?'':'none';mb.textContent='⇄ '+tr('moveBtn');}
+  if(mb){mb.style.display=canEditTeam(match.teamId)&&!match.counted?'':'none';mb.textContent='⇄ '+tr('moveBtn');}
   const mi=document.getElementById('move-info');
   if(mi){
     const orig=match.movedFrom?(state.movedMatches||[]).find(x=>x.id===match.movedFrom):null;
@@ -1055,10 +1154,12 @@ function renderLineupSlots(){
     }
     return opts;
   }
-  const ro=!canEditTeam(match.teamId); // read-only for other teams
+  const canEdit=canEditTeam(match.teamId);
+  const ro=!canEdit||!!match.counted; // read-only for other teams, and locked once counted
   const dis=ro?'disabled':'';
   ['auto-btn','sort-btn'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display=ro?'none':'';});
-  let slotsHtml=ro?`<div style="background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:6px 12px;margin-bottom:10px;font-size:12px;color:var(--muted)">🔒 ${tr('readOnly')}</div>`:'';
+  let slotsHtml=ro?`<div style="background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:6px 12px;margin-bottom:10px;font-size:12px;color:var(--muted)">🔒 ${tr(canEdit?'countedLocked':'readOnly')}</div>`:'';
+  renderCountWrap(match,lineup,size,filledCount,canEdit);
   for(let i=0;i<size;i++){
     const pid=lineup[i]||'';
     const p=pid?playerById(pid):null;
