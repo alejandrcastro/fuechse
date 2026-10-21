@@ -130,6 +130,35 @@ input:focus,select:focus{border-color:var(--court)}
 .lineup-slot.dragging{opacity:.4}
 .drag-handle{color:var(--muted);font-size:14px;cursor:grab;padding:0 4px;user-select:none;flex-shrink:0}
 .drag-handle:hover{color:var(--court)}
+/* ── VERLEGT ── */
+.move-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--warn)66;background:#2e2414;color:var(--warn);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.move-btn:hover{background:var(--warn);color:#1a1205}
+.match-card.moved{opacity:.55;cursor:default;background:#181818;border-style:dashed}
+.match-card.moved:hover{border-color:var(--border)}
+.match-card.moved .match-title,.match-card.moved .match-meta{text-decoration:line-through;text-decoration-color:#7a8a8599}
+.status-moved{background:#2e2414;color:var(--warn);border:1px solid var(--warn)55}
+.status-new{background:#14262e;color:var(--info);border:1px solid var(--info)55;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
+.moved-link{font-size:11px;color:var(--warn);margin-top:6px}
+.moved-link b{color:var(--white);font-weight:600}
+.info-banner{background:#14262e;border:1px solid var(--info)44;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#9cc9e6;line-height:1.5}
+.info-banner b{color:var(--white)}
+.mv-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:5000;padding:16px}
+.mv-bg.open{display:flex}
+.mv{background:var(--card);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:440px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.6);max-height:calc(100vh - 32px);overflow-y:auto}
+.mv h2{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:var(--warn);margin-bottom:2px}
+.mv .orig{background:#181818;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--muted);margin:12px 0 16px}
+.mv .orig b{display:block;color:var(--white);font-size:13px;margin-bottom:2px;text-decoration:line-through;text-decoration-color:var(--warn)}
+.mv .field{margin-bottom:12px}
+.mv .field label{display:block;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.mv .row2{display:grid;grid-template-columns:1.4fr 1fr;gap:10px}
+.mv .check{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--white);margin:4px 0 10px;cursor:pointer}
+.mv .check input{width:auto;margin-top:2px;accent-color:var(--court)}
+.mv .check small{display:block;color:var(--muted);font-size:11px;margin-top:1px}
+.mv-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.mv-ghost{padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.mv-go{padding:8px 16px;border-radius:8px;border:none;background:var(--warn);color:#1a1205;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.mv-go:disabled{opacity:.5;cursor:default}
+.mv-err{font-size:12px;color:var(--danger);min-height:16px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -214,12 +243,14 @@ input:focus,select:focus{border-color:var(--court)}
             <div class="avail-panel-title" id="panel-match-title"></div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px" id="panel-match-meta"></div>
           </div>
-          <div style="display:flex;gap:6px">
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="move-btn" id="move-btn" onclick="openMoveModal()" style="display:none">⇄ Verlegen</button>
             <button class="auto-btn" id="auto-btn" onclick="runAutoLineup()">&#9889; Auto-Aufstellung</button>
             <button class="auto-btn" id="sort-btn" onclick="sortLineupKap()" style="background:transparent;border-color:var(--court)44;color:var(--muted)">↕ Sort</button>
           </div>
         </div>
 
+        <div id="move-info"></div>
         <!-- Lineup FIRST (above availability) -->
         <div class="lineup-section" style="margin-top:0;margin-bottom:18px">
           <div class="lineup-title" id="lineup-label">Aufstellung</div>
@@ -377,6 +408,73 @@ function scopeGroup(){
 function scopeTeams(){const g=scopeGroup();return g==null?state.teams:state.teams.filter(t=>catGroup(t.category)===g);}
 function canEditMatch(matchId){const m=state.matches.find(x=>x.id===matchId);return !!m&&canEditTeam(m.teamId);}
 function denyEdit(){if(canEditMatch(selectedMatchId))return false;setSync('err',tr('readOnly'));setTimeout(()=>setSync('ok','● sync'),2500);renderLineupSlots();return true;}
+// ── SPIEL VERLEGEN ── creates a new match with the new date/time and marks the original as 'verlegt'
+function openMoveModal(){
+  const m=state.matches.find(x=>x.id===selectedMatchId);if(!m)return;
+  if(!canEditTeam(m.teamId))return;
+  const team=teamById(m.teamId);
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const hasLineup=(state.lineups[m.id]||[]).some(Boolean);
+  document.getElementById('move-modal-box').innerHTML=`
+    <h2>⇄ ${tr('moveTitle')}</h2>
+    <div style="font-size:12px;color:var(--muted)">${tr('moveSub')}</div>
+    <div class="orig"><b>${esc(team?.name)} vs ${esc(m.opponent)}</b>${fmtDate(m.date)} · ${m.time} · ${m.home}</div>
+    <div class="row2">
+      <div class="field"><label>${tr('moveDate')}</label><input type="date" id="mv-date" value="${m.date}"></div>
+      <div class="field"><label>${tr('moveTime')}</label><input type="time" id="mv-time" value="${m.time||''}"></div>
+    </div>
+    <div class="field"><label>${tr('movePlace')}</label>
+      <select id="mv-home" onchange="document.getElementById('mv-nuliga').style.display=this.value==='Heim'?'':'none'"><option value="Heim" ${m.home==='Heim'?'selected':''}>Heim</option><option value="Auswärts" ${m.home!=='Heim'?'selected':''}>Auswärts</option></select>
+    </div>
+    <div class="field"><label>${tr('moveNote')}</label><input type="text" id="mv-note" maxlength="140" placeholder="${esc(tr('moveNotePh'))}"></div>
+    <label class="check"><input type="checkbox" id="mv-lineup" ${hasLineup?'checked':''}><span>${tr('moveKeepLineup')}<small>${tr('moveKeepLineupSub')}</small></span></label>
+    <label class="check"><input type="checkbox" id="mv-avail"><span>${tr('moveKeepAvail')}<small>${tr('moveKeepAvailSub')}</small></span></label>
+    <div class="rule-box warn" id="mv-nuliga" style="margin:6px 0 0;${m.home==='Heim'?'':'display:none'}">${tr('moveNuliga')}</div>
+    <div class="mv-err" id="mv-err"></div>
+    <div class="mv-actions">
+      <button class="mv-ghost" onclick="closeMoveModal()">${tr('moveCancel')}</button>
+      <button class="mv-go" id="mv-go" onclick="doMoveMatch()">${tr('moveGo')}</button>
+    </div>`;
+  document.getElementById('move-modal').classList.add('open');
+}
+function closeMoveModal(){document.getElementById('move-modal').classList.remove('open');}
+async function doMoveMatch(){
+  const m=state.matches.find(x=>x.id===selectedMatchId);if(!m)return;
+  if(!canEditTeam(m.teamId)){closeMoveModal();return;}
+  const date=document.getElementById('mv-date').value;
+  const time=document.getElementById('mv-time').value;
+  const home=document.getElementById('mv-home').value;
+  const note=document.getElementById('mv-note').value.trim();
+  const keepLineup=document.getElementById('mv-lineup').checked;
+  const keepAvail=document.getElementById('mv-avail').checked;
+  const err=document.getElementById('mv-err');
+  if(!date||!time){err.textContent=tr('moveErrMissing');return;}
+  if(date===m.date&&time===m.time&&home===m.home){err.textContent=tr('moveErrSame');return;}
+  const btn=document.getElementById('mv-go');btn.disabled=true;btn.textContent='...';
+  setSync('ing','⟳');
+  const newId=uid();
+  try{
+    // 1) new match
+    await sbUpsert('matches',[{id:newId,team_id:m.teamId,opponent:m.opponent,date,time,home,venue:m.venue,moved_from:m.id}]);
+    // 2) copy lineup / availability if requested
+    if(keepLineup&&(state.lineups[m.id]||[]).some(Boolean))await sbUpsert('lineups',[{match_id:newId,slots:state.lineups[m.id]}]);
+    if(keepAvail){
+      const rows=Object.entries(state.availability[m.id]||{}).map(([pid,status])=>({match_id:newId,player_id:pid,status}));
+      for(let i=0;i<rows.length;i+=100)await sbUpsert('availability',rows.slice(i,i+100));
+    }
+    // 3) mark original as verlegt
+    const r=await fetch(`${SB_URL}/rest/v1/matches?id=eq.${m.id}`,{method:'PATCH',headers:getHDR(),
+      body:JSON.stringify({status:'verlegt',moved_to:newId,move_note:note||null,moved_at:new Date().toISOString(),moved_by:currentUsername()})});
+    if(!r.ok)throw new Error(await r.text());
+    closeMoveModal();
+    selectedMatchId=newId;
+    await loadAll();
+    selectMatch(newId);
+  }catch(e){
+    console.error(e);setSync('err','✕ '+tr('moveErrSave'));
+    err.textContent=tr('moveErrSave');btn.disabled=false;btn.textContent=tr('moveGo');
+  }
+}
 async function doLogin(){
   const email=usernameToEmail(document.getElementById('login-email').value);
   const pass=document.getElementById('login-pass').value;
@@ -502,7 +600,15 @@ function setSync(s,m){const b=document.getElementById('sync-badge');b.className=
 const T={
   de:{
     tabSpiele:'Spiele & Aufstellung',tabOverview:'Overview',tabSperren:'Sperren',
-    logout:'Abmelden',teamsTitle:'Mannschaften',loading:'Laden...',readOnly:'Nur ansehen – du kannst nur die Aufstellung deiner eigenen Mannschaft bearbeiten.',whoAll:'Angemeldet · darf alle Mannschaften bearbeiten',whoOwn:'Angemeldet · darf nur die eigene Mannschaft bearbeiten',
+    logout:'Abmelden',teamsTitle:'Mannschaften',loading:'Laden...',
+    movedBadge:'VERLEGT',movedNewDate:'Neuer Termin',movedOn:(d,u)=>`verlegt am ${d}${u?` von ${u}`:''}`,newBadge:'NEU',
+    movedFromInfo:(d,t)=>`<b>Verlegt</b> vom ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} Spieler haben für den neuen Termin geantwortet.`,
+    moveBtn:'Verlegen',moveTitle:'Spiel verlegen',moveSub:'Es wird ein neuer Termin angelegt. Der alte bleibt als „verlegt“ sichtbar.',
+    moveDate:'Neues Datum',moveTime:'Uhrzeit',movePlace:'Ort',moveNote:'Hinweis (optional)',moveNotePh:'z. B. Halle belegt, mit Gegner abgesprochen',
+    moveKeepLineup:'Aufstellung übernehmen',moveKeepLineupSub:'Die bisherige Aufstellung wird in den neuen Termin kopiert.',
+    moveKeepAvail:'Verfügbarkeiten übernehmen',moveKeepAvailSub:'Aus: Die Spieler werden für den neuen Termin neu abgefragt (empfohlen, weil sich das Datum ändert).',
+    moveNuliga:'Heimspiel: Die Verlegung muss zusätzlich in <strong>nuLiga</strong> eingetragen werden.',moveCancel:'Abbrechen',moveGo:'Verlegen',
+    moveErrMissing:'Bitte Datum und Uhrzeit angeben.',moveErrSame:'Datum, Uhrzeit und Ort sind unverändert.',moveErrSave:'Fehler beim Speichern',readOnly:'Nur ansehen – du kannst nur die Aufstellung deiner eigenen Mannschaft bearbeiten.',whoAll:'Angemeldet · darf alle Mannschaften bearbeiten',whoOwn:'Angemeldet · darf nur die eigene Mannschaft bearbeiten',
     groupYes:'✓ Ja',groupConditional:'(Ja) — Prio II',groupNotfall:'Im Notfall',groupNo:'✗ Nein',groupNone:'— Keine Angabe',
     badgeYes:'✓ Ja',badgeNotfall:'Im Notfall',badgeNo:'Nein',
     dropYes:'── ✓ Ja',dropConditional:'── (Ja)',dropNotfall:'── Im Notfall',dropNo:'── ✗ Nein',dropNone:'── ?',
@@ -520,7 +626,15 @@ const T={
   },
   es:{
     tabSpiele:'Partidos & Alineación',tabOverview:'Overview',tabSperren:'Bloqueos',
-    logout:'Cerrar sesión',teamsTitle:'Equipos',loading:'Cargando...',readOnly:'Solo lectura: solo podés editar la alineación de tu propio equipo.',whoAll:'Sesión iniciada · puede editar todos los equipos',whoOwn:'Sesión iniciada · solo puede editar su propio equipo',
+    logout:'Cerrar sesión',teamsTitle:'Equipos',loading:'Cargando...',
+    movedBadge:'POSTERGADO',movedNewDate:'Nueva fecha',movedOn:(d,u)=>`movido el ${d}${u?` por ${u}`:''}`,newBadge:'NUEVO',
+    movedFromInfo:(d,t)=>`<b>Movido</b> desde el ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} jugadores respondieron para la nueva fecha.`,
+    moveBtn:'Mover',moveTitle:'Mover partido',moveSub:'Se crea una fecha nueva. La anterior queda visible como „verlegt“.',
+    moveDate:'Nueva fecha',moveTime:'Hora',movePlace:'Lugar',moveNote:'Comentario (opcional)',moveNotePh:'p. ej. cancha ocupada, acordado con el rival',
+    moveKeepLineup:'Mantener alineación',moveKeepLineupSub:'La alineación actual se copia a la nueva fecha.',
+    moveKeepAvail:'Mantener disponibilidades',moveKeepAvailSub:'Desactivado: se vuelve a consultar a los jugadores para la nueva fecha (recomendado, porque cambia el día).',
+    moveNuliga:'Partido de local: el cambio también hay que cargarlo en <strong>nuLiga</strong>.',moveCancel:'Cancelar',moveGo:'Mover',
+    moveErrMissing:'Indicá fecha y hora.',moveErrSame:'Fecha, hora y lugar no cambiaron.',moveErrSave:'Error al guardar',readOnly:'Solo lectura: solo podés editar la alineación de tu propio equipo.',whoAll:'Sesión iniciada · puede editar todos los equipos',whoOwn:'Sesión iniciada · solo puede editar su propio equipo',
     groupYes:'✓ Sí',groupConditional:'(Sí) — Prio II',groupNotfall:'Si es necesario',groupNo:'✗ No',groupNone:'— Sin respuesta',
     badgeYes:'✓ Sí',badgeNotfall:'Si es necesario',badgeNo:'No',
     dropYes:'── ✓ Sí',dropConditional:'── (Sí)',dropNotfall:'── Si es necesario',dropNo:'── ✗ No',dropNone:'── ?',
@@ -538,7 +652,15 @@ const T={
   },
   en:{
     tabSpiele:'Matches & Lineup',tabOverview:'Overview',tabSperren:'Blocks',
-    logout:'Log out',teamsTitle:'Teams',loading:'Loading...',readOnly:'View only – you can only edit your own team\'s lineup.',whoAll:'Logged in · can edit all teams',whoOwn:'Logged in · can only edit own team',
+    logout:'Log out',teamsTitle:'Teams',loading:'Loading...',
+    movedBadge:'RESCHEDULED',movedNewDate:'New date',movedOn:(d,u)=>`moved on ${d}${u?` by ${u}`:''}`,newBadge:'NEW',
+    movedFromInfo:(d,t)=>`<b>Rescheduled</b> from ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} players have answered for the new date.`,
+    moveBtn:'Reschedule',moveTitle:'Reschedule match',moveSub:'A new date is created. The old one stays visible as “verlegt”.',
+    moveDate:'New date',moveTime:'Time',movePlace:'Venue',moveNote:'Note (optional)',moveNotePh:'e.g. court booked, agreed with opponent',
+    moveKeepLineup:'Keep lineup',moveKeepLineupSub:'The current lineup is copied to the new date.',
+    moveKeepAvail:'Keep availability',moveKeepAvailSub:'Off: players are asked again for the new date (recommended, since the day changes).',
+    moveNuliga:'Home match: the change must also be entered in <strong>nuLiga</strong>.',moveCancel:'Cancel',moveGo:'Reschedule',
+    moveErrMissing:'Please enter date and time.',moveErrSame:'Date, time and venue are unchanged.',moveErrSave:'Error while saving',readOnly:'View only – you can only edit your own team\'s lineup.',whoAll:'Logged in · can edit all teams',whoOwn:'Logged in · can only edit own team',
     groupYes:'✓ Yes',groupConditional:'(Yes) — Prio II',groupNotfall:'If needed',groupNo:'✗ No',groupNone:'— No answer',
     badgeYes:'✓ Yes',badgeNotfall:'If needed',badgeNo:'No',
     dropYes:'── ✓ Yes',dropConditional:'── (Yes)',dropNotfall:'── If needed',dropNo:'── ✗ No',dropNone:'── ?',
@@ -607,7 +729,12 @@ async function loadAll(){
     state.teams=isJugendLogin()?state.allTeams.filter(t=>catGroup(t.category)===2):state.allTeams;
     renderWhoBadge();
     state.players=players.map(p=>({id:p.id,name:p.name,idnr:p.idnr,lk:p.lk,lkStr:p.lk_str,year:p.year,teamIds:[],gender:p.gender||'M',rank:p.rank}));
-    state.matches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue}));
+    // Verlegt: the original stays as an archived card (state.movedMatches); everything else (conflicts,
+    // overview, Sperren) only uses the active matches in state.matches
+    const _seasonMatches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue,
+      status:m.status||null,movedTo:m.moved_to||null,movedFrom:m.moved_from||null,moveNote:m.move_note||'',movedAt:m.moved_at||null,movedBy:m.moved_by||''}));
+    state.matches=_seasonMatches.filter(m=>m.status!=='verlegt');
+    state.movedMatches=_seasonMatches.filter(m=>m.status==='verlegt');
     state.availability={};
     for(const r of avRows){if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
     state.lineups={};
@@ -682,12 +809,26 @@ function renderTeamContent(){
   const team=teamById(selectedTeamId);if(!team)return;
   document.getElementById('content-team-name').textContent=team.name;
   document.getElementById('content-team-meta').textContent=`${team.liga} · ${team.season} · ${teamSize(team)} Spieler`;
-  const matches=[...state.matches.filter(m=>m.teamId===selectedTeamId)].sort((a,b)=>a.date.localeCompare(b.date));
+  const matches=[...state.matches,...(state.movedMatches||[])].filter(m=>m.teamId===selectedTeamId).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
   if(!matches.length){
     document.getElementById('match-list').innerHTML='<div class="empty">Keine Spiele für diese Mannschaft</div>';
     return;
   }
   document.getElementById('match-list').innerHTML=matches.map(m=>{
+    const opp=(m.opponent||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    if(m.status==='verlegt'){
+      const nm=state.matches.find(x=>x.id===m.movedTo);
+      return`<div class="match-card moved">
+        <div class="match-header">
+          <div>
+            <div class="match-title">${team.name} vs ${opp}</div>
+            <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${m.home}</div>
+          </div>
+          <span class="match-status status-moved">⇄ ${tr('movedBadge')}</span>
+        </div>
+        ${nm?`<div class="moved-link">→ ${tr('movedNewDate')}: <b>${fmtDate(nm.date)} · ${nm.time}</b>${m.movedAt?` · ${tr('movedOn')(fmtDate(m.movedAt.slice(0,10)),m.movedBy)}`:''}</div>`:''}
+      </div>`;
+    }
     const avail=state.availability[m.id]||{};
     const tp=state.players.filter(p=>p.teamIds.includes(m.teamId));
     const yes=tp.filter(p=>avail[p.id]==='yes').length;
@@ -700,7 +841,7 @@ function renderTeamContent(){
     return`<div class="match-card ${isActive?'active':''}" onclick="selectMatch('${m.id}')">
       <div class="match-header">
         <div>
-          <div class="match-title">${team.name} vs ${(m.opponent||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+          <div class="match-title">${team.name} vs ${opp}${m.movedFrom?`<span class="status-new">${tr('newBadge')}</span>`:''}</div>
           <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${m.home}</div>
         </div>
         <span class="match-status ${hasLineup?'status-ready':'status-open'}">${hasLineup?'✓ Aufstellung':'⏳ offen'}</span>
@@ -727,6 +868,19 @@ function renderAvailPanel(){
   document.getElementById('panel-match-title').textContent=`${team?.name||'?'} vs ${match.opponent}`;
   document.getElementById('panel-match-meta').textContent=`${fmtDate(match.date)} · ${match.time} · ${match.home}`;
   document.getElementById('lineup-label').textContent=`Aufstellung (${teamSize(team)} Einzel)`;
+  // Verlegen: only admins/super users or the team's own login
+  const mb=document.getElementById('move-btn');
+  if(mb){mb.style.display=canEditTeam(match.teamId)?'':'none';mb.textContent='⇄ '+tr('moveBtn');}
+  const mi=document.getElementById('move-info');
+  if(mi){
+    const orig=match.movedFrom?(state.movedMatches||[]).find(x=>x.id===match.movedFrom):null;
+    if(orig){
+      const tp=state.players.filter(p=>p.teamIds.includes(match.teamId));
+      const answered=tp.filter(p=>(state.availability[match.id]||{})[p.id]).length;
+      const note=orig.moveNote?` — <i>${orig.moveNote.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</i>`:'';
+      mi.innerHTML=`<div class="info-banner">⇄ ${tr('movedFromInfo')(fmtDate(orig.date),orig.time)}${note}<br>${tr('movedAnswers')(answered,tp.length)}</div>`;
+    }else mi.innerHTML='';
+  }
 
   const avail=state.availability[selectedMatchId]||{};
   const tp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>{
@@ -1703,5 +1857,9 @@ function shortPN(p){
 <footer style="text-align:center;padding:18px;font-size:11px;color:#333;border-top:1px solid var(--border);margin-top:40px">
   Füchse Berlin Reinickendorf e.V. · Kapitän-App · TVBB Berlin
 </footer>
+<!-- MODAL: Spiel verlegen -->
+<div class="mv-bg" id="move-modal" onclick="if(event.target===this)closeMoveModal()">
+  <div class="mv" id="move-modal-box"></div>
+</div>
 </body>
 </html>

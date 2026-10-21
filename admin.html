@@ -938,7 +938,10 @@ async function loadAll(){
     state.teams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
     const _activeTeamIds=new Set(state.teams.map(t=>t.id));
     state.players=players.map(p=>({id:p.id,name:p.name,rawName:p.raw_name,idnr:p.idnr,lk:p.lk,lkStr:p.lk_str,year:p.year,teamIds:[],gender:p.gender||'M',rank:p.rank}));
-    state.matches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue,counted:m.counted||false,ersatzCounted:m.ersatz_counted||false}));
+    const _seasonMatches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue,counted:m.counted||false,ersatzCounted:m.ersatz_counted||false,status:m.status||null,movedTo:m.moved_to||null,movedFrom:m.moved_from||null}));
+    // Verlegt (rescheduled in kapitaen.html): the original is archived and ignored everywhere in admin
+    state.matches=_seasonMatches.filter(m=>m.status!=='verlegt');
+    state.movedMatches=_seasonMatches.filter(m=>m.status==='verlegt');
     state.availability={};
     for(const r of avRows){if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
     state.lineups={};
@@ -3371,7 +3374,8 @@ async function confirmMatchesImport(){
       if(!m.teamId){const t=state.teams.find(x=>x.category===m.teamCategory);if(t)m.teamId=t.id;}
     }
     const toInsert=matches
-      .filter(m=>m.teamId&&!state.matches.find(x=>x.date===m.date&&x.teamId===m.teamId&&x.opponent===m.opponent))
+      // also compare against verlegt originals, so a re-import of an old nuLiga plan does not bring them back
+      .filter(m=>m.teamId&&![...state.matches,...(state.movedMatches||[])].find(x=>x.date===m.date&&x.teamId===m.teamId&&x.opponent===m.opponent))
       .map(m=>({id:m.id,team_id:m.teamId,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue}));
     if(toInsert.length){for(let i=0;i<toInsert.length;i+=100)await sbUpsert('matches',toInsert.slice(i,i+100));}
     await loadAll();
@@ -3388,7 +3392,7 @@ async function deleteAllMatches(){
   setSync('ing',tr('syncIng'));
   try{
     // state.matches only holds matches of ACTIVE_SEASON teams — archived seasons are untouched
-    for(const m of state.matches)await sbDelete('matches',`id=eq.${m.id}`);
+    for(const m of [...state.matches,...(state.movedMatches||[])])await sbDelete('matches',`id=eq.${m.id}`);
     await loadAll();
     statusEl.textContent=tr('deletedMsg');
   }catch(e){setSync('err',tr('syncErr'));console.error(e);}

@@ -231,7 +231,7 @@ async function sbUpsert(t,d){const r=await fetch(`${SB_URL}/rest/v1/${t}`,{metho
 
 const T={
   de:{
-    headerSub:'Spielerverfügbarkeit',
+    headerSub:'Spielerverfügbarkeit',movedBadge:'Verlegt',movedFrom:'verlegt vom',
     step1Label:'Schritt 1 von 2',step1Title:'Wer bist du?',step1Sub:'Suche deinen Namen in der Kaderliste.',
     step1Ph:'Namen eingeben...',findStatus:'Lade Spieler...',
     step2Label:'Schritt 2 von 2',step2Sub:'Tippe auf ein Spiel um deine Verfügbarkeit zu bestätigen.',
@@ -247,7 +247,7 @@ const T={
     mainTeamHint:'★ = Stammmannschaft — dein empfohlenes Team.',
   },
   es:{
-    headerSub:'Disponibilidad de jugadores',
+    headerSub:'Disponibilidad de jugadores',movedBadge:'Postergado',movedFrom:'movido del',
     step1Label:'Paso 1 de 2',step1Title:'¿Quién sos?',step1Sub:'Buscá tu nombre en el plantel.',
     step1Ph:'Escribí tu nombre...',findStatus:'Cargando jugadores...',
     step2Label:'Paso 2 de 2',step2Sub:'Tocá un partido para confirmar tu disponibilidad.',
@@ -263,7 +263,7 @@ const T={
     mainTeamHint:'★ = Stammmannschaft — tu equipo recomendado.',
   },
   en:{
-    headerSub:'Player availability',
+    headerSub:'Player availability',movedBadge:'Rescheduled',movedFrom:'moved from',
     step1Label:'Step 1 of 2',step1Title:'Who are you?',step1Sub:'Search your name in the club roster.',
     step1Ph:'Type your name...',findStatus:'Loading players...',
     step2Label:'Step 2 of 2',step2Sub:'Tap a match to confirm your availability.',
@@ -391,7 +391,10 @@ async function loadAll(){
     state.teams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender}));
     const _activeTeamIds=new Set(state.teams.map(t=>t.id));
     state.players=players.map(p=>({...p,lkStr:p.lk_str,rawName:p.raw_name,year:p.year}));
-    state.matches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({...m,teamId:m.team_id}));
+    const _seasonMatches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({...m,teamId:m.team_id}));
+    // Verlegt (rescheduled by the captain): original is shown crossed out, answers go to the new match
+    state.matches=_seasonMatches.filter(m=>m.status!=='verlegt');
+    state.movedMatches=_seasonMatches.filter(m=>m.status==='verlegt');
     state.availability={};
     for(const r of avRows){if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
     state.matchCounts={};
@@ -585,11 +588,25 @@ function renderMatchList(){
     </div>
   </div>`;
   const filterIds=activeTeamFilters.size>0?teamIds.filter(id=>activeTeamFilters.has(id)):teamIds;
-  const myMatches=[...state.matches].filter(m=>filterIds.includes(m.team_id)).sort((a,b)=>a.date.localeCompare(b.date));
+  const myMatches=[...state.matches,...(state.movedMatches||[])].filter(m=>filterIds.includes(m.team_id)).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
   const el=document.getElementById('match-list');
   if(!myMatches.length){el.innerHTML=`<div class="empty">${tr('noMatches')}</div>`;return;}
   el.innerHTML=myMatches.map(m=>{
     const team=teamById(m.team_id);
+    if(m.status==='verlegt'){
+      const d0=fmtDate(m.date);const nm=state.matches.find(x=>x.id===m.moved_to);const nd=nm?fmtDate(nm.date):null;
+      return`<div class="match-item" style="cursor:default;opacity:.5;border-style:dashed">
+        <div style="display:flex;align-items:center;gap:12px;align-self:stretch">
+          <div style="text-align:center;width:44px;flex-shrink:0;text-decoration:line-through">
+            <div class="match-date">${d0.day}</div><div class="match-month">${d0.month}</div>
+          </div>
+          <div class="match-info" style="flex:1">
+            <div class="match-teams" style="text-decoration:line-through">${team?.name||'?'} vs ${(m.opponent||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+            <div class="match-meta" style="color:var(--warn)">⇄ ${tr('movedBadge')}${nd?` → ${nd.day}. ${nd.month} · ${nm.time}`:''}</div>
+          </div>
+        </div>
+      </div>`;
+    }
     const avail=state.availability[m.id]?.[p.id]||'';
     const d=fmtDate(m.date);
     const blocked=isBlocked(p.id,m.team_id);
@@ -602,7 +619,7 @@ function renderMatchList(){
         </div>
         <div class="match-info" style="flex:1">
           <div class="match-teams">${team?.name||'?'} vs ${(m.opponent||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
-          <div class="match-meta">${m.time} · ${m.home}${blocked?' · ⛔':''}</div>
+          <div class="match-meta">${m.time} · ${m.home}${blocked?' · ⛔':''}${m.moved_from?(()=>{const o=(state.movedMatches||[]).find(x=>x.id===m.moved_from);return o?` · <span style="color:var(--warn)">⇄ ${tr('movedFrom')} ${fmtDate(o.date).full}</span>`:'';})():''}</div>
         </div>
         <button onclick="makeICS(state.matches.find(x=>x.id==='${m.id}'),teamById('${m.team_id}'))"
           style="background:none;border:1px solid #333;border-radius:8px;color:var(--muted);padding:4px 8px;font-size:11px;cursor:pointer;white-space:nowrap">
