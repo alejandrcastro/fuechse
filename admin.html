@@ -905,7 +905,22 @@ function isPlayerBlockedForTeam(playerId,teamId){
 }
 
 // For lineup display only — same logic but separate function for consistency with kapitaen
-function isPlayerBlockedForLineup(playerId,teamId){
+// ── SPIELTAG (WSpO TVBB § 10 (3), § 11 (4)) ── a match moved by the captains keeps the ORIGINAL date as Spieltag
+// (unless moved "von Amts wegen" → new date). All same-day rules compare Spieltage, not real dates.
+function spieltagOf(m){return (m&&(m.spieltag||m.date))||'';}
+function playedInMatch(m){
+  if(!m)return[];
+  if(Array.isArray(m.countedPlayers))return m.countedPlayers;
+  const size=teamSize(teamById(m.teamId));return (state.lineups[m.id]||[]).slice(0,size).filter(Boolean);
+}
+// For a verlegt match: the other match of the same Spieltag that this player already played (earlier real date), or null
+function playedOnSpieltag(pid,match){
+  if(!match)return null;
+  const st=spieltagOf(match);if(st===match.date)return null;
+  return state.matches.find(om=>om.id!==match.id&&spieltagOf(om)===st&&om.date<match.date&&playedInMatch(om).includes(pid))||null;
+}
+function isPlayerBlockedForLineup(playerId,teamId,matchId){
+  if(matchId&&playedOnSpieltag(playerId,state.matches.find(x=>x.id===matchId)))return true;
   const team=teamById(teamId);if(!team)return false;
   const status=getPlayerBlockStatus(playerId,team.category);
   return status.blocked.some(b=>b.id===teamId);
@@ -938,7 +953,7 @@ async function loadAll(){
     state.teams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
     const _activeTeamIds=new Set(state.teams.map(t=>t.id));
     state.players=players.map(p=>({id:p.id,name:p.name,rawName:p.raw_name,idnr:p.idnr,lk:p.lk,lkStr:p.lk_str,year:p.year,teamIds:[],gender:p.gender||'M',rank:p.rank}));
-    const _seasonMatches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue,counted:m.counted||false,ersatzCounted:m.ersatz_counted||false,status:m.status||null,movedTo:m.moved_to||null,movedFrom:m.moved_from||null,countedPlayers:Array.isArray(m.counted_players)?m.counted_players:null}));
+    const _seasonMatches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({id:m.id,teamId:m.team_id,opponent:m.opponent,date:m.date,time:m.time,home:m.home,venue:m.venue,counted:m.counted||false,ersatzCounted:m.ersatz_counted||false,status:m.status||null,movedTo:m.moved_to||null,movedFrom:m.moved_from||null,spieltag:m.spieltag||null,countedPlayers:Array.isArray(m.counted_players)?m.counted_players:null}));
     // Verlegt (rescheduled in kapitaen.html): the original is archived and ignored everywhere in admin
     state.matches=_seasonMatches.filter(m=>m.status!=='verlegt');
     state.movedMatches=_seasonMatches.filter(m=>m.status==='verlegt');
@@ -1582,7 +1597,7 @@ function renderAvail(){
           let hdr='';
           if(s!==_lg){_lg=s;hdr=`<tr><td colspan="5" style="padding:5px 12px 2px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${_gc[s]};border-top:1px solid #2e4a4233">${_gl[s]}</td></tr>`;}
           const blocked=isPlayerBlockedForTeam(p.id,match.teamId);
-          const _yesMatch=s==='conditional'?state.matches.find(om=>om.id!==matchId&&om.date===match.date&&state.availability[om.id]?.[p.id]==='yes'):null;
+          const _yesMatch=s==='conditional'?state.matches.find(om=>om.id!==matchId&&spieltagOf(om)===spieltagOf(match)&&state.availability[om.id]?.[p.id]==='yes'):null;
           const _yesTeam=_yesMatch?teamById(_yesMatch.teamId):null;
           const _condLabel=_yesTeam?`(Ja → ${_yesTeam.name})`:'(Ja)';
           const row=`<tr style="${blocked?'background:#2d151544':''}">
@@ -1833,7 +1848,7 @@ async function autoLineup(matchId){
   const team=teamById(match.teamId);
   const avail=state.availability[matchId]||{};
   const size=teamSize(team);
-  const available=[...state.players.filter(p=>p.teamIds.includes(match.teamId)&&avail[p.id]==='yes'&&!isPlayerBlockedForTeam(p.id,match.teamId))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
+  const available=[...state.players.filter(p=>p.teamIds.includes(match.teamId)&&avail[p.id]==='yes'&&!isPlayerBlockedForTeam(p.id,match.teamId)&&!playedOnSpieltag(p.id,match))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
   const slots=available.slice(0,size).map(p=>p.id);
   state.lineups[matchId]=slots;
   try{await sbUpsert('lineups',[{match_id:matchId,slots}]);}catch(e){console.error(e);}
@@ -1899,7 +1914,9 @@ function renderLineup(){
   }
   const blockedWarnings=lineup.filter(Boolean).map(pid=>{
     const p=playerById(pid);if(!p)return null;
-    if(isPlayerBlockedForLineup(pid,match.teamId))return T[lang].blockedInLineup(p.name,team?.name||'?');
+    const _sp=playedOnSpieltag(pid,match);
+    if(_sp)return `⛔ ${p.name}: Spieltag ${fmtDate(spieltagOf(match))} – bereits für ${teamById(_sp.teamId)?.name||'?'} gespielt (WSpO § 10 Abs. 3)`;
+    if(isPlayerBlockedForLineup(pid,match.teamId,match.id))return T[lang].blockedInLineup(p.name,team?.name||'?');
     return null;
   }).filter(Boolean);
   el.innerHTML=`<div class="card">
@@ -1917,7 +1934,7 @@ function renderLineup(){
         const pid=lineup[i]||'';const p=pid?playerById(pid):null;
         const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
         const rankOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
-        const isBlocked=pid?isPlayerBlockedForLineup(pid,match.teamId):false;
+        const isBlocked=pid?isPlayerBlockedForLineup(pid,match.teamId,match.id):false;
         return`<div class="lineup-slot ${p?(isBlocked?'blocked-slot':rankOk?'ok':'warning'):''}">
           <div class="lineup-pos">${i+1}</div>
           <select style="flex:1;background:#181818;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:4px 8px;font-size:11px;font-family:'DM Sans',sans-serif" onchange="setLineupPlayer('${matchId}',${i},this.value)">
@@ -1947,12 +1964,12 @@ function renderLineup(){
       // ── ERSATZ SLOT ──
       const ersatzPid=lineup[size]||'';
       const ersatzP=ersatzPid?playerById(ersatzPid):null;
-      const isBlocked=ersatzPid?isPlayerBlockedForLineup(ersatzPid,match.teamId):false;
+      const isBlocked=ersatzPid?isPlayerBlockedForLineup(ersatzPid,match.teamId,match.id):false;
       // Check if ersatz is in another team's lineup or as ersatz same day
       let ersatzWarn='';
       if(ersatzPid){
-        const otherLineup=state.matches.find(om=>om.id!==matchId&&om.date===match.date&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(ersatzPid));
-        const otherErsatz=state.matches.find(om=>om.id!==matchId&&om.date===match.date&&(state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===ersatzPid);
+        const otherLineup=state.matches.find(om=>om.id!==matchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(ersatzPid));
+        const otherErsatz=state.matches.find(om=>om.id!==matchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===ersatzPid);
         if(otherLineup){const ot=teamById(otherLineup.teamId);ersatzWarn=`⚠ Bereits Aufstellung: <strong>${ot?.name||'?'}</strong>`;}
         else if(otherErsatz){const ot=teamById(otherErsatz.teamId);ersatzWarn=`⚠ Bereits Ersatz: <strong>${ot?.name||'?'}</strong>`;}
       }
@@ -1976,8 +1993,9 @@ function renderLineup(){
       // Double-booking warnings for main lineup
       const doubleWarnings=lineup.slice(0,size).filter(Boolean).map(pid=>{
         const p=playerById(pid);if(!p)return null;
+    if(playedOnSpieltag(pid,match))return null; // already reported as Spieltag block
         const otherMatch=state.matches.find(om=>
-          om.id!==matchId&&om.date===match.date&&
+          om.id!==matchId&&spieltagOf(om)===spieltagOf(match)&&
           (state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(pid)
         );
         if(!otherMatch)return null;
@@ -2213,12 +2231,15 @@ function renderSALineup(){
   }
   const blockedW=lineup.slice(0,size).filter(Boolean).map(pid=>{
     const p=playerById(pid);if(!p)return null;
-    if(isPlayerBlockedForLineup(pid,match.teamId))return T[lang].blockedInLineup(p.name,team?.name||'?');
+    const _sp=playedOnSpieltag(pid,match);
+    if(_sp)return `⛔ ${p.name}: Spieltag ${fmtDate(spieltagOf(match))} – bereits für ${teamById(_sp.teamId)?.name||'?'} gespielt (WSpO § 10 Abs. 3)`;
+    if(isPlayerBlockedForLineup(pid,match.teamId,match.id))return T[lang].blockedInLineup(p.name,team?.name||'?');
     return null;
   }).filter(Boolean);
   const doubleW=lineup.slice(0,size).filter(Boolean).map(pid=>{
     const p=playerById(pid);if(!p)return null;
-    const om=state.matches.find(om=>om.id!==_saMatchId&&om.date===match.date&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(pid));
+    if(playedOnSpieltag(pid,match))return null; // already reported as Spieltag block
+    const om=state.matches.find(om=>om.id!==_saMatchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(pid));
     if(!om)return null;
     return`⚠ ${p.name} spielt auch für <strong>${teamById(om.teamId)?.name||'?'}</strong>`;
   }).filter(Boolean);
@@ -2250,7 +2271,7 @@ function renderSALineup(){
     const p=pid?playerById(pid):null;
     const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
     const rankOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
-    const isBlocked=pid?isPlayerBlockedForLineup(pid,match.teamId):false;
+    const isBlocked=pid?isPlayerBlockedForLineup(pid,match.teamId,match.id):false;
     const cls=p?(isBlocked?'blocked-slot':rankOk?'ok':'warning'):'';
     html+=`<div class="lineup-slot ${cls}" draggable="true" data-slot-index="${i}"
       ondragstart="saDragStart(event,${i})" ondragover="saDragOver(event)" ondragleave="saDragLeave(event)"
@@ -2265,11 +2286,11 @@ function renderSALineup(){
   // Ersatz
   const ersatzPid=lineup[size]||'';
   const ersatzP=ersatzPid?playerById(ersatzPid):null;
-  const ersatzBlocked=ersatzPid?isPlayerBlockedForLineup(ersatzPid,match.teamId):false;
+  const ersatzBlocked=ersatzPid?isPlayerBlockedForLineup(ersatzPid,match.teamId,match.id):false;
   let ersatzWarn='';
   if(ersatzPid){
-    const otherL=state.matches.find(om=>om.id!==_saMatchId&&om.date===match.date&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(ersatzPid));
-    const otherE=state.matches.find(om=>om.id!==_saMatchId&&om.date===match.date&&(state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===ersatzPid);
+    const otherL=state.matches.find(om=>om.id!==_saMatchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(ersatzPid));
+    const otherE=state.matches.find(om=>om.id!==_saMatchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===ersatzPid);
     if(otherL){const ot=teamById(otherL.teamId);ersatzWarn=`⚠ Bereits Aufstellung: <strong>${ot?.name||'?'}</strong>`;}
     else if(otherE){const ot=teamById(otherE.teamId);ersatzWarn=`⚠ Bereits Ersatz: <strong>${ot?.name||'?'}</strong>`;}
   }
@@ -2351,7 +2372,7 @@ async function saAutoLineup(){
   const team=teamById(match.teamId);
   const avail=state.availability[_saMatchId]||{};
   const size=teamSize(team);
-  const available=[...state.players.filter(p=>p.teamIds.includes(match.teamId)&&avail[p.id]==='yes'&&!isPlayerBlockedForTeam(p.id,match.teamId))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
+  const available=[...state.players.filter(p=>p.teamIds.includes(match.teamId)&&avail[p.id]==='yes'&&!isPlayerBlockedForTeam(p.id,match.teamId)&&!playedOnSpieltag(p.id,match))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
   const slots=available.slice(0,size).map(p=>p.id);
   state.lineups[_saMatchId]=slots;
   try{await sbUpsert('lineups',[{match_id:_saMatchId,slots}]);}catch(e){console.error(e);}
@@ -2456,7 +2477,7 @@ function renderSAAvail(){
     let hdr='';
     if(s!==_lg){_lg=s;hdr=`<tr><td colspan="5" style="padding:5px 12px 2px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${_gc[s]};border-top:1px solid #2e4a4233">${_gl[s]}</td></tr>`;}
     const blocked=isPlayerBlockedForTeam(p.id,match.teamId);
-    const _yesMatch=s==='conditional'?state.matches.find(om=>om.id!==_saMatchId&&om.date===match.date&&state.availability[om.id]?.[p.id]==='yes'):null;
+    const _yesMatch=s==='conditional'?state.matches.find(om=>om.id!==_saMatchId&&spieltagOf(om)===spieltagOf(match)&&state.availability[om.id]?.[p.id]==='yes'):null;
     const _yesTeam=_yesMatch?teamById(_yesMatch.teamId):null;
     const _condLabel=_yesTeam?`(Ja → ${_yesTeam.name})`:'(Ja)';
     return hdr+`<tr style="${blocked?'background:#2d151544':''}">

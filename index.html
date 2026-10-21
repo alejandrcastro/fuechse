@@ -315,6 +315,7 @@ function fmtDate(d){
   const months=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
   return{day,month:months[parseInt(m)-1],full:`${day}.${m}.${y}`};
 }
+function spieltagOf(m){return (m&&(m.spieltag||m.date))||'';} // WSpO § 11 (4): verlegt keeps the original Spieltag
 function teamById(id){return state.teams.find(t=>t.id===id)}
 function playerById(id){return state.players.find(p=>p.id===id)}
 function getPlayerTeamIds(playerId){return state.playerTeams.filter(r=>r.player_id===playerId).map(r=>r.team_id);}
@@ -497,7 +498,7 @@ async function quickAvail(matchId,status,event){
       // Check for other yes/conditional on same day
       const sameDay=state.matches.filter(m=>
         m.id!==matchId &&
-        m.date===thisMatch.date &&
+        spieltagOf(m)===spieltagOf(thisMatch) &&
         (state.availability[m.id]?.[pid]==='yes'||state.availability[m.id]?.[pid]==='conditional')
       );
       if(sameDay.length>0){
@@ -686,7 +687,7 @@ async function setAvail(status){
     if(thisMatch){
       const sameDay=state.matches.filter(m=>
         m.id!==matchId &&
-        m.date===thisMatch.date &&
+        spieltagOf(m)===spieltagOf(thisMatch) &&
         (state.availability[m.id]?.[playerId]==='yes'||state.availability[m.id]?.[playerId]==='conditional')
       );
       if(sameDay.length>0){
