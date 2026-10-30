@@ -18,6 +18,7 @@ Club Manager is a standalone web application made up of three independent HTML f
 | `kapitaen.html` | Team captain |
 | `index.html` | Player (confirm availability) |
 | `umfrage.html` | Player (participation survey per season) |
+| `lk.html` | Player (LK calculator: how much a win improves the LK) |
 
 ---
 
@@ -133,7 +134,7 @@ Players answer whether they want to play in the next competition.
 
 ### Seasons
 
-The active season (`S2027` = Sommer 2027, `W2027` = Winter 2027/28) is switched in the **admin.html header** and applies to all pages. Older seasons stay archived. Requires `sql/app_settings.sql` once.
+The season selector in the **admin.html header** only changes what admin shows (this browser), so a new season can be prepared (`S2027` = Sommer 2027, `W2027` = Winter 2027/28). **⇪ … für alle aktivieren** then switches kapitaen, index and umfrage to it. Older seasons stay archived. Requires `sql/app_settings.sql` once.
 
 ## TVBB Berlin Rules
 

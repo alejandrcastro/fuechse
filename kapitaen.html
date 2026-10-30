@@ -1223,11 +1223,20 @@ function renderAvailPanel(){
             (state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(p.id)
           );
           const conflictTeam=conflictMatch?teamById(conflictMatch.teamId):null;
+          // Ersatz in another match on the same Spieltag → just a flag
+          const ersatzMatch=conflictMatch?null:state.matches.find(om=>
+            om.id!==match.id&&spieltagOf(om)===spieltagOf(match)&&
+            (state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===p.id
+          );
+          const ersatzTeam=ersatzMatch?teamById(ersatzMatch.teamId):null;
+          const ersatzFlag=ersatzTeam?'<span title="'+(lang==='de'?'Ersatz bei '+ersatzTeam.name:lang==='es'?'Ersatz en '+ersatzTeam.name:'Substitute for '+ersatzTeam.name)+'" style="background:#2a2a2a;color:#bbb;border:1px dashed #555;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Ersatz ('+_teamShort(ersatzTeam)+')</span>':'';
           
           if(conflictTeam){
             const teamShort=conflictTeam.name.replace('Herren','H').replace('Damen','D').replace('Senioren','Sen').replace('Seniorinnen','SenF').trim();
             const bereitTitle=lang==='de'?'Bereits aufgestellt in '+conflictTeam.name:lang==='es'?'Ya alineado en '+conflictTeam.name:'Already in lineup for '+conflictTeam.name;
             extraBadge='<span title="'+bereitTitle+'" style="background:#2a2a2a;color:#bbb;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Bereits aufgestellt ('+teamShort+')</span>';
+          } else if(ersatzFlag){
+            extraBadge=ersatzFlag;
           } else if(yesMatch&&yesTeam){
             try{
               const ySz=teamSize(yesTeam);
@@ -1253,10 +1262,19 @@ function renderAvailPanel(){
             (state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(p.id)
           );
           const conflictTeam=conflictMatch?teamById(conflictMatch.teamId):null;
+          // Ersatz in another match on the same Spieltag → just a flag
+          const ersatzMatch=conflictMatch?null:state.matches.find(om=>
+            om.id!==match.id&&spieltagOf(om)===spieltagOf(match)&&
+            (state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===p.id
+          );
+          const ersatzTeam=ersatzMatch?teamById(ersatzMatch.teamId):null;
+          const ersatzFlag=ersatzTeam?'<span title="'+(lang==='de'?'Ersatz bei '+ersatzTeam.name:lang==='es'?'Ersatz en '+ersatzTeam.name:'Substitute for '+ersatzTeam.name)+'" style="background:#2a2a2a;color:#bbb;border:1px dashed #555;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Ersatz ('+_teamShort(ersatzTeam)+')</span>':'';
           if(conflictTeam){
             const teamShort=conflictTeam.name.replace('Herren','H').replace('Damen','D').replace('Senioren','Sen').replace('Seniorinnen','SenF').trim();
             const bereitTitle=lang==='de'?'Bereits aufgestellt in '+conflictTeam.name:lang==='es'?'Ya alineado en '+conflictTeam.name:'Already in lineup for '+conflictTeam.name;
             extraBadge='<span title="'+bereitTitle+'" style="background:#2a2a2a;color:#bbb;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Bereits aufgestellt ('+teamShort+')</span>';
+          }else if(ersatzFlag){
+            extraBadge=ersatzFlag;
           }
         }
 

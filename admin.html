@@ -296,10 +296,12 @@ window.doLogin=async function(){
     </div>
     <a id="download-spieler-btn" href="spieler.html" download="spieler.html" style="padding:3px 9px;font-size:10px;font-weight:600;border:1px solid var(--court)55;border-radius:20px;color:var(--court);background:#1a2e26;text-decoration:none;white-space:nowrap">↓ Spieler-App</a>
     <select id="season-switch" onchange="onSeasonSwitch(this)" title="Saison" style="width:auto;padding:3px 8px;font-size:11px;font-weight:700;background:#111;border:1px solid var(--court)55;border-radius:20px;color:var(--court);font-family:'DM Sans',sans-serif;cursor:pointer"></select>
+    <button id="season-publish" onclick="publishSeason()" style="display:none;padding:3px 10px;font-size:11px;font-weight:700;background:#2e2414;border:1px solid var(--warn);border-radius:20px;color:var(--warn);font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap"></button>
     <div id="sync-badge" class="sync-badge sync-ing">⟳</div>
     <div class="tvbb-badge">TVBB</div>
   </div>
 </header>
+<div id="season-prep-banner" style="display:none;background:#2e2414;border-bottom:1px solid var(--warn)66;color:var(--warn);font-size:12px;padding:7px 20px;text-align:center"></div>
 
 <div class="tabs">
   <button class="tab active" onclick="showTab('import',event)" data-tab="import"></button>
@@ -694,7 +696,17 @@ async function _readSetting(key){
   }catch(e){console.warn('app_settings',e);return null;}
 }
 let ACTIVE_SEASON_KIND='Winter';
-const _seasonReady=(async()=>{const v=await _readSetting('active_season');if(typeof v==='string'&&/^[SW]\d{4}$/.test(v))ACTIVE_SEASON=v;ACTIVE_SEASON_KIND=ACTIVE_SEASON.startsWith('W')?'Winter':'Sommer';})();
+// PUBLISHED_SEASON = what kapitaen / index / umfrage use (app_settings).
+// ACTIVE_SEASON in admin = the season the Sportwart is looking at / preparing (this browser only).
+let PUBLISHED_SEASON='W2026';
+const ADMIN_SEASON_KEY='fcb_admin_season';
+const _seasonReady=(async()=>{
+  const v=await _readSetting('active_season');
+  if(typeof v==='string'&&/^[SW]\d{4}$/.test(v))PUBLISHED_SEASON=v;
+  let view=null;try{view=localStorage.getItem(ADMIN_SEASON_KEY);}catch(e){}
+  ACTIVE_SEASON=(view&&/^[SW]\d{4}$/.test(view))?view:PUBLISHED_SEASON;
+  ACTIVE_SEASON_KIND=ACTIVE_SEASON.startsWith('W')?'Winter':'Sommer';
+})();
 const HDR={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 function getHDR(){
   // Use session JWT if available, otherwise fall back to publishable key
@@ -4006,16 +4018,23 @@ async function saveActiveSurvey(){
 // ── SEASON SWITCH (header) → app_settings 'active_season', read by all pages ──
 const SEASON_T={
   de:{newOpt:'+ Neue Saison…',prompt:'Neue Saison-ID (S = Sommer, W = Winter), z.B. S2027:',bad:'Ungültig. Format: S2027 oder W2027.',
-      confirm:(a,b)=>`Aktive Saison von ${a} auf ${b} umstellen?\n\nGilt für admin, kapitaen, index und umfrage. Die alte Saison bleibt archiviert.`,
-      label:id=>`${id.startsWith('W')?'Winter':'Sommer'} ${id.startsWith('W')?id.slice(1)+'/'+String(+id.slice(1)+1).slice(2):id.slice(1)}`,empty:'(leer)'},
+      live:'live',publish:id=>`⇪ ${id} für alle aktivieren`,
+      banner:(v,p)=>`Vorbereitung: du siehst ${v}. Kapitäne und Spieler sehen weiter ${p}.`,
+      confirm:(a,b)=>`${b} für alle aktivieren?\n\nKapitäne (kapitaen), Spieler (index) und die Umfrage-Namenssuche wechseln von ${a} auf ${b}. Die alte Saison bleibt archiviert.`,
+      empty:'(leer)'},
   es:{newOpt:'+ Nueva temporada…',prompt:'ID de la nueva temporada (S = verano, W = invierno), ej. S2027:',bad:'Inválido. Formato: S2027 o W2027.',
-      confirm:(a,b)=>`¿Cambiar la temporada activa de ${a} a ${b}?\n\nVale para admin, kapitaen, index y umfrage. La temporada vieja queda archivada.`,
-      label:id=>`${id.startsWith('W')?'Winter':'Sommer'} ${id.startsWith('W')?id.slice(1)+'/'+String(+id.slice(1)+1).slice(2):id.slice(1)}`,empty:'(vacía)'},
+      live:'activa',publish:id=>`⇪ Activar ${id} para todos`,
+      banner:(v,p)=>`Preparación: estás viendo ${v}. Capitanes y jugadores siguen viendo ${p}.`,
+      confirm:(a,b)=>`¿Activar ${b} para todos?\n\nCapitanes (kapitaen), jugadores (index) y la búsqueda de la encuesta pasan de ${a} a ${b}. La temporada vieja queda archivada.`,
+      empty:'(vacía)'},
   en:{newOpt:'+ New season…',prompt:'New season ID (S = summer, W = winter), e.g. S2027:',bad:'Invalid. Format: S2027 or W2027.',
-      confirm:(a,b)=>`Switch the active season from ${a} to ${b}?\n\nApplies to admin, kapitaen, index and umfrage. The old season stays archived.`,
-      label:id=>`${id.startsWith('W')?'Winter':'Sommer'} ${id.startsWith('W')?id.slice(1)+'/'+String(+id.slice(1)+1).slice(2):id.slice(1)}`,empty:'(empty)'},
+      live:'live',publish:id=>`⇪ Activate ${id} for everyone`,
+      banner:(v,p)=>`Preparing: you are viewing ${v}. Captains and players still see ${p}.`,
+      confirm:(a,b)=>`Activate ${b} for everyone?\n\nCaptains (kapitaen), players (index) and the survey name search switch from ${a} to ${b}. The old season stays archived.`,
+      empty:'(empty)'},
 };
 function sT(k){return SEASON_T[lang]?.[k]??SEASON_T.de[k];}
+function seasonLabel(id){return id.startsWith('W')?`Winter ${id.slice(1)}/${String(+id.slice(1)+1).slice(2)}`:`Sommer ${id.slice(1)}`;}
 let _knownSeasons=null;
 async function renderSeasonSwitch(){
   const sel=document.getElementById('season-switch');if(!sel)return;
@@ -4023,12 +4042,18 @@ async function renderSeasonSwitch(){
     try{const rows=await sbGetAll('teams','select=season_id&order=season_id');_knownSeasons=[...new Set(rows.map(r=>r.season_id).filter(Boolean))];}
     catch(e){console.error(e);_knownSeasons=[];}
   }
-  const ids=[...new Set([..._knownSeasons,ACTIVE_SEASON])].filter(x=>/^[SW]\d{4}$/.test(x))
+  const ids=[...new Set([..._knownSeasons,ACTIVE_SEASON,PUBLISHED_SEASON])].filter(x=>/^[SW]\d{4}$/.test(x))
     .sort((a,b)=>a.slice(1).localeCompare(b.slice(1))||(a[0]==='S'?-1:1)); // chronological: S2026, W2026, S2027…
-  sel.innerHTML=ids.map(id=>`<option value="${id}"${id===ACTIVE_SEASON?' selected':''}>● ${sT('label')(id)}${_knownSeasons.includes(id)?'':' '+sT('empty')}</option>`).join('')
+  sel.innerHTML=ids.map(id=>`<option value="${id}"${id===ACTIVE_SEASON?' selected':''}>${id===PUBLISHED_SEASON?'● ':'○ '}${seasonLabel(id)}${id===PUBLISHED_SEASON?' · '+sT('live'):''}${_knownSeasons.includes(id)?'':' '+sT('empty')}</option>`).join('')
     +`<option value="__new">${sT('newOpt')}</option>`;
+  const prep=ACTIVE_SEASON!==PUBLISHED_SEASON;
+  const pb=document.getElementById('season-publish');
+  if(pb){pb.style.display=prep?'':'none';pb.textContent=sT('publish')(ACTIVE_SEASON);}
+  const bn=document.getElementById('season-prep-banner');
+  if(bn){bn.style.display=prep?'':'none';bn.textContent=sT('banner')(seasonLabel(ACTIVE_SEASON),seasonLabel(PUBLISHED_SEASON));}
 }
-async function onSeasonSwitch(sel){
+// Admin-only: changes what THIS browser's admin shows. Nobody else is affected.
+function onSeasonSwitch(sel){
   let v=sel.value;
   if(v==='__new'){
     v=(prompt(sT('prompt'))||'').trim().toUpperCase();
@@ -4036,11 +4061,19 @@ async function onSeasonSwitch(sel){
     if(!/^[SW]\d{4}$/.test(v)){alert(sT('bad'));sel.value=ACTIVE_SEASON;return;}
   }
   if(v===ACTIVE_SEASON){sel.value=ACTIVE_SEASON;return;}
-  if(!confirm(sT('confirm')(ACTIVE_SEASON,v))){sel.value=ACTIVE_SEASON;return;}
+  try{if(v===PUBLISHED_SEASON)localStorage.removeItem(ADMIN_SEASON_KEY);else localStorage.setItem(ADMIN_SEASON_KEY,v);}
+  catch(e){alert('Browser storage blocked — cannot switch the admin view.');sel.value=ACTIVE_SEASON;return;}
+  location.reload();
+}
+// Propagate: make the season admin is viewing the one everybody uses.
+async function publishSeason(){
+  if(ACTIVE_SEASON===PUBLISHED_SEASON)return;
+  if(!confirm(sT('confirm')(PUBLISHED_SEASON,ACTIVE_SEASON)))return;
   try{
-    await sbUpsert('app_settings',[{key:'active_season',value:v,updated_at:new Date().toISOString()}]);
+    await sbUpsert('app_settings',[{key:'active_season',value:ACTIVE_SEASON,updated_at:new Date().toISOString()}]);
+    try{localStorage.removeItem(ADMIN_SEASON_KEY);}catch(e){}
     location.reload();
-  }catch(e){console.error(e);alert(e.message);sel.value=ACTIVE_SEASON;}
+  }catch(e){console.error(e);alert(e.message);}
 }
 </script>
 </body>
