@@ -307,6 +307,7 @@ window.doLogin=async function(){
   <button class="tab" onclick="showTab('blocking',event)" data-tab="blocking"></button>
   <button class="tab" onclick="showTab('overview',event)" data-tab="overview"></button>
   <button class="tab" onclick="showTab('statistiken',event)" data-tab="statistiken"></button>
+  <button class="tab" onclick="showTab('umfrage',event)" data-tab="umfrage"></button>
 </div>
 
 <main>
@@ -616,6 +617,18 @@ window.doLogin=async function(){
   <div id="stats-content" style="overflow-x:auto"></div>
 </div>
 
+<!-- UMFRAGE (survey_responses, filled via umfrage.html) -->
+<div class="section" id="sec-umfrage">
+  <div class="section-title" id="um-title"></div>
+  <div class="section-sub" id="um-sub"></div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+    <select id="um-survey" onchange="renderUmfrage()" style="width:auto;padding:6px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif"></select>
+    <button class="btn btn-outline btn-sm" onclick="loadUmfrage()" id="um-reload"></button>
+    <button class="btn btn-outline btn-sm" onclick="exportUmfrageCSV()" id="um-csv"></button>
+  </div>
+  <div id="um-content"></div>
+</div>
+
 </main>
 
 <!-- PLAYER VIEW -->
@@ -713,7 +726,7 @@ function teamSortCmp(a,b){
 
 
 const T={
-  de:{tabs:['PDF importieren','Spieler','Mannschaften','Spiele & Aufstellung','Sperren','Overview','Statistiken'],
+  de:{tabs:['PDF importieren','Spieler','Mannschaften','Spiele & Aufstellung','Sperren','Overview','Statistiken','Umfrage'],
     ovMatches:'📋 Spiele',ovPlayers:'👥 Spieler',
     importTitle:'Spieler aus PDF importieren',importSub:'Offizielles TVBB-Format',
     uploadBtn:'TVBB-PDF hochladen',uploadSub:'Namentliche Mannschaftsmeldung · Sommer / Winter',
@@ -752,7 +765,7 @@ const T={
     pvChangeMatch:'← Spiel ändern',pvChangePlayer:'← Spieler ändern',pvOpenView:'Spieleransicht',
     syncOk:'● sync',syncErr:'✕ offline',syncIng:'⟳',availSaved:'✓ Gespeichert',confirmingAvail:'Speichern...',
     addMatchCount:'+ Spiel addieren',blockNote:'Die Regel gilt innerhalb jeder Kategorie (Herren, Herren 30 usw.) getrennt.'},
-  es:{tabs:['Importar PDF','Jugadores','Equipos','Partidos & Alineación','Bloqueos','Overview','Estadísticas'],
+  es:{tabs:['Importar PDF','Jugadores','Equipos','Partidos & Alineación','Bloqueos','Overview','Estadísticas','Encuesta'],
     ovMatches:'📋 Partidos',ovPlayers:'👥 Jugadores',
     importTitle:'Importar jugadores desde PDF',importSub:'Formato oficial TVBB Berlin',
     uploadBtn:'Subir PDF del TVBB',uploadSub:'Namentliche Mannschaftsmeldung · Sommer / Winter',
@@ -791,7 +804,7 @@ const T={
     pvChangeMatch:'← Cambiar partido',pvChangePlayer:'← Cambiar jugador',pvOpenView:'Vista jugador',
     syncOk:'● sync',syncErr:'✕ offline',syncIng:'⟳',availSaved:'✓ Guardado',confirmingAvail:'Guardando...',
     addMatchCount:'+ Sumar partido',blockNote:'La regla aplica dentro de cada categoría (Herren, Herren 30, etc.) por separado.'},
-  en:{tabs:['Import PDF','Players','Teams','Matches & Lineup','Blocks','Overview','Statistics'],
+  en:{tabs:['Import PDF','Players','Teams','Matches & Lineup','Blocks','Overview','Statistics','Survey'],
     ovMatches:'📋 Matches',ovPlayers:'👥 Players',
     importTitle:'Import players from PDF',importSub:'Official TVBB Berlin format',
     uploadBtn:'Upload TVBB PDF',uploadSub:'Namentliche Mannschaftsmeldung · Summer / Winter',
@@ -989,6 +1002,7 @@ async function loadAll(){
 // ── LANG ──
 function setLang(l){lang=l;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));applyT();renderAll();}
 function applyT(){
+  if(document.getElementById('sec-umfrage')?.classList.contains('active'))renderUmfrage();
   document.querySelectorAll('[data-tab]').forEach((tab,i)=>{tab.textContent=T[lang].tabs[i];});
   document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(T[lang][k]!==undefined)el.textContent=T[lang][k];});
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const k=el.getAttribute('data-i18n-placeholder');if(T[lang][k]!==undefined)el.placeholder=T[lang][k];});
@@ -1015,6 +1029,7 @@ function showTab(name,e){
   if(name==='blocking')renderBlocking();
   if(name==='overview')renderOverview();
   if(name==='statistiken'){setStatsMode('matches');}
+  if(name==='umfrage')loadUmfrage();
 }
 
 // ── DRAG & DROP SETUP ──
@@ -3814,5 +3829,123 @@ setLang('de');
   Daten basieren auf öffentlichen TVBB-Informationen · Nur für interne Vereinszwecke<br>
   Sportwart der Tennisabteilung · Füchse Berlin Reinickendorf e.V.
 </footer>
+<script>
+// ══════════════ UMFRAGE TAB ══════════════
+// Reads survey_responses (written by umfrage.html). One survey = season_id + competition.
+const UM_T={
+  de:{title:'Umfrage',sub:'Antworten aus umfrage.html · eine Umfrage pro Saison und Wettbewerb',reload:'↻ Neu laden',csv:'↓ CSV',
+    comp:{sommer:'Sommer',ferienrunde:'Mixed/Doppel',winter:'Winter'},
+    none:'Noch keine Antworten.',loading:'Lade...',err:'Fehler beim Laden (Tabelle survey_responses angelegt?).',
+    answers:'Antworten',yes:'Ja',no:'Nein',captains:'MF-Kandidaten',
+    byCat:'Zusagen pro Kategorie',cat:'Kategorie',total:'Ja',all:'Jeder Spieltag',half:'Hälfte',ersatz:'Ersatz',
+    list:'Alle Antworten',name:'Name',lk:'LK',year:'Jg.',part:'Spielt',cats:'Kategorien',freq:'Häufigkeit',mf:'MF',comment:'Anmerkung',date:'Datum',
+    newP:'neu',del:'Antwort von {n} löschen?',
+    freqL:{all:'jeder Spieltag',half:'Hälfte',ersatz:'Ersatz'}},
+  es:{title:'Encuesta',sub:'Respuestas de umfrage.html · una encuesta por temporada y competencia',reload:'↻ Recargar',csv:'↓ CSV',
+    comp:{sommer:'Verano',ferienrunde:'Mixed/Doppel',winter:'Invierno'},
+    none:'Todavía no hay respuestas.',loading:'Cargando...',err:'Error al cargar (¿está creada la tabla survey_responses?).',
+    answers:'Respuestas',yes:'Sí',no:'No',captains:'Candidatos a MF',
+    byCat:'Confirmados por categoría',cat:'Categoría',total:'Sí',all:'Todas las fechas',half:'Mitad',ersatz:'Suplente',
+    list:'Todas las respuestas',name:'Nombre',lk:'LK',year:'Año',part:'Juega',cats:'Categorías',freq:'Frecuencia',mf:'MF',comment:'Comentario',date:'Fecha',
+    newP:'nuevo',del:'¿Borrar la respuesta de {n}?',
+    freqL:{all:'todas',half:'mitad',ersatz:'suplente'}},
+  en:{title:'Survey',sub:'Answers from umfrage.html · one survey per season and competition',reload:'↻ Reload',csv:'↓ CSV',
+    comp:{sommer:'Summer',ferienrunde:'Mixed/Doubles',winter:'Winter'},
+    none:'No answers yet.',loading:'Loading...',err:'Loading failed (is the survey_responses table created?).',
+    answers:'Answers',yes:'Yes',no:'No',captains:'Captain candidates',
+    byCat:'Commitments per category',cat:'Category',total:'Yes',all:'Every match day',half:'Half',ersatz:'Substitute',
+    list:'All answers',name:'Name',lk:'LK',year:'Born',part:'Plays',cats:'Categories',freq:'Frequency',mf:'Capt.',comment:'Comment',date:'Date',
+    newP:'new',del:'Delete the answer from {n}?',
+    freqL:{all:'every match day',half:'half',ersatz:'substitute'}},
+};
+let _umRows=null,_umErr=false;
+function umT(k){return UM_T[lang]?.[k]??UM_T.de[k];}
+function umEsc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function umKey(r){return r.season_id+'|'+r.competition;}
+function umLabel(k){const[sid,c]=k.split('|');return `${sid} · ${umT('comp')[c]||c}`;}
+
+async function loadUmfrage(){
+  document.getElementById('um-content').innerHTML=`<div style="color:var(--muted);font-size:13px">${umT('loading')}</div>`;
+  try{_umRows=await sbGetAll('survey_responses','order=updated_at.desc,id');_umErr=false;}
+  catch(e){console.error(e);_umRows=[];_umErr=true;}
+  renderUmfrage();
+}
+
+function renderUmfrage(){
+  document.getElementById('um-title').textContent=umT('title');
+  document.getElementById('um-sub').textContent=umT('sub');
+  document.getElementById('um-reload').textContent=umT('reload');
+  document.getElementById('um-csv').textContent=umT('csv');
+  const out=document.getElementById('um-content');
+  if(_umRows===null)return;
+  if(_umErr){out.innerHTML=`<div style="color:var(--danger);font-size:13px">${umT('err')}</div>`;return;}
+  // survey selector: newest season first
+  const sel=document.getElementById('um-survey');
+  const keys=[...new Set(_umRows.map(umKey))]; // _umRows is newest-first → survey with the latest answer comes first
+  const cur=keys.includes(sel.value)?sel.value:keys[0];
+  sel.innerHTML=keys.map(k=>`<option value="${umEsc(k)}"${k===cur?' selected':''}>${umEsc(umLabel(k))}</option>`).join('');
+  sel.style.display=keys.length?'':'none';
+  if(!keys.length){out.innerHTML=`<div style="color:var(--muted);font-size:13px">${umT('none')}</div>`;return;}
+  const rows=_umRows.filter(r=>umKey(r)===cur);
+  const yes=rows.filter(r=>r.participates);
+  const caps=yes.filter(r=>r.captain);
+  // per category
+  const cats={};
+  for(const r of yes)for(const c of(r.categories||[])){
+    cats[c]=cats[c]||{total:0,all:0,half:0,ersatz:0};
+    cats[c].total++;if(r.commitment&&cats[c][r.commitment]!==undefined)cats[c][r.commitment]++;
+  }
+  const catNames=Object.keys(cats).sort((a,b)=>{
+    const ma=a.startsWith('Mixed'),mb=b.startsWith('Mixed');if(ma!==mb)return ma?1:-1;
+    return catCmp(a.replace(/ Doppel$/,''),b.replace(/ Doppel$/,''));
+  });
+  const stat=(n,l)=>`<div class="stat-card"><div class="stat-num">${n}</div><div class="stat-label">${l}</div></div>`;
+  const sorted=[...rows].sort((a,b)=>(b.participates-a.participates)||a.name.localeCompare(b.name,'de'));
+  const fmtD=d=>d?new Date(d).toLocaleDateString(lang==='en'?'en-GB':lang==='es'?'es-AR':'de-DE'):'';
+  out.innerHTML=`
+    <div class="stats-row">${stat(rows.length,umT('answers'))}${stat(yes.length,umT('yes'))}${stat(rows.length-yes.length,umT('no'))}${stat(caps.length,umT('captains'))}</div>
+    <div class="card" style="overflow-x:auto">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--court);margin-bottom:6px">${umT('byCat')}</div>
+      ${catNames.length?`<table class="avail-table"><thead><tr><th>${umT('cat')}</th><th>${umT('total')}</th><th>${umT('all')}</th><th>${umT('half')}</th><th>${umT('ersatz')}</th></tr></thead><tbody>
+        ${catNames.map(c=>`<tr><td style="font-weight:600">${umEsc(c)}</td><td style="color:var(--court);font-weight:700">${cats[c].total}</td><td>${cats[c].all}</td><td>${cats[c].half}</td><td>${cats[c].ersatz}</td></tr>`).join('')}
+      </tbody></table>`:`<div style="color:var(--muted);font-size:12px">—</div>`}
+    </div>
+    <div class="card" style="overflow-x:auto">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--court);margin-bottom:6px">${umT('list')}</div>
+      <table class="avail-table"><thead><tr><th>${umT('name')}</th><th>${umT('lk')}</th><th>${umT('year')}</th><th>${umT('part')}</th><th>${umT('cats')}</th><th>${umT('freq')}</th><th>${umT('mf')}</th><th>${umT('comment')}</th><th>${umT('date')}</th><th></th></tr></thead><tbody>
+      ${sorted.map(r=>`<tr>
+        <td style="font-weight:600;white-space:nowrap">${umEsc(r.name)}${r.player_id?'':` <span style="font-size:10px;color:var(--warn)">${umT('newP')}</span>`}</td>
+        <td>${umEsc(r.lk||'—')}</td><td>${umEsc(r.birth_year||'')}</td>
+        <td style="color:${r.participates?'var(--court)':'var(--danger)'};font-weight:700">${r.participates?'✓ '+umT('yes'):'✗ '+umT('no')}</td>
+        <td>${umEsc((r.categories||[]).join(', '))}</td>
+        <td>${r.commitment?umEsc(umT('freqL')[r.commitment]):''}</td>
+        <td>${r.captain?'✓':''}</td>
+        <td style="max-width:220px;color:var(--muted)">${umEsc(r.comment||'')}</td>
+        <td style="white-space:nowrap;color:var(--muted)">${fmtD(r.updated_at||r.created_at)}</td>
+        <td><button class="btn btn-danger" onclick="deleteUmfrage('${umEsc(r.id)}')">✕</button></td>
+      </tr>`).join('')}
+      </tbody></table>
+    </div>`;
+}
+
+async function deleteUmfrage(id){
+  const r=_umRows.find(x=>x.id===id);if(!r)return;
+  if(!confirm(umT('del').replace('{n}',r.name)))return;
+  try{await sbDelete('survey_responses',`id=eq.${encodeURIComponent(id)}`);await loadUmfrage();}
+  catch(e){console.error(e);alert(e.message);}
+}
+
+function exportUmfrageCSV(){
+  if(!_umRows)return;
+  const cur=document.getElementById('um-survey').value;
+  const rows=_umRows.filter(r=>umKey(r)===cur);
+  const head=['Name','LK','Jahrgang','Geschlecht','Spielt','Kategorien','Häufigkeit','Mannschaftsführer','Anmerkung','Im Kader','Datum'];
+  const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const lines=[head.map(q).join(';'),...rows.map(r=>[r.name,r.lk,r.birth_year,r.gender,r.participates?'Ja':'Nein',(r.categories||[]).join(', '),r.commitment?UM_T.de.freqL[r.commitment]:'',r.participates?(r.captain?'Ja':'Nein'):'',r.comment,r.player_id?'Ja':'Nein',(r.updated_at||'').slice(0,10)].map(q).join(';'))];
+  const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Umfrage_${cur.replace('|','_')}.csv`;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+</script>
 </body>
 </html>

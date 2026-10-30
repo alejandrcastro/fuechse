@@ -17,6 +17,7 @@ Club Manager is a standalone web application made up of three independent HTML f
 | `admin.html` | Sportwart (full admin) | Login with email/password |
 | `kapitaen.html` | Team captain | Login with email/password |
 | `index.html` | Player (confirm availability) | Shared club password |
+| `umfrage.html` | Player (participation survey per season) | Shared club password |
 
 ---
 
@@ -45,6 +46,7 @@ Project: `kepbpcttbvkbcckqoecv.supabase.co`
 | `availability` | Availability responses per player and match |
 | `lineups` | Starting lineup + Ersatz per match |
 | `player_match_counts` | Matches played per team (used for block rules) |
+| `survey_responses` | Umfrage answers — one row per person per survey (`season_id` + `competition`); created with `sql/survey_responses.sql` |
 
 ### Key columns
 
@@ -128,6 +130,16 @@ When a player confirms for two matches on the same day, a priority modal appears
 **Languages:** DE / ES / EN
 
 ---
+
+### `umfrage.html` — Participation survey
+
+Players answer whether they want to play in the next competition. Same shared club password as `index.html`.
+
+- **Active survey** is a constant in the file: `SURVEY={season_id,competition,year,deadline}` with `competition` = `sommer` | `ferienrunde` | `winter`. Change it by hand for each new survey.
+- Name search uses the roster of `ACTIVE_SEASON`; people not on the list enter name, Jahrgang, Herren/Damen and LK manually.
+- Categories offered = Herren/Damen + the Altersklassen the person is eligible for (AK X = turns X in `SURVEY.year`), configured in `AK`. Ferienrunde shows Mixed + Doppel categories.
+- Answering again with the same name overwrites the previous answer (unique on `season_id, competition, name_key`).
+- Results: **admin.html → Umfrage** tab (summary per category, full list, delete, CSV export).
 
 ## TVBB Berlin Rules
 

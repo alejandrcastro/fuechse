@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Füchse Berlin – Umfrage</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#c0392b;--green:#2d6a4f;--green-light:#40916c;
+  --white:#f0f7f2;--dark:#1e2d24;--muted:#7a9e88;
+  --line:#2e4a38;--warn:#f4a261;--court:#52b788;--card:#243330;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);min-height:100vh}
+header{background:linear-gradient(160deg,#1b2d23 0%,#2d4a38 60%,#1e2d24 100%);padding:20px 24px 18px;border-bottom:3px solid var(--red);display:flex;align-items:center;gap:16px}
+.logo-img{width:54px;height:54px;object-fit:contain;flex-shrink:0}
+.header-text h1{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px}
+.header-text p{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.lang-bar{display:flex;gap:5px;margin-left:auto}
+.lang-btn{padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;transition:all .15s}
+.lang-btn.active{background:var(--green-light);color:#fff;border-color:var(--green-light)}
+main{padding:20px 16px;max-width:480px;margin:0 auto}
+.step-label{font-size:11px;font-weight:600;color:var(--court);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.step-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;margin-bottom:4px}
+.step-sub{font-size:13px;color:var(--muted);margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.q{font-size:13px;font-weight:600;margin-bottom:10px}
+.q .opt-l{color:var(--muted);font-weight:400}
+.hint{font-size:11px;color:var(--muted);margin-top:-6px;margin-bottom:10px}
+input,textarea{background:#1b2d24;border:1px solid var(--line);border-radius:8px;color:var(--white);padding:10px 14px;font-family:inherit;font-size:14px;outline:none;width:100%;transition:border-color .2s}
+input:focus,textarea:focus{border-color:var(--court)}
+input::placeholder,textarea::placeholder{color:var(--muted)}
+.ac-wrap{position:relative}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:#243330;border:1px solid #3a5a48;border-radius:10px;z-index:50;max-height:240px;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,.35);margin-top:4px}
+.ac-item{padding:11px 14px;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid #2e4a3855}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover{background:#2e4a38}
+.avatar{width:34px;height:34px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--court);flex-shrink:0}
+.player-card{display:flex;align-items:center;gap:12px;background:#1b2d24;border:1px solid var(--court);border-radius:10px;padding:11px 13px;margin-top:10px}
+.lk-badge{margin-left:auto;border:1px solid #52b78855;color:var(--court);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;padding:12px 6px;border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;border:1.5px solid var(--line);background:transparent;color:var(--muted);transition:all .15s}
+.seg button.on{background:#1a3d2a;color:var(--court);border-color:var(--court)}
+.seg button.no.on{background:#3d1a1a;color:#e74c3c;border-color:#e74c3c}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:7px 12px;border-radius:20px;border:1px solid var(--line);font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+.chip.on{background:#1a3d2a;border-color:var(--court);color:var(--court);font-weight:600}
+.chip small{opacity:.7;font-size:10px;margin-left:4px}
+.opt{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:14px;cursor:pointer;border-bottom:1px solid #2e4a3855}
+.opt:last-child{border-bottom:none}
+.dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex-shrink:0}
+.opt.on .dot{border-color:var(--court);background:radial-gradient(var(--court) 45%,transparent 50%)}
+.link{font-size:12px;color:var(--court);margin-top:10px;cursor:pointer;text-decoration:underline;display:inline-block}
+.row{display:flex;gap:10px;margin-top:10px}.row>div{flex:1}
+.lbl{font-size:11px;color:var(--muted);margin-bottom:4px}
+.btn{display:block;width:100%;padding:14px;border-radius:10px;border:none;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;background:var(--green-light);color:#fff;margin-top:6px;transition:all .2s}
+.btn:hover{background:var(--court);color:var(--dark)}
+.btn:disabled{opacity:.5;cursor:default}
+.msg{font-size:13px;min-height:20px;margin-top:12px;text-align:center;font-weight:500}
+.msg.ok{color:var(--court)}.msg.err{color:#e74c3c}
+.notice{background:#1a3d2a;border:1px solid #52b78855;border-radius:10px;padding:10px 13px;font-size:12px;color:var(--court);margin-bottom:12px}
+.deadline{text-align:center;font-size:12px;color:var(--muted);margin-top:12px}
+.done{text-align:center;padding:40px 10px}
+.done .big{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;color:var(--court);margin-bottom:8px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="sp-login" style="position:fixed;inset:0;background:#0d2015;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Sans',sans-serif;">
+  <div style="background:#1a2e24;border:1px solid #2d6a4f;border-radius:14px;padding:36px 32px;width:100%;max-width:320px;box-shadow:0 20px 60px rgba(0,0,0,.6);">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:.1em;color:#74c69d">FÜCHSE BERLIN</div>
+      <div style="font-size:.7rem;color:#4a9970;letter-spacing:.08em;text-transform:uppercase;margin-top:3px">Spieler-App</div>
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#4a9970;display:block;margin-bottom:5px">Passwort</label>
+      <input id="sp-pw" type="password" autocomplete="off"
+        style="width:100%;background:#111;border:1px solid #2d6a4f;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none"
+        placeholder="••••••••" onkeydown="if(event.key==='Enter')spLogin()">
+    </div>
+    <button onclick="spLogin()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer">Einloggen</button>
+    <div id="sp-err" style="margin-top:12px;font-size:.8rem;color:#e63946;text-align:center;min-height:18px"></div>
+  </div>
+</div>
+<script>
+(function(){
+  const _c='01612cccec019602';
+  const KEY='fcb_spieler_auth';
+  if(sessionStorage.getItem(KEY)==='ok'){document.getElementById('sp-login').style.display='none';}
+  window.spLogin=async function(){
+    const _d='59699dc4b9a79a54';
+    const pw=document.getElementById('sp-pw').value;
+    const _h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));
+    const hex=Array.from(new Uint8Array(_h)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    const _a=document.getElementById('_fa').dataset.v;
+    const _b=document.getElementById('_fb').dataset.v;
+    const _ref=_a+_b+_c+_d;
+    if(hex===_ref){
+      sessionStorage.setItem(KEY,'ok');
+      const o=document.getElementById('sp-login');
+      o.style.opacity='0';o.style.transition='opacity .3s';
+      setTimeout(()=>o.style.display='none',300);
+    }else{
+      document.getElementById('sp-err').textContent='Falsches Passwort';
+      document.getElementById('sp-pw').value='';
+      setTimeout(()=>document.getElementById('sp-err').textContent='',2000);
+    }
+  };
+})();
+</script>
+
+<span id="_fa" data-v="fe4d13ebc8af156b" style="display:none" aria-hidden="true"></span>
+<span id="_fb" data-v="17aa79be6d26e795" style="display:none" aria-hidden="true"></span>
+<header>
+  <img class="logo-img" src="data:image/svg+xml;base64,PHN2ZyB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBpZD0iYjYwNWMxN2ItYmMxNS00NjY4LTkzZDItOGQ0MzBlZjNjNjZhIiBkYXRhLW5hbWU9IkViZW5lIDEiIHZpZXdCb3g9IjAgMCAyMjIuNTQgMjQyLjUxIiB3aWR0aD0iMjIyLjU0IiAgaGVpZ2h0PSIyNDIuNTEiID48cGF0aCBkPSJNNTAuNzcsMjQuODdDNjEuODUsMTkuNjQsOTgsNywxNDksN2wuMS4zNC4xLS4zNGM1MSwwLDg3LjE2LDEyLjY0LDk4LjI0LDE3Ljg3LDE3LjcyLDQwLjcxLDkuMjgsOTUuODktNi4yOCwxMjUuMThDMjI1LjgzLDE3OC45MywxNzkuNTUsMjI0LDE0OSwyMjUuMjRjMCwwLDAsMCwwLDAtMzAuNTMtMS4yNi03Ni42Mi00Ni4zMS05Mi03NS4xOUM0MS40OSwxMjAuNzYsMzMsNjUuNTgsNTAuNzcsMjQuODdaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMmY0ODFiIi8+PHBhdGggZD0iTTYzLjk0LDI4Ljc3YzkuNi01LDQwLjk0LTE3LjIsODUuMDgtMTcuMmwuMDkuMzIuMDktLjMyYzQ0LjEzLDAsNzUuNDgsMTIuMTYsODUuMDcsMTcuMiwxNS4zNiwzOS4xNyw4LDkyLjI3LTUuNDMsMTIwLjQ2QzIxNS41NSwxNzcsMTc1LjQ2LDIyMC4zOCwxNDksMjIxLjU5Yy0yNi40NC0xLjIxLTY2LjM0LTQ0LjU3LTc5LjYzLTcyLjM2QzU1LjksMTIxLDQ4LjU5LDY3Ljk0LDYzLjk0LDI4Ljc3Wm0tNi4xLDQ2LjExYy0uNjYsMjcuNjQsNSw1NS4yMSwxMy40LDcyLjg2LDEzLDI3LjMyLDUxLjk0LDY5Ljk1LDc3Ljc3LDcxLjE1LDI1LjgzLTEuMiw2NS00My44Myw3OC03MS4xNSw4LjM4LTE3LjY1LDE0LjA3LTQ1LjIyLDEzLjQxLTcyLjg2LTE0LjM1LTUuNzUtNDctMTUuNDgtOTEuMjctMTUuNDhTNzIuMTksNjkuMTMsNTcuODQsNzQuODhaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojZmZmIi8+PHBhdGggZD0iTTkwLjY2LDMyLjk0VjI5LjIxYzAtLjUyLS4yNC0uNjctLjc5LS42NGE0NS44LDQ1LjgsMCwwLDAtNy41NywxLjA3Yy01LjA2LDEuMDYtOS41OCwzLjI5LTkuNTgsMTAuNThWNjFhLjYzLjYzLDAsMCwwLC43OS42NGw1LjEtMS4wN2ExLDEsMCwwLDAsLjc5LTFWNDcuODVsMTAuMTYtMi4xM2ExLDEsMCwwLDAsLjc4LTFWNDAuOTRhLjYyLjYyLDAsMCwwLS43OC0uNjNMNzkuNCw0Mi40M3YtMy42YzAtMi4wOS42Ni0yLjg3LDIuNTEtMy4yNmw4LTEuNjZhMSwxLDAsMCwwLC43OS0xWm0yOS44Myw5Ljg3VjI1YS43LjcsMCwwLDAtLjg0LS42NmwtNS4xOC41OWEuODguODgsMCwwLDAtLjc5Ljg1VjQzLjU5YzAsNC4wOS0xLjEyLDUuOTQtNC43LDYuMzZzLTQuNjYtMS4xOS00LjY2LTUuMjhWMjYuODNhLjY3LjY3LDAsMCwwLS44LS42N2wtNS4yMi41OWEuODguODgsMCwwLDAtLjc5Ljg2VjQ1LjQ1YzAsOS4xNCw1LjEzLDEwLjk1LDExLjQ3LDEwLjIzUzEyMC40OSw1MiwxMjAuNDksNDIuODFaTTExNiwyMS41OVYxNy44N2EuNzYuNzYsMCwwLDAtLjg4LS43bC0zLjc0LjQyYTEsMSwwLDAsMC0uODQuOXYzLjczYS43NC43NCwwLDAsMCwuODQuNzFsMy43NC0uNDNhMSwxLDAsMCwwLC44OC0uOTFabS04LjY1LDFWMTguODZhLjczLjczLDAsMCwwLS44My0uNzFsLTMuNzUuNDNhMSwxLDAsMCwwLS44Ny45djMuNzNhLjc2Ljc2LDAsMCwwLC44Ny43bDMuNzUtLjQzYTEsMSwwLDAsMCwuODMtLjg5Wm0zOC42NSwyOVY0Ny43YS42OC42OCwwLDAsMC0uNzYtLjc3aC0uMTJjLTEuNTIuMTctMy43My40NC01LjkzLjUyLTIuNzcuMDktNS0xLjI4LTUtNi42MnYtNWMwLTUuMzMsMi4yLTYuODUsNS02Ljk0LDIuMi0uMDcsNC40MS4wNiw1LjkzLjEzaC4xMmEuNzQuNzQsMCwwLDAsLjc2LS44M1YyNC4yNWMwLS41Ni0uMzItLjcxLS44OC0uODVhMjIuMjMsMjIuMjMsMCwwLDAtNi0uNDljLTYuMDkuMi0xMS44NiwzLjU2LTExLjg2LDEzLjF2NS4wNWMwLDkuNTQsNS43NywxMi41NiwxMS44NiwxMi4zNmEyMi44NiwyMi44NiwwLDAsMCw2LS44OGMuNTYtLjE4Ljg4LS4zOS44OC0uOTVaTTE3Ni4xMSw1M1YyNC43OWEuODIuODIsMCwwLDAtLjgtLjhsLTUuMjQtLjI1YS43NC43NCwwLDAsMC0uODEuNzNWMzUuMTNsLTkuODktLjQ3VjI0YS44Mi44MiwwLDAsMC0uOC0uOEwxNTMuMzMsMjNhLjczLjczLDAsMCwwLS44LjcyVjUxLjlhLjg2Ljg2LDAsMCwwLC44Ljg0bDUuMjQuMjRhLjc1Ljc1LDAsMCwwLC44LS43NlY0MC42M2w5Ljg5LjQ3VjUyLjY5YS44NS44NSwwLDAsMCwuODEuODRsNS4yNC4yNWEuNzYuNzYsMCwwLDAsLjgtLjc2Wm0yNi41LTQuMzFjMC0zLjI1LTEuMjMtNi4wNy01LjM2LTguODhsLTUuMDgtMy40N2MtMi4xNS0xLjQ1LTIuNjYtMi0yLjY2LTMuMTcsMC0xLjQ0LjgzLTIsMy4xLTEuNywyLjcuMzgsNy4zLDEuMzcsOC40MSwxLjZoLjA4Yy41Mi4wOC42OC0uMjIuNjgtLjU4VjI4LjQ3YS44NS44NSwwLDAsMC0uNi0uODEsNDYuNTksNDYuNTksMCwwLDAtOC40Mi0yYy03LjctMS4wNi0xMC4xNiwyLTEwLjE2LDYuNDIsMCwyLjkzLDEsNS41OSw0LjY4LDguM2w1LjQ4LDRjMi4wNywxLjUzLDIuNjMsMi4yNSwyLjYzLDMuNDEsMCwxLjkzLS44LDIuNy0zLjU0LDIuMzItMS41NS0uMjEtNS45Mi0xLjEzLTcuNTUtMS41MmgtLjExYy0uNC0uMDYtLjcyLjEtLjcyLjY2djMuOTNjMCwuNDQuNC43My43OS45MUEzMS41LDMxLjUsMCwwLDAsMTkxLjc3LDU2YzguMDYsMS4xMSwxMC44NC0zLDEwLjg0LTcuMjhabTI0LjIzLDEyLjQxVjU3LjM5YTEsMSwwLDAsMC0uNzgtMWwtOC0xLjczYy0xLjg0LS40LTIuNS0xLjE5LTIuNS0zLjI4VjQ3LjE2bDEwLjE0LDIuMjFhLjYyLjYyLDAsMCwwLC43OS0uNjNWNDQuOTNhMS4wNSwxLjA1LDAsMCwwLS43OS0xTDIxNS42LDQxLjc1VjM4LjFjMC0yLjA4LjY2LTIuNTgsMi41LTIuMThsOCwxLjc0YS42Mi42MiwwLDAsMCwuNzgtLjY0VjMzLjNjMC0uNTMtLjIzLS43OC0uNzgtMWE1MCw1MCwwLDAsMC03LjU2LTIuMTZjLTUuMDYtMS4xLTkuNTYtLjgtOS41Niw2LjQ5VjUwYzAsNy4zLDQuNDYsOS42LDkuNTIsMTAuN2E0Ni4zMSw0Ni4zMSwwLDAsMCw3LjYsMS4xM2MuNTUsMCwuNzgtLjE1Ljc4LS42N1oiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0zNy44NCAtNC4wMykiIHN0eWxlPSJmaWxsOiMyMjIyMjEiLz48cGF0aCBkPSJNMjAyLjI0LDIzN2EyNzMuMjIsMjczLjIyLDAsMCwxLTUzLjc4LDUuNjFBMjc0LjU3LDI3NC41NywwLDAsMSw5NiwyMzcuMjV2LTMwYzE1LjY2LDMuMDYsMzMuNTEsNS41OSw1Mi40OSw1LjU5QTI3Mi40NSwyNzIuNDUsMCwwLDAsMjAyLjI0LDIwN3YzMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0zNy44NCAtNC4wMykiIHN0eWxlPSJmaWxsOiNmZmYiLz48cGF0aCBkPSJNMjAyLjQzLDIzOGMtOCwxLjYyLTE2LjYyLDMtMjUuNjUsNGEyNTUuOTIsMjU1LjkyLDAsMCwxLTI4LjMyLDEuNkEyNTUuNjEsMjU1LjYxLDAsMCwxLDEyMC44NywyNDJjLTguODMtMS0xNy4yNC0yLjMtMjUuMDgtMy44NGwtLjc5LS4xNXYtMzJsMS4xNi4yMmM3LjgxLDEuNTMsMTYuMTYsMi45MiwyNC45MiwzLjkzYTIzOC44MiwyMzguODIsMCwwLDAsMjcuMzgsMS42NCwyNDIuMTgsMjQyLjE4LDAsMCwwLDI4LjExLTEuN2M5LTEuMDYsMTcuNTQtMi41MSwyNS40OC00LjEybDEuMTYtLjIzdjMybC0uNzguMTZabS0yNS44NiwyLjFjOC43MS0xLDE3LTIuMywyNC43LTMuODR2LTI4Yy03LjY5LDEuNTItMTUuOSwyLjktMjQuNDgsMy45MWEyNDMuODcsMjQzLjg3LDAsMCwxLTI4LjMzLDEuNzIsMjQwLjY4LDI0MC42OCwwLDAsMS0yNy42LTEuNjVjLTguMzktMS0xNi40LTIuMjktMjMuOTItMy43M3YyOGM3LjU5LDEuNDcsMTUuNjcsMi43NSwyNC4xMywzLjY3YTI1My44OCwyNTMuODgsMCwwLDAsMjcuMzksMS41MiwyNTYuNDUsMjU2LjQ1LDAsMCwwLDI4LjExLTEuNTlaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMjIyMjIxIi8+PHBhdGggZD0iTTExNy4wNSwyMjkuODV2LS4zN2E0LjY0LDQuNjQsMCwwLDAtMi4xNi0zLjkzLDMuMywzLjMsMCwwLDAsMi0zLjMxdi0uNDVjMC0zLjg5LTMuMDgtNS41NS03LjY2LTYuMmE0MC44MSw0MC44MSwwLDAsMC00LjM0LS4zNGMtMSwwLTEuMjkuMzEtMS4yOSwxLjQxdjE0LjlhMS41NSwxLjU1LDAsMCwwLDEuMzMsMS43OCwzMi4zLDMyLjMsMCwwLDAsNC40NC45MmM0LjIuNTksNy42NS0uMSw3LjY1LTQuNDFabS00LjEzLThjMCwxLS41NiwxLjg2LTIuNDcsMS41OWwtMi43Mi0uMzl2LTQuMjRjLjM0LDAsMS40Ni4xOCwxLjg0LjI0LDIuNS4zNSwzLjM1LDEuMDgsMy4zNSwyLjQzdi4zN1ptLjEsNy4zMWMwLDEuMzctLjgsMi0zLjMsMS42OS0uMzQsMC0xLjYtLjI1LTItLjNWMjI2bDIuNzIuMzhjMS45NC4yNywyLjU3LDEuMzcsMi41NywyLjU0di4yN1ptMTkuMzQsNi41OHYtMi4yOGEuNTQuNTQsMCwwLDAtLjQ5LS41M2wtNS0uMzdjLTEuMTQtLjA4LTEuNTYtLjUtMS41Ni0xLjc4di0yLjZsNi4zMy40N2EuNDUuNDUsMCwwLDAsLjQ5LS40NXYtMi4zM2EuNTMuNTMsMCwwLDAtLjQ5LS41MmwtNi4zMy0uNDd2LTIuMjNjMC0xLjI4LjQyLTEuNjQsMS41Ni0xLjU1bDUsLjM2YS40NS40NSwwLDAsMCwuNDktLjQ1di0yLjI4YzAtLjMyLS4xNC0uNDUtLjQ5LS41MmEyNy42NSwyNy42NSwwLDAsMC00LjcxLS42N2MtMy4xNS0uMjQtNiwuMzQtNiw0Ljh2OC4xM2MwLDQuNDYsMi43OCw1LjQ4LDUuOTMsNS43MWEyNy43NSwyNy43NSwwLDAsMCw0Ljc0LDBjLjM1LDAsLjQ5LS4xNi40OS0uNDdabTE4LjU1LjgxYS42Ny42NywwLDAsMC0uMDgtLjI3bC0zLjctN2E0Ljg0LDQuODQsMCwwLDAsMy4xNi00Ljg1di0uMzFjMC00LjM0LTMuMjEtNS43OS03LjM3LTUuODVhMzcuMTEsMzcuMTEsMCwwLDAtNSwuMjRjLS43Ni4xMS0xLjExLjMyLTEuMTEsMS4xNnYxNi40NGEuNDkuNDksMCwwLDAsLjQ5LjQ5bDMuMTksMGEuNDguNDgsMCwwLDAsLjQ5LS40OFYyMzBjLjQ2LDAsMS4yMi4wNywxLjc0LjA4bC4yNywwLDMuMjgsNi4yNWMuMTIuMjUuMjIuNS40OS41bDMuNzUuMDZjLjI3LDAsLjM3LS4xMi4zNy0uMjlabS00Ljc4LTEyLjE1YzAsMS42Ni0uODEsMi4zMS0zLjM4LDIuMjctLjI3LDAtMS40NywwLTEuNzQtLjA3di00LjcxYy4yOSwwLDEuNTcsMCwxLjkxLDAsMi4wNiwwLDMuMjEuNzQsMy4yMSwyLjIzdi4zMlptMTkuMjMsMTEuMzd2LTIuMjdhLjQ4LjQ4LDAsMCwwLS40OS0uNDhsLTQuMjEuMTZjLTEuMTUuMDUtMS41Ny0uMzMtMS41Ny0xLjZWMjE4LjkzYS40Ny40NywwLDAsMC0uNDktLjQ3bC0zLjIxLjEyYS41Mi41MiwwLDAsMC0uNDkuNTF2MTIuNjdjMCw0LjQ1LDIuODIsNS4xNiw2LDVhMjUuOTIsMjUuOTIsMCwwLDAsNC0uNDdjLjM0LS4wOS40OS0uMjIuNDktLjU0Wm03LjgyLS40NVYyMTguMDlhLjQxLjQxLDAsMCwwLS40Ni0uNDNsLTMuMjguMjZhLjQ4LjQ4LDAsMCwwLS40NC41djE3LjI1YS40MS40MSwwLDAsMCwuNDQuNDVsMy4yOC0uMjVhLjUyLjUyLDAsMCwwLC40Ni0uNTNabTE5LjEzLTIuNjRWMjE1Ljg5YS40LjQsMCwwLDAtLjQ4LS40bC0yLjg3LjM3YS41Ni41NiwwLDAsMC0uNDkuNTN2MTAuMzdjMCwuMTctLjA3LjIzLS4xMi4yM3MtLjA5LDAtLjE5LS4xN2wtNS43Ni05LjM0Yy0uMjktLjQ3LS41My0uNjktMS0uNjJsLTIuNDUuMzJhMS4wOCwxLjA4LDAsMCwwLS45MywxVjIzNWEuNDMuNDMsMCwwLDAsLjQ5LjQzbDIuODctLjM4YS41Ny41NywwLDAsMCwuNDgtLjU1di05LjkyYzAtLjE1LDAtLjIxLjEyLS4yMnMuMTMsMCwuMjIuMTdsNS41NCw4LjkzYTEuMDksMS4wOSwwLDAsMCwxLjI2LjU5bDIuMzktLjMxYTEuMSwxLjEsMCwwLDAsLjk0LTEuMDVaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMjIyMjIxIi8+PHBhdGggZD0iTTIwMC43NSw3NS40NUMxODUuNjYsODMsMTY5LjUxLDk0Ljc5LDE2MiwxMTcuM2E5NC4wOCw5NC4wOCwwLDAsMC0yNS44MiwwQzEyOC43LDk0Ljc5LDExMi41Niw4Myw5Ny40Nyw3NS40NWMtOC4zNSwyOC40OC41NSw0My4yOCw4LjUsNTIuMDh2LjIxYzAsMTYuNjEtLjA5LDM3LjU2LDE3LjY1LDQ1Ljc1LDIwLDkuMjYsMTQuNTksMjkuMTIsMjUuNDksMjkuMTJzNS40NS0xOS44NiwyNS40OS0yOS4xMmMxNy43My04LjE5LDE3LjY1LTI5LjE0LDE3LjY1LTQ1Ljc1di0uMjFjNy45NC04LjgsMTYuODQtMjMuNiw4LjUtNTIuMDhaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojYzIwZTFhIi8+PHBhdGggZD0iTTE0MywxNzAuNTVhNDkuMjcsNDkuMjcsMCwwLDAtLjU1LTgsMjAuOTQsMjAuOTQsMCwwLDAtMTguNjYtMTguMDksMjAuOTEsMjAuOTEsMCwwLDAsNiwxMi43M2MuNS41LDEsMSwxLjU1LDEuMzkuNTYtLjU5LDEuMDgtMi4xMiwxLjItNS43MywxLjEzLDEuMTQsMi4xLDQuNjYsMi4zMiw4LjA2YTIxLjM2LDIxLjM2LDAsMCwwLDQuODYsMS44MywyMi44NCwyMi44NCwwLDAsMSwzLjI0LDcuODNaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojMjIyMjIxIi8+PHBhdGggZD0iTTE3NC40MiwxNDQuNDRhMjAuOTQsMjAuOTQsMCwwLDAtMTguNjcsMTguMDksNDkuMjgsNDkuMjgsMCwwLDAtLjU0LDgsMjIuODQsMjIuODQsMCwwLDEsMy4yNC03LjgzLDIxLjUsMjEuNSwwLDAsMCw0LjQtMS42Yy4xOS0zLjQ3LDEuMTgtNy4xMiwyLjMzLTguMjkuMTQsNC4wOC43OSw1LjUxLDEuNDIsNS45MWEyMS43MywyMS43MywwLDAsMCwxLjc4LTEuNTcsMjAuOTEsMjAuOTEsMCwwLDAsNi0xMi43M1oiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0zNy44NCAtNC4wMykiIHN0eWxlPSJmaWxsOiMyMjIyMjEiLz48cGF0aCBkPSJNMTQ5LjIxLDdjNTEsMCw4Ny4xNiwxMi42NCw5OC4yNCwxNy44NywxNy43Miw0MC43MSw5LjI4LDk1Ljg5LTYuMjgsMTI1LjE4LTUuMTEsOS42MS0xMy42NSwyMS0yMy44OSwzMi00LjIzLDQuNTMtOC43NCw5LTEzLjQzLDEzLjIzYTE3NC40MiwxNzQuNDIsMCwwLDEtMTYuNDUsMTMuMzZjNS44MS0uODcsMTAuNDctMS43NywxNS44LTIuODVsMCwzMmEyNjEuOTQsMjYxLjk0LDAsMCwxLTQxLjcyLDUuNDNjLTEuNDguMDgtMywuMTQtNC40Ni4xOC0uNjcsMC0xLjM1LDAtMiwuMDZxLTMuMzcuMDktNi42OS4wOWEyNTguNjUsMjU4LjY1LDAsMCwxLTM3LjQ3LTIuNzRjLTUuMzktLjc3LTEwLjctMS42OC0xNS44NS0yLjczbDAtMzJjNS4zOSwxLDEwLjEyLDEuODgsMTYsMi43OC0xLjc4LTEuMzItMy41OC0yLjY1LTUuMzMtNC0uNjctLjUyLTEuMzItMS0yLTEuNTdxLTEuNjktMS4zNy0zLjM4LTIuNzZjLTE4LjQ0LTE1LjQ1LTM1LjEzLTM1LjIyLTQzLjIzLTUwLjQ3QzQxLjQ5LDEyMC43OSwzMyw2NS42MSw1MC43NywyNC45LDYxLjg1LDE5LjY3LDk4LDcsMTQ5LDdsLjEuMzQuMS0uMzRtMi0zSDE0N2EyOTIuNzYsMjkyLjc2LDAsMCwwLTYyLjcyLDdjLTIwLjEsNC41Ni0zMS43LDkuNjYtMzQuNzgsMTEuMTFsLTEsLjQ4LS40NSwxQzM3LjQ3LDQ3Ljk0LDM3LDc0LjIzLDM4LjQ0LDkyYzEuOCwyMi4wOSw3LjYyLDQzLjc2LDE2LDU5LjQ2LDguNDYsMTUuOTMsMjUuNzEsMzYuMDksNDMuOTUsNTEuMzdsMS4zLDEuMDdjLTEuMy0uMjQtMi42NS0uNDktNC4wOC0uNzdMOTIsMjAyLjQ2djMuNjRsMCwzMnYyLjQ1bDIuNC40OWM1LDEsMTAuNDQsMiwxNiwyLjc2YTI2My43NCwyNjMuNzQsMCwwLDAsMzcuOSwyLjc3YzIuMjIsMCw0LjUsMCw2Ljc3LS4wOS42OCwwLDEuMzcsMCwyLS4wNiwxLjQ5LS4wNSwzLS4xMSw0LjUxLS4xOGEyNjYuNzUsMjY2Ljc1LDAsMCwwLDQyLjIxLTUuNWwyLjM2LS41MnYtMi40MmwwLTMxLjk1di0zLjY2bC0zLjU5LjcyLTMuNzUuNzVxMy4zNi0yLjc5LDctNi4xYzQuNjgtNC4yMyw5LjI2LTguNzQsMTMuNjEtMTMuNDEsMTAuNS0xMS4yNSwxOS4xNC0yMi44NSwyNC4zNS0zMi42NSw4LjM0LTE1LjcsMTQuMTYtMzcuMzcsMTYtNTkuNDYsMS40NS0xNy43OSwxLTQ0LjA4LTkuNTgtNjguMzFsLS40NS0xLTEtLjQ4Yy0zLjA4LTEuNDUtMTQuNjgtNi41NS0zNC43OC0xMS4xMWEyOTIuODMsMjkyLjgzLDAsMCwwLTYyLjcyLTdaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzcuODQgLTQuMDMpIiBzdHlsZT0iZmlsbDojZmZmIi8+PC9zdmc+" alt="Füchse Berlin">
+  <div class="header-text">
+    <h1>Füchse Berlin</h1>
+    <p id="header-sub"></p>
+  </div>
+  <div class="lang-bar">
+    <button class="lang-btn active" onclick="setLang('de')">DE</button>
+    <button class="lang-btn" onclick="setLang('es')">ES</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+  </div>
+</header>
+
+<main>
+<div id="form-view">
+  <div class="step-label" id="t-label"></div>
+  <div class="step-title" id="t-title"></div>
+  <div class="step-sub" id="t-sub"></div>
+
+  <!-- Name -->
+  <div class="card">
+    <div class="q" id="t-who"></div>
+    <div id="mode-found">
+      <div class="ac-wrap">
+        <input id="ac-input" oninput="onAcInput()" autocomplete="off">
+        <div class="ac-list" id="ac-list" style="display:none"></div>
+      </div>
+      <div id="player-card"></div>
+      <div id="find-status" class="hint" style="margin:8px 0 0"></div>
+      <span class="link" id="t-notinlist" onclick="setMode('new')"></span>
+    </div>
+    <div id="mode-new" class="hidden">
+      <input id="new-name" autocomplete="off" oninput="onNameChange()">
+      <div class="row">
+        <div><div class="lbl" id="t-year"></div><input id="new-year" type="number" inputmode="numeric" min="1920" max="2025" oninput="renderChips()"></div>
+        <div><div class="lbl">LK</div><input id="new-lk" inputmode="decimal"></div>
+      </div>
+      <span class="link" id="t-backtolist" onclick="setMode('found')"></span>
+    </div>
+    <div id="gender-wrap" class="hidden" style="margin-top:10px">
+      <div class="seg" id="gender">
+        <button data-v="M" id="t-men"></button><button data-v="F" id="t-women"></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="existing-notice" class="notice hidden"></div>
+
+  <!-- Participation -->
+  <div class="card">
+    <div class="q" id="t-participate"></div>
+    <div class="seg" id="participates">
+      <button data-v="true" id="t-yes1"></button><button data-v="false" class="no" id="t-no1"></button>
+    </div>
+  </div>
+
+  <div id="yes-block" class="hidden">
+    <div class="card">
+      <div class="q" id="t-cats"></div>
+      <div class="hint" id="t-catshint"></div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="card">
+      <div class="q" id="t-commit"></div>
+      <div id="commitment">
+        <div class="opt" data-v="all"><span class="dot"></span><span id="t-c-all"></span></div>
+        <div class="opt" data-v="half"><span class="dot"></span><span id="t-c-half"></span></div>
+        <div class="opt" data-v="ersatz"><span class="dot"></span><span id="t-c-ersatz"></span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="q" id="t-captain"></div>
+      <div class="seg" id="captain">
+        <button data-v="true" id="t-yes2"></button><button data-v="false" class="no" id="t-no2"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="q"><span id="t-comment"></span> <span class="opt-l" id="t-optional"></span></div>
+    <textarea id="comment" rows="3"></textarea>
+  </div>
+
+  <button class="btn" id="submit" onclick="submit()"></button>
+  <div class="msg" id="msg"></div>
+  <div class="deadline" id="t-deadline"></div>
+</div>
+
+<div id="done-view" class="hidden done">
+  <div class="big" id="t-thanks"></div>
+  <div class="step-sub" id="t-thankssub"></div>
+  <span class="link" id="t-edit" onclick="showForm()"></span>
+</div>
+</main>
+
+<script>
+const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
+const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
+// ── ACTIVE SEASON ── roster used for the name search (same as index.html, admin.html, kapitaen.html)
+const ACTIVE_SEASON='W2026';
+// ── ACTIVE SURVEY ── change manually for each survey (also in admin.html → Umfrage tab lists all surveys)
+//   competition: 'sommer' | 'ferienrunde' | 'winter'
+//   year: calendar year the Altersklassen are calculated for (AK X = turns X in that year)
+const SURVEY={season_id:'S2027',competition:'sommer',year:2027,deadline:'30.11.2026'};
+// ── ALTERSKLASSEN ── offered per competition (check against the current TVBB Ausschreibung)
+const AK={
+  sommer:     {M:[30,40,50,55,60,65,70,75],F:[30,40,50,55,60]},
+  winter:     {M:[30,40,50,55,60,65,70,75],F:[30,40,50,55,60]},
+  ferienrunde:{M:[35,45,55,65,75],F:[35,45,55,65]},
+};
+const HDR={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+async function sbGet(t,p=''){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{headers:HDR});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function sbGetAll(t,p=''){let out=[],off=0;while(true){const b=await sbGet(t,`${p}${p?'&':''}limit=1000&offset=${off}`);out=out.concat(b);if(b.length<1000)break;off+=1000;}return out;}
+async function sbUpsert(t,d,onConflict){const r=await fetch(`${SB_URL}/rest/v1/${t}?on_conflict=${onConflict}`,{method:'POST',headers:{...HDR,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());}
+
+const COMP_NAME={
+  de:{sommer:'Medenspiele Sommer',ferienrunde:'Mixed- & Doppelrunde',winter:'Medenspiele Winter'},
+  es:{sommer:'Medenspiele de verano',ferienrunde:'Mixed- y Doppelrunde',winter:'Medenspiele de invierno'},
+  en:{sommer:'Summer league',ferienrunde:'Mixed & doubles round',winter:'Winter league'},
+};
+const T={
+  de:{
+    headerSub:'Umfrage',label:'Umfrage',title:'Spielst du mit?',
+    sub:'Damit wir planen können, wie viele Mannschaften wir melden. Dauert 1 Minute.',
+    who:'Wer bist du?',searchPh:'Namen eingeben...',loading:'Lade Spieler...',loadErr:'Verbindungsfehler. Bitte Seite neu laden.',
+    notInList:'Ich bin nicht in der Liste →',backToList:'← Doch in der Liste suchen',namePh:'Vorname Nachname',
+    year:'Jahrgang',lkPh:'z.B. 18 · leer = weiß nicht',men:'Herren',women:'Damen',
+    participate:'Möchtest du mitspielen?',yes:'✓ Ja',no:'✗ Nein',
+    cats:'In welchen Kategorien?',catsHint:'Mehrfachauswahl möglich · nur passende Altersklassen werden angezeigt',
+    catsNeed:'Gib Jahrgang und Herren/Damen an, dann erscheinen die Kategorien.',from:'ab Jg.',
+    commit:'Wie oft kannst du spielen?',cAll:'(Fast) jeden Spieltag',cHalf:'Etwa die Hälfte',cErsatz:'Nur als Ersatz',
+    captain:'Würdest du eine Mannschaft als Mannschaftsführer:in übernehmen?',
+    comment:'Anmerkungen',optional:'(optional)',commentPh:'z.B. im Juni 3 Wochen im Urlaub',
+    submit:'Antwort absenden',saving:'Speichern...',
+    deadline:'Antworten bis {d} · später noch änderbar',
+    existing:'Du hast schon geantwortet ({d}). Wenn du jetzt absendest, wird deine Antwort überschrieben.',
+    errName:'Bitte gib deinen Namen an.',errGender:'Bitte wähle Herren oder Damen.',errYear:'Bitte gib deinen Jahrgang an.',
+    errPart:'Bitte wähle Ja oder Nein.',errCats:'Bitte wähle mindestens eine Kategorie.',errCommit:'Bitte gib an, wie oft du spielen kannst.',
+    errSave:'Speichern fehlgeschlagen. Bitte nochmal versuchen.',
+    thanks:'Danke!',thanksSub:'Deine Antwort ist gespeichert.',edit:'Antwort ändern',
+  },
+  es:{
+    headerSub:'Encuesta',label:'Encuesta',title:'¿Jugás?',
+    sub:'Para planificar cuántos equipos anotamos. Lleva 1 minuto.',
+    who:'¿Quién sos?',searchPh:'Escribí tu nombre...',loading:'Cargando jugadores...',loadErr:'Error de conexión. Recargá la página.',
+    notInList:'No estoy en la lista →',backToList:'← Buscar en la lista',namePh:'Nombre Apellido',
+    year:'Año de nacimiento',lkPh:'ej. 18 · vacío = no sé',men:'Herren',women:'Damen',
+    participate:'¿Querés jugar?',yes:'✓ Sí',no:'✗ No',
+    cats:'¿En qué categorías?',catsHint:'Podés elegir varias · solo aparecen las categorías de edad que te corresponden',
+    catsNeed:'Indicá año de nacimiento y Herren/Damen para ver las categorías.',from:'desde',
+    commit:'¿Cuántas fechas podés jugar?',cAll:'(Casi) todas',cHalf:'Más o menos la mitad',cErsatz:'Solo como suplente',
+    captain:'¿Te animarías a ser capitán/capitana de un equipo?',
+    comment:'Comentarios',optional:'(opcional)',commentPh:'ej. en junio 3 semanas de vacaciones',
+    submit:'Enviar respuesta',saving:'Guardando...',
+    deadline:'Respuestas hasta el {d} · después se puede cambiar',
+    existing:'Ya respondiste ({d}). Si enviás ahora, se reemplaza tu respuesta.',
+    errName:'Poné tu nombre.',errGender:'Elegí Herren o Damen.',errYear:'Poné tu año de nacimiento.',
+    errPart:'Elegí Sí o No.',errCats:'Elegí al menos una categoría.',errCommit:'Indicá cuántas fechas podés jugar.',
+    errSave:'No se pudo guardar. Probá de nuevo.',
+    thanks:'¡Gracias!',thanksSub:'Tu respuesta quedó guardada.',edit:'Cambiar respuesta',
+  },
+  en:{
+    headerSub:'Survey',label:'Survey',title:'Are you playing?',
+    sub:'So we can plan how many teams to register. Takes 1 minute.',
+    who:'Who are you?',searchPh:'Type your name...',loading:'Loading players...',loadErr:'Connection error. Please reload.',
+    notInList:'I\'m not on the list →',backToList:'← Search the list instead',namePh:'First name Last name',
+    year:'Year of birth',lkPh:'e.g. 18 · empty = don\'t know',men:'Men',women:'Women',
+    participate:'Do you want to play?',yes:'✓ Yes',no:'✗ No',
+    cats:'Which categories?',catsHint:'Multiple choice · only age groups you are eligible for are shown',
+    catsNeed:'Enter year of birth and Men/Women to see the categories.',from:'born ≤',
+    commit:'How often can you play?',cAll:'(Almost) every match day',cHalf:'About half',cErsatz:'Only as a substitute',
+    captain:'Would you take on a team as captain?',
+    comment:'Comments',optional:'(optional)',commentPh:'e.g. 3 weeks on holiday in June',
+    submit:'Send answer',saving:'Saving...',
+    deadline:'Answers by {d} · can be changed later',
+    existing:'You already answered ({d}). Sending now will overwrite your answer.',
+    errName:'Please enter your name.',errGender:'Please choose Men or Women.',errYear:'Please enter your year of birth.',
+    errPart:'Please choose Yes or No.',errCats:'Please choose at least one category.',errCommit:'Please say how often you can play.',
+    errSave:'Saving failed. Please try again.',
+    thanks:'Thanks!',thanksSub:'Your answer has been saved.',edit:'Change answer',
+  }
+};
+
+let lang='de';
+let players=[],responses=[];
+let mode='found',selected=null;
+const form={gender:null,participates:null,categories:new Set(),commitment:null,captain:null};
+
+function tr(k){return T[lang][k]??T.de[k]??k}
+function setText(id,t){const e=document.getElementById(id);if(e)e.textContent=t;}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function initials(n){return n.split(/\s+/).filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,2)}
+function nameKey(n){return n.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().split(' ').sort().join(' ');}
+function compName(){return COMP_NAME[lang][SURVEY.competition]+' '+SURVEY.year;}
+
+function setLang(l){
+  lang=l;document.documentElement.lang=l;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));
+  applyT();
+}
+function applyT(){
+  setText('header-sub',tr('headerSub'));
+  showMsg('');
+  setText('t-label',tr('label')+' · '+compName());
+  setText('t-title',tr('title'));setText('t-sub',tr('sub'));setText('t-who',tr('who'));
+  document.getElementById('ac-input').placeholder=tr('searchPh');
+  document.getElementById('new-name').placeholder=tr('namePh');
+  document.getElementById('new-lk').placeholder=tr('lkPh');
+  document.getElementById('comment').placeholder=tr('commentPh');
+  setText('t-notinlist',tr('notInList'));setText('t-backtolist',tr('backToList'));setText('t-year',tr('year'));
+  setText('t-men',tr('men'));setText('t-women',tr('women'));
+  setText('t-participate',tr('participate'));setText('t-yes1',tr('yes'));setText('t-no1',tr('no'));
+  setText('t-yes2',tr('yes'));setText('t-no2',tr('no'));
+  setText('t-cats',tr('cats'));setText('t-catshint',tr('catsHint'));
+  setText('t-commit',tr('commit'));setText('t-c-all',tr('cAll'));setText('t-c-half',tr('cHalf'));setText('t-c-ersatz',tr('cErsatz'));
+  setText('t-captain',tr('captain'));setText('t-comment',tr('comment'));setText('t-optional',tr('optional'));
+  setText('submit',tr('submit'));setText('t-deadline',tr('deadline').replace('{d}',SURVEY.deadline));
+  setText('t-thanks',tr('thanks'));setText('t-thankssub',tr('thanksSub'));setText('t-edit',tr('edit'));
+  if(players.length===0&&!document.getElementById('find-status').dataset.err)setText('find-status',tr('loading'));
+  renderChips();updateExistingNotice();
+}
+
+// ── Data ──
+async function loadAll(){
+  try{
+    const[pl,rs]=await Promise.all([
+      sbGetAll('players',`season_id=eq.${ACTIVE_SEASON}&select=id,name,raw_name,lk_str,year,gender&order=name,id`),
+      sbGetAll('survey_responses',`season_id=eq.${SURVEY.season_id}&competition=eq.${SURVEY.competition}&order=id`)
+    ]);
+    players=pl;responses=rs;
+    setText('find-status','');
+  }catch(e){
+    console.error(e);
+    const fs=document.getElementById('find-status');fs.dataset.err='1';fs.textContent=tr('loadErr');
+  }
+}
+
+// ── Name search ──
+function onAcInput(){
+  const val=document.getElementById('ac-input').value.toLowerCase();
+  const list=document.getElementById('ac-list');
+  if(selected&&val!==selected.name.toLowerCase())selectPlayer(null);
+  if(val.length<2){list.style.display='none';return;}
+  const f=players.filter(p=>p.name.toLowerCase().includes(val)||(p.raw_name||'').toLowerCase().includes(val)).slice(0,10);
+  if(!f.length){list.style.display='none';return;}
+  list.innerHTML=f.map(p=>`<div class="ac-item" onclick="selectPlayer('${esc(p.id)}')">
+    <div class="avatar">${esc(initials(p.name))}</div>
+    <div style="flex:1"><div style="font-weight:600">${esc(p.name)}</div><div style="font-size:11px;color:var(--muted)">${esc(p.year||'')}</div></div>
+    <span class="lk-badge">${esc(p.lk_str||'?')}</span></div>`).join('');
+  list.style.display='block';
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.ac-wrap'))document.getElementById('ac-list').style.display='none';});
+
+function selectPlayer(id){
+  selected=id?players.find(p=>p.id===id):null;
+  const card=document.getElementById('player-card');
+  if(selected){
+    document.getElementById('ac-input').value=selected.name;
+    document.getElementById('ac-list').style.display='none';
+    card.innerHTML=`<div class="player-card"><div class="avatar">${esc(initials(selected.name))}</div>
+      <div><div style="font-weight:600">${esc(selected.name)}</div><div style="font-size:11px;color:var(--muted)">${selected.year?tr('year')+' '+esc(selected.year):''}</div></div>
+      <span class="lk-badge">${esc(selected.lk_str||'?')}</span></div>`;
+    form.gender=(selected.gender==='M'||selected.gender==='F')?selected.gender:null;
+  }else{card.innerHTML='';form.gender=null;}
+  syncGender();prefillFromExisting();renderChips();
+}
+
+function setMode(m){
+  mode=m;
+  document.getElementById('mode-found').classList.toggle('hidden',m!=='found');
+  document.getElementById('mode-new').classList.toggle('hidden',m!=='new');
+  if(m==='new'){selectPlayer(null);form.gender=null;}
+  syncGender();prefillFromExisting();renderChips();
+}
+function onNameChange(){prefillFromExisting();}
+
+// Gender toggle only when we don't know it from the roster
+function syncGender(){
+  const show=mode==='new'||(selected&&!(selected.gender==='M'||selected.gender==='F'));
+  document.getElementById('gender-wrap').classList.toggle('hidden',!show);
+  document.querySelectorAll('#gender button').forEach(b=>b.classList.toggle('on',b.dataset.v===form.gender));
+}
+
+function currentName(){return mode==='found'?(selected?.name||''):document.getElementById('new-name').value.trim();}
+function currentYear(){return mode==='found'?parseInt(selected?.year)||null:parseInt(document.getElementById('new-year').value)||null;}
+
+// ── Categories: base + Altersklassen the player is eligible for ──
+function availableCats(){
+  const g=form.gender,y=currentYear();
+  if(!g)return null;
+  const base=g==='M'?'Herren':'Damen';
+  const out=[{n:base}];
+  const ages=(AK[SURVEY.competition]||{})[g]||[];
+  if(y&&y>1900)ages.forEach(a=>{if(SURVEY.year-y>=a)out.push({n:`${base} ${a}`,h:`${tr('from')} ${SURVEY.year-a}`});});
+  if(SURVEY.competition==='ferienrunde'){
+    return [{n:'Mixed'},...out.map(c=>({n:c.n+' Doppel',h:c.h}))];
+  }
+  return out;
+}
+function renderChips(){
+  const el=document.getElementById('chips');
+  const cats=availableCats();
+  if(!cats){el.innerHTML=`<div class="hint" style="margin:0">${esc(tr('catsNeed'))}</div>`;return;}
+  const names=new Set(cats.map(c=>c.n));
+  form.categories.forEach(c=>{if(!names.has(c))form.categories.delete(c);});
+  el.innerHTML=cats.map(c=>`<span class="chip${form.categories.has(c.n)?' on':''}" data-v="${esc(c.n)}">${esc(c.n)}${c.h?`<small>${esc(c.h)}</small>`:''}</span>`).join('');
+  el.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>{
+    const v=ch.dataset.v;form.categories.has(v)?form.categories.delete(v):form.categories.add(v);ch.classList.toggle('on');
+  });
+}
+
+// ── Single-choice controls ──
+function bindSeg(id,key,parse){
+  document.querySelectorAll(`#${id} button`).forEach(b=>b.onclick=()=>{
+    form[key]=parse(b.dataset.v);
+    document.querySelectorAll(`#${id} button`).forEach(x=>x.classList.toggle('on',x===b));
+    if(key==='gender')renderChips();
+    if(key==='participates')document.getElementById('yes-block').classList.toggle('hidden',!form.participates);
+  });
+}
+function setSeg(id,val){document.querySelectorAll(`#${id} button`).forEach(b=>b.classList.toggle('on',val!==null&&b.dataset.v===String(val)));}
+bindSeg('gender','gender',v=>v);
+bindSeg('participates','participates',v=>v==='true');
+bindSeg('captain','captain',v=>v==='true');
+document.querySelectorAll('#commitment .opt').forEach(o=>o.onclick=()=>{
+  form.commitment=o.dataset.v;
+  document.querySelectorAll('#commitment .opt').forEach(x=>x.classList.toggle('on',x===o));
+});
+
+// ── Existing answer → prefill + notice ──
+function findExisting(){
+  const n=currentName();if(!n)return null;
+  const k=nameKey(n);
+  return responses.find(r=>(selected&&r.player_id===selected.id)||r.name_key===k)||null;
+}
+function updateExistingNotice(){
+  const ex=findExisting(),el=document.getElementById('existing-notice');
+  if(!ex){el.classList.add('hidden');return;}
+  const d=new Date(ex.updated_at||ex.created_at).toLocaleDateString(lang==='en'?'en-GB':lang==='es'?'es-AR':'de-DE');
+  el.textContent=tr('existing').replace('{d}',d);el.classList.remove('hidden');
+}
+let lastPrefilled=null;
+function prefillFromExisting(){
+  updateExistingNotice();
+  const ex=findExisting();
+  if(!ex||ex.id===lastPrefilled)return;
+  lastPrefilled=ex.id;
+  if(mode==='new'){
+    if(ex.birth_year)document.getElementById('new-year').value=ex.birth_year;
+    if(ex.lk)document.getElementById('new-lk').value=ex.lk;
+  }
+  if(ex.gender&&!form.gender)form.gender=ex.gender;
+  syncGender();
+  form.participates=ex.participates;setSeg('participates',ex.participates);
+  document.getElementById('yes-block').classList.toggle('hidden',!ex.participates);
+  form.categories=new Set(ex.categories||[]);
+  form.commitment=ex.commitment;document.querySelectorAll('#commitment .opt').forEach(o=>o.classList.toggle('on',o.dataset.v===ex.commitment));
+  form.captain=ex.captain;setSeg('captain',ex.captain);
+  document.getElementById('comment').value=ex.comment||'';
+  renderChips();
+}
+
+// ── Submit ──
+function showMsg(t,cls){const m=document.getElementById('msg');m.textContent=t;m.className='msg '+(cls||'');}
+async function submit(){
+  const name=currentName(),year=currentYear();
+  if(!name)return showMsg(tr('errName'),'err');
+  if(!form.gender)return showMsg(tr('errGender'),'err');
+  if(mode==='new'&&!year)return showMsg(tr('errYear'),'err');
+  if(form.participates===null)return showMsg(tr('errPart'),'err');
+  if(form.participates){
+    if(!form.categories.size)return showMsg(tr('errCats'),'err');
+    if(!form.commitment)return showMsg(tr('errCommit'),'err');
+  }
+  const ex=findExisting();
+  const row={
+    season_id:SURVEY.season_id,competition:SURVEY.competition,
+    player_id:selected?.id||null,name,
+    name_key:ex?ex.name_key:nameKey(name), // keep the stored key so the answer is overwritten, not duplicated
+    gender:form.gender,birth_year:year,
+    lk:mode==='found'?(selected?.lk_str||null):(document.getElementById('new-lk').value.trim()||null),
+    participates:form.participates,
+    categories:form.participates?[...form.categories]:[],
+    commitment:form.participates?form.commitment:null,
+    captain:form.participates?form.captain:null,
+    comment:document.getElementById('comment').value.trim()||null,
+  };
+  const btn=document.getElementById('submit');btn.disabled=true;showMsg(tr('saving'));
+  try{
+    await sbUpsert('survey_responses',[row],'season_id,competition,name_key');
+    responses=await sbGetAll('survey_responses',`season_id=eq.${SURVEY.season_id}&competition=eq.${SURVEY.competition}&order=id`);
+    lastPrefilled=findExisting()?.id||null;
+    showMsg('');
+    document.getElementById('form-view').classList.add('hidden');
+    document.getElementById('done-view').classList.remove('hidden');
+    window.scrollTo(0,0);
+  }catch(e){console.error(e);showMsg(tr('errSave'),'err');}
+  finally{btn.disabled=false;}
+}
+function showForm(){
+  document.getElementById('done-view').classList.add('hidden');
+  document.getElementById('form-view').classList.remove('hidden');
+  updateExistingNotice();
+}
+
+applyT();
+loadAll();
+</script>
+</body>
+</html>

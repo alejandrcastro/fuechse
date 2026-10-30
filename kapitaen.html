@@ -141,6 +141,9 @@ input:focus,select:focus{border-color:var(--court)}
 .moved-link{font-size:11px;color:var(--warn);margin-top:6px}
 .moved-link b{color:var(--white);font-weight:600}
 .info-banner{background:#14262e;border:1px solid var(--info)44;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#9cc9e6;line-height:1.5}
+.wk-badge{border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:4px;cursor:help;white-space:nowrap}
+.wk-badge.play{background:#2d1f10;color:var(--warn);border:1px solid #f4a26155}
+.wk-badge.ans{background:#2a2a2a;color:#bbb;border:1px solid #444}
 .info-banner b{color:var(--white)}
 .mv-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:5000;padding:16px}
 .mv-bg.open{display:flex}
@@ -158,6 +161,9 @@ input:focus,select:focus{border-color:var(--court)}
 .mv-ghost{padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
 .mv-go{padding:8px 16px;border-radius:8px;border:none;background:var(--warn);color:#1a1205;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
 .mv-go:disabled{opacity:.5;cursor:default}
+.mv textarea.share-text{width:100%;min-height:260px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.45;outline:none;resize:vertical}
+.mv textarea.share-text:focus{border-color:var(--court)}
+.mv-wa{padding:8px 16px;border-radius:8px;border:none;background:#25d366;color:#08210f;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
 .mv-err{font-size:12px;color:var(--danger);min-height:16px;margin-top:8px}
 </style>
 </head>
@@ -247,6 +253,7 @@ input:focus,select:focus{border-color:var(--court)}
             <button class="move-btn" id="move-btn" onclick="openMoveModal()" style="display:none">⇄ Verlegen</button>
             <button class="auto-btn" id="auto-btn" onclick="runAutoLineup()">&#9889; Auto-Aufstellung</button>
             <button class="auto-btn" id="sort-btn" onclick="sortLineupKap()" style="background:transparent;border-color:var(--court)44;color:var(--muted)">↕ Sort</button>
+            <button class="auto-btn" id="share-btn" onclick="openShareModal()" style="background:#14301f;border-color:#25d36666;color:#25d366">📤 Teilen</button>
           </div>
         </div>
 
@@ -585,6 +592,65 @@ function openMoveModal(){
     </div>`;
   document.getElementById('move-modal').classList.add('open');
 }
+// ── SHARE (WhatsApp / native share / copy) ──
+// Builds a plain-text summary of the selected match + lineup. Always German: it goes to the team chat.
+function buildShareText(m){
+  const team=teamById(m.teamId);
+  const size=teamSize(team);
+  const slots=state.lineups[m.id]||[];
+  const WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const d=m.date?new Date(m.date+'T12:00:00'):null;
+  const heim=m.home==='Heim';
+  const L=[];
+  L.push(`🎾 *${team?.name||'?'} – ${m.opponent}*`);
+  if(team?.liga)L.push(team.liga);
+  L.push('');
+  L.push(`📅 ${d?WD[d.getDay()]+', ':''}${fmtDate(m.date)} · ${m.time||'?'} Uhr`);
+  L.push(heim?'🏠 Heimspiel':'🚗 Auswärtsspiel');
+  if(m.venue){
+    L.push(`📍 ${m.venue}`);
+    L.push(`https://maps.google.com/?q=${encodeURIComponent(m.venue)}`);
+  }
+  const orig=m.movedFrom?(state.movedMatches||[]).find(x=>x.id===m.movedFrom):null;
+  if(orig)L.push(`⇄ Verlegt vom ${fmtDate(orig.date)} ${orig.time||''}`.trim());
+  if(spieltagOf(m)!==m.date)L.push(`(Spieltag ${fmtDate(spieltagOf(m))})`);
+  L.push('');
+  L.push('*Aufstellung*');
+  for(let i=0;i<size;i++){
+    const p=slots[i]?playerById(slots[i]):null;
+    L.push(`${i+1}. ${p?p.name+(p.lkStr?` (${p.lkStr})`:''):'— offen —'}`);
+  }
+  const e=slots[size]?playerById(slots[size]):null;
+  L.push(`Ersatz: ${e?e.name+(e.lkStr?` (${e.lkStr})`:''):'—'}`);
+  return L.join('\n');
+}
+function openShareModal(){
+  const m=state.matches.find(x=>x.id===selectedMatchId);if(!m)return;
+  const canNative=!!navigator.share;
+  document.getElementById('share-modal-box').innerHTML=`
+    <h2 style="color:#25d366">📤 ${tr('shareTitle')}</h2>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">${tr('shareSub')}</div>
+    <textarea class="share-text" id="share-text"></textarea>
+    <div class="mv-err" id="share-msg" style="color:var(--court)"></div>
+    <div class="mv-actions" style="flex-wrap:wrap">
+      <button class="mv-ghost" onclick="closeShareModal()">${tr('shareClose')}</button>
+      <button class="mv-ghost" onclick="copyShareText()">${tr('shareCopy')}</button>
+      ${canNative?`<button class="mv-ghost" onclick="nativeShare()">${tr('shareNative')}</button>`:''}
+      <button class="mv-wa" onclick="shareWhatsApp()">${tr('shareWa')}</button>
+    </div>`;
+  document.getElementById('share-text').value=buildShareText(m);
+  document.getElementById('share-modal').classList.add('open');
+}
+function closeShareModal(){document.getElementById('share-modal').classList.remove('open');}
+function _shareVal(){return document.getElementById('share-text').value;}
+function shareWhatsApp(){window.open('https://wa.me/?text='+encodeURIComponent(_shareVal()),'_blank');}
+async function nativeShare(){try{await navigator.share({text:_shareVal()});}catch(e){if(e.name!=='AbortError')console.error(e);}}
+async function copyShareText(){
+  const t=_shareVal();
+  try{await navigator.clipboard.writeText(t);}
+  catch(e){const ta=document.getElementById('share-text');ta.select();document.execCommand('copy');}
+  const msg=document.getElementById('share-msg');msg.textContent=tr('shareCopied');setTimeout(()=>msg.textContent='',2000);
+}
 function closeMoveModal(){document.getElementById('move-modal').classList.remove('open');}
 async function doMoveMatch(){
   const m=state.matches.find(x=>x.id===selectedMatchId);if(!m)return;
@@ -773,6 +839,8 @@ const T={
     moveAmtlich:'Verlegung von Amts wegen (Spielleiter)',moveAmtlichSub:d=>`Nur dann gilt der neue Termin als Spieltag. Sonst bleibt der Spieltag ${d} (WSpO § 11 Abs. 4).`,
     movedBadge:'VERLEGT',movedNewDate:'Neuer Termin',movedOn:(d,u)=>`verlegt am ${d}${u?` von ${u}`:''}`,newBadge:'NEU',
     movedFromInfo:(d,t)=>`<b>Verlegt</b> vom ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} Spieler haben für den neuen Termin geantwortet.`,
+    wkPlay:'aufgestellt',wkErsatz:'Ersatz',wkPlayTitle:(d,dt,t,tm)=>`${d} ${dt}: in der Aufstellung von ${t} (${tm})`,wkAnsTitle:(d,dt,t)=>`${d} ${dt}: hat für ${t} zugesagt, noch nicht aufgestellt`,
+    shareBtn:'Teilen',shareTitle:'Aufstellung teilen',shareSub:'Text vor dem Senden anpassen (z.B. Treffpunkt). Die Nachricht ist immer auf Deutsch.',shareWa:'WhatsApp',shareNative:'Teilen…',shareCopy:'Kopieren',shareCopied:'✓ Kopiert',shareClose:'Schließen',
     moveBtn:'Verlegen',moveTitle:'Spiel verlegen',moveSub:'Es wird ein neuer Termin angelegt. Der alte bleibt als „verlegt“ sichtbar.',
     moveDate:'Neues Datum',moveTime:'Uhrzeit',movePlace:'Ort',moveNote:'Hinweis (optional)',moveNotePh:'z. B. Halle belegt, mit Gegner abgesprochen',
     moveKeepLineup:'Aufstellung übernehmen',moveKeepLineupSub:'Die bisherige Aufstellung wird in den neuen Termin kopiert.',
@@ -804,6 +872,8 @@ const T={
     moveAmtlich:'Movido de oficio (Spielleiter)',moveAmtlichSub:d=>`Solo así la nueva fecha cuenta como Spieltag. Si no, el Spieltag sigue siendo el ${d} (WSpO § 11 Abs. 4).`,
     movedBadge:'POSTERGADO',movedNewDate:'Nueva fecha',movedOn:(d,u)=>`movido el ${d}${u?` por ${u}`:''}`,newBadge:'NUEVO',
     movedFromInfo:(d,t)=>`<b>Movido</b> desde el ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} jugadores respondieron para la nueva fecha.`,
+    wkPlay:'aufgestellt',wkErsatz:'Ersatz',wkPlayTitle:(d,dt,t,tm)=>`${d} ${dt}: en la alineación de ${t} (${tm})`,wkAnsTitle:(d,dt,t)=>`${d} ${dt}: confirmó para ${t}, todavía no alineado`,
+    shareBtn:'Compartir',shareTitle:'Compartir alineación',shareSub:'Podés editar el texto antes de mandarlo (ej. punto de encuentro). El mensaje sale siempre en alemán.',shareWa:'WhatsApp',shareNative:'Compartir…',shareCopy:'Copiar',shareCopied:'✓ Copiado',shareClose:'Cerrar',
     moveBtn:'Mover',moveTitle:'Mover partido',moveSub:'Se crea una fecha nueva. La anterior queda visible como „verlegt“.',
     moveDate:'Nueva fecha',moveTime:'Hora',movePlace:'Lugar',moveNote:'Comentario (opcional)',moveNotePh:'p. ej. cancha ocupada, acordado con el rival',
     moveKeepLineup:'Mantener alineación',moveKeepLineupSub:'La alineación actual se copia a la nueva fecha.',
@@ -835,6 +905,8 @@ const T={
     moveAmtlich:'Moved officially (Spielleiter)',moveAmtlichSub:d=>`Only then the new date counts as match day. Otherwise it stays ${d} (WSpO § 11 (4)).`,
     movedBadge:'RESCHEDULED',movedNewDate:'New date',movedOn:(d,u)=>`moved on ${d}${u?` by ${u}`:''}`,newBadge:'NEW',
     movedFromInfo:(d,t)=>`<b>Rescheduled</b> from ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} players have answered for the new date.`,
+    wkPlay:'in lineup',wkErsatz:'sub',wkPlayTitle:(d,dt,t,tm)=>`${d} ${dt}: in the lineup of ${t} (${tm})`,wkAnsTitle:(d,dt,t)=>`${d} ${dt}: confirmed for ${t}, not in lineup yet`,
+    shareBtn:'Share',shareTitle:'Share lineup',shareSub:'Edit the text before sending (e.g. meeting point). The message is always in German.',shareWa:'WhatsApp',shareNative:'Share…',shareCopy:'Copy',shareCopied:'✓ Copied',shareClose:'Close',
     moveBtn:'Reschedule',moveTitle:'Reschedule match',moveSub:'A new date is created. The old one stays visible as “verlegt”.',
     moveDate:'New date',moveTime:'Time',movePlace:'Venue',moveNote:'Note (optional)',moveNotePh:'e.g. court booked, agreed with opponent',
     moveKeepLineup:'Keep lineup',moveKeepLineupSub:'The current lineup is copied to the new date.',
@@ -1042,6 +1114,41 @@ function selectMatch(matchId){
   document.getElementById('avail-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
+// ── WOCHENENDE: other matches on the same Sat/Sun (different day) ──
+// Only a hint, never a block: playing Sat + Sun in different teams is allowed.
+const _WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
+function _wdOf(date){return date?new Date(date+'T12:00:00').getDay():null;}
+function _addDays(date,n){const d=new Date(date+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+function weekendOtherDate(match){
+  const wd=_wdOf(match.date);
+  if(wd===6)return _addDays(match.date,1); // Sa → So
+  if(wd===0)return _addDays(match.date,-1); // So → Sa
+  return null; // weekday match: no weekend check
+}
+function weekendMatches(match){
+  const other=weekendOtherDate(match);if(!other)return[];
+  return state.matches.filter(m=>m.id!==match.id&&m.date===other)
+    .sort((a,b)=>(a.time||'').localeCompare(b.time||'')||teamNumber(teamById(a.teamId)||{name:''})-teamNumber(teamById(b.teamId)||{name:''}));
+}
+function _teamShort(t){return(t?.name||'?').replace('Herren','H').replace('Damen','D').replace('Senioren','Sen').replace('Seniorinnen','SenF').trim();}
+function weekendBadges(pid,match){
+  const play=[],ans=[];
+  for(const om of weekendMatches(match)){
+    const ot=teamById(om.teamId);const sz=teamSize(ot);
+    const slots=state.lineups[om.id]||[];
+    const day=_WD[_wdOf(om.date)];
+    const inMain=slots.slice(0,sz).includes(pid),inErsatz=slots[sz]===pid;
+    if(inMain||inErsatz){
+      const lbl=inMain?tr('wkPlay'):tr('wkErsatz');
+      play.push(`<span class="wk-badge play" title="${tr('wkPlayTitle')(day,fmtDate(om.date),ot?.name||'?',om.time||'')}">${day}: ${lbl} ${_teamShort(ot)}</span>`);
+    }else{
+      const st=state.availability[om.id]?.[pid];
+      if(st==='yes'||st==='conditional')
+        ans.push(`<span class="wk-badge ans" title="${tr('wkAnsTitle')(day,fmtDate(om.date),ot?.name||'?')}">${day}: ${st==='yes'?'Ja':'(Ja)'} ${_teamShort(ot)}</span>`);
+    }
+  }
+  return play[0]||ans[0]||''; // only one badge: aufgestellt beats zugesagt
+}
 // ── AVAILABILITY PANEL ──
 function renderAvailPanel(){
   const match=state.matches.find(m=>m.id===selectedMatchId);if(!match)return;
@@ -1052,6 +1159,7 @@ function renderAvailPanel(){
   // Verlegen: only admins/super users or the team's own login
   const mb=document.getElementById('move-btn');
   if(mb){mb.style.display=canEditTeam(match.teamId)&&!match.counted?'':'none';mb.textContent='⇄ '+tr('moveBtn');}
+  const shb=document.getElementById('share-btn');if(shb)shb.textContent='📤 '+tr('shareBtn');
   const mi=document.getElementById('move-info');
   if(mi){
     const orig=match.movedFrom?(state.movedMatches||[]).find(x=>x.id===match.movedFrom):null;
@@ -1129,9 +1237,26 @@ function renderAvailPanel(){
           }
         }
         
+        // Im Notfall: same "Bereits aufgestellt" check as Prio II
+        if(s==='notfall'){
+          const conflictMatch=state.matches.find(om=>
+            om.id!==match.id&&spieltagOf(om)===spieltagOf(match)&&
+            (state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(p.id)
+          );
+          const conflictTeam=conflictMatch?teamById(conflictMatch.teamId):null;
+          if(conflictTeam){
+            const teamShort=conflictTeam.name.replace('Herren','H').replace('Damen','D').replace('Senioren','Sen').replace('Seniorinnen','SenF').trim();
+            const bereitTitle=lang==='de'?'Bereits aufgestellt in '+conflictTeam.name:lang==='es'?'Ya alineado en '+conflictTeam.name:'Already in lineup for '+conflictTeam.name;
+            extraBadge='<span title="'+bereitTitle+'" style="background:#2a2a2a;color:#bbb;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Bereits aufgestellt ('+teamShort+')</span>';
+          }
+        }
+
         const bg=s==='yes'?'#1a2e26':s==='conditional'?'rgba(82,201,122,.1)':s==='notfall'?'#2e2a1a':s==='no'?'#2d1a1a':'#252525';
         const col=s==='yes'?'var(--court)':s==='conditional'?'#52c97a':s==='notfall'?'var(--warn)':s==='no'?'var(--danger)':'var(--muted)';
-        return'<span class="avail-badge" style="background:'+bg+';color:'+col+';border-radius:10px;padding:2px 8px;font-size:11px;font-weight:600">'+badgeLabel+'</span>'+extraBadge;
+        // max. one extra badge: same-day (Bereits aufgestellt / FREI) wins over the weekend hint
+        if(!extraBadge)extraBadge=weekendBadges(p.id,match);
+        // extra badges first, status badge last → status badges line up on the right
+        return extraBadge+'<span class="avail-badge" style="background:'+bg+';color:'+col+';border-radius:10px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:4px">'+badgeLabel+'</span>';
       })()}
     </div>`;
   }
@@ -2047,6 +2172,10 @@ function shortPN(p){
 <!-- MODAL: Spiel verlegen -->
 <div class="mv-bg" id="move-modal" onclick="if(event.target===this)closeMoveModal()">
   <div class="mv" id="move-modal-box"></div>
+</div>
+<!-- MODAL: Aufstellung teilen -->
+<div class="mv-bg" id="share-modal" onclick="if(event.target===this)closeShareModal()">
+  <div class="mv" id="share-modal-box"></div>
 </div>
 </body>
 </html>
