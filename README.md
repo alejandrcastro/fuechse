@@ -12,12 +12,12 @@ Club Manager is a standalone web application made up of three independent HTML f
 
 ## Files
 
-| File | Role | Access |
-|---|---|---|
-| `admin.html` | Sportwart (full admin) | Login with email/password |
-| `kapitaen.html` | Team captain | Login with email/password |
-| `index.html` | Player (confirm availability) | Shared club password |
-| `umfrage.html` | Player (participation survey per season) | Shared club password |
+| File | Role |
+|---|---|
+| `admin.html` | Sportwart (full admin) |
+| `kapitaen.html` | Team captain |
+| `index.html` | Player (confirm availability) |
+| `umfrage.html` | Player (participation survey per season) |
 
 ---
 
@@ -32,8 +32,6 @@ Club Manager is a standalone web application made up of three independent HTML f
 ---
 
 ## Database (Supabase)
-
-Project: `kepbpcttbvkbcckqoecv.supabase.co`
 
 ### Tables
 
@@ -59,20 +57,13 @@ Project: `kepbpcttbvkbcckqoecv.supabase.co`
 - `matches.counted` — boolean flag; true if the match counter has been applied (prevents duplicate counting)
 - `matches.ersatz_counted` — boolean flag; true if Ersatz was included in the count
 
-### Row-Level Security (RLS)
-
-All tables have RLS enabled with appropriate policies:
-- Public `SELECT` for anonymous users (read-only access)
-- `INSERT`/`UPDATE` on `availability` table for anonymous users (player responses)
-- Full access for authenticated users (admins and captains)
-
 ---
 
 ## Roles & Features
 
 ### `admin.html` — Sportwart
 
-Full club management view. Requires Supabase Auth login.
+Full club management view.
 
 **Tabs:**
 - **PDF importieren** — import players from TVBB Namentliche Mannschaftsmeldung, teams from ResultReport PDF, and matches from Begegnungen PDF
@@ -112,9 +103,8 @@ Operational view for the captain. Shows only the teams assigned to the logged-in
 Mobile-first interface for players to confirm availability.
 
 **Flow:**
-1. Player enters the club password (SHA-256 hash split into 4 fragments for obfuscation)
-2. Searches their name in the roster
-3. Selects a match and confirms availability
+1. Searches their name in the roster
+2. Selects a match and confirms availability
 
 **Availability states:**
 
@@ -133,13 +123,17 @@ When a player confirms for two matches on the same day, a priority modal appears
 
 ### `umfrage.html` — Participation survey
 
-Players answer whether they want to play in the next competition. Same shared club password as `index.html`.
+Players answer whether they want to play in the next competition.
 
-- **Active survey** is a constant in the file: `SURVEY={season_id,competition,year,deadline}` with `competition` = `sommer` | `ferienrunde` | `winter`. Change it by hand for each new survey.
-- Name search uses the roster of `ACTIVE_SEASON`; people not on the list enter name, Jahrgang, Herren/Damen and LK manually.
+- **Active survey** (season ID, competition `sommer` | `ferienrunde` | `winter`, AK year, deadline) is set in **admin.html → Umfrage**.
+- Name search uses the roster of the active season; people not on the list enter name, Jahrgang, Herren/Damen and LK manually.
 - Categories offered = Herren/Damen + the Altersklassen the person is eligible for (AK X = turns X in `SURVEY.year`), configured in `AK`. Ferienrunde shows Mixed + Doppel categories.
 - Answering again with the same name overwrites the previous answer (unique on `season_id, competition, name_key`).
 - Results: **admin.html → Umfrage** tab (summary per category, full list, delete, CSV export).
+
+### Seasons
+
+The active season (`S2027` = Sommer 2027, `W2027` = Winter 2027/28) is switched in the **admin.html header** and applies to all pages. Older seasons stay archived. Requires `sql/app_settings.sql` once.
 
 ## TVBB Berlin Rules
 
@@ -258,8 +252,6 @@ Consistent color usage across all files to differentiate states:
 
 - One file = one role. No imports between files.
 - All Supabase calls go through `sbGet()`, `sbUpsert()` and `sbDelete()`.
-- `admin.html` and `kapitaen.html` use `getHDR()` which injects the authenticated user's JWT.
-- `index.html` uses the anon key directly (players do not have Supabase accounts).
 - Short player names are derived from `raw_name` (`"Lastname, Firstname"` format).
 - Short team names: `Herren` → `H`, `Damen` → `D`, `Senioren` → `Sen`, etc.
 - `teamSize(team)` returns 4 or 6 based on season and `is_4er` flag.

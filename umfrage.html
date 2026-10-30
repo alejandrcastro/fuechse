@@ -44,8 +44,9 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 .seg button.on{background:#1a3d2a;color:var(--court);border-color:var(--court)}
 .seg button.no.on{background:#3d1a1a;color:#e74c3c;border-color:#e74c3c}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
-.chip{padding:7px 12px;border-radius:20px;border:1px solid var(--line);font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
-.chip.on{background:#1a3d2a;border-color:var(--court);color:var(--court);font-weight:600}
+.chip{position:relative;padding:7px 12px;border-radius:20px;border:1px solid var(--line);font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+.chip.on{background:#1a3d2a;border-color:var(--court);color:var(--court);font-weight:600;padding-left:30px}
+.chip .num{position:absolute;left:5px;top:50%;transform:translateY(-50%);width:19px;height:19px;border-radius:50%;background:var(--court);color:var(--dark);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .chip small{opacity:.7;font-size:10px;margin-left:4px}
 .opt{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:14px;cursor:pointer;border-bottom:1px solid #2e4a3855}
 .opt:last-child{border-bottom:none}
@@ -173,6 +174,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       <div class="q" id="t-cats"></div>
       <div class="hint" id="t-catshint"></div>
       <div class="chips" id="chips"></div>
+      <span class="link hidden" id="t-catsreset" onclick="resetCats()"></span>
     </div>
     <div class="card">
       <div class="q" id="t-commit"></div>
@@ -210,12 +212,24 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 <script>
 const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
 const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
-// ── ACTIVE SEASON ── roster used for the name search (same as index.html, admin.html, kapitaen.html)
-const ACTIVE_SEASON='W2026';
-// ── ACTIVE SURVEY ── change manually for each survey (also in admin.html → Umfrage tab lists all surveys)
+// ── ACTIVE SEASON ── switched in admin.html (header). Stored in Supabase → app_settings.
+// Format: 'S2026' = Sommer 2026, 'W2026' = Winter 2026/27. The value below is only a fallback.
+let ACTIVE_SEASON='W2026';
+async function _readSetting(key){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/app_settings?key=eq.${key}&select=value`,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+    if(!r.ok)return null;const j=await r.json();return j[0]?.value??null;
+  }catch(e){console.warn('app_settings',e);return null;}
+}
+// ── ACTIVE SURVEY ── set in admin.html → Umfrage tab (app_settings 'active_survey'); value below is only a fallback
 //   competition: 'sommer' | 'ferienrunde' | 'winter'
 //   year: calendar year the Altersklassen are calculated for (AK X = turns X in that year)
-const SURVEY={season_id:'S2027',competition:'sommer',year:2027,deadline:'30.11.2026'};
+let SURVEY={season_id:'S2027',competition:'sommer',year:2027,deadline:'30.11.2026'};
+const _seasonReady=(async()=>{
+  const[v,sv]=await Promise.all([_readSetting('active_season'),_readSetting('active_survey')]);
+  if(typeof v==='string'&&/^[SW]\d{4}$/.test(v))ACTIVE_SEASON=v;
+  if(sv&&sv.season_id&&['sommer','ferienrunde','winter'].includes(sv.competition)&&parseInt(sv.year))SURVEY={season_id:sv.season_id,competition:sv.competition,year:parseInt(sv.year),deadline:sv.deadline||''};
+})();
 // ── ALTERSKLASSEN ── offered per competition (check against the current TVBB Ausschreibung)
 const AK={
   sommer:     {M:[30,40,50,55,60,65,70,75],F:[30,40,50,55,60]},
@@ -240,7 +254,7 @@ const T={
     notInList:'Ich bin nicht in der Liste →',backToList:'← Doch in der Liste suchen',namePh:'Vorname Nachname',
     year:'Jahrgang',lkPh:'z.B. 18 · leer = weiß nicht',men:'Herren',women:'Damen',
     participate:'Möchtest du mitspielen?',yes:'✓ Ja',no:'✗ Nein',
-    cats:'In welchen Kategorien?',catsHint:'Mehrfachauswahl möglich · nur passende Altersklassen werden angezeigt',
+    cats:'In welchen Kategorien?',catsHint:'Tippe in der Reihenfolge deiner Priorität — zuerst dein Wunschteam. Nur passende Altersklassen werden angezeigt.',catsReset:'Reihenfolge zurücksetzen',
     catsNeed:'Gib Jahrgang und Herren/Damen an, dann erscheinen die Kategorien.',from:'ab Jg.',
     commit:'Wie oft kannst du spielen?',cAll:'(Fast) jeden Spieltag',cHalf:'Etwa die Hälfte',cErsatz:'Nur als Ersatz',
     captain:'Würdest du eine Mannschaft als Mannschaftsführer:in übernehmen?',
@@ -260,7 +274,7 @@ const T={
     notInList:'No estoy en la lista →',backToList:'← Buscar en la lista',namePh:'Nombre Apellido',
     year:'Año de nacimiento',lkPh:'ej. 18 · vacío = no sé',men:'Herren',women:'Damen',
     participate:'¿Querés jugar?',yes:'✓ Sí',no:'✗ No',
-    cats:'¿En qué categorías?',catsHint:'Podés elegir varias · solo aparecen las categorías de edad que te corresponden',
+    cats:'¿En qué categorías?',catsHint:'Tocalas en orden de prioridad — primero tu equipo preferido. Solo aparecen las categorías de edad que te corresponden.',catsReset:'Reiniciar orden',
     catsNeed:'Indicá año de nacimiento y Herren/Damen para ver las categorías.',from:'desde',
     commit:'¿Cuántas fechas podés jugar?',cAll:'(Casi) todas',cHalf:'Más o menos la mitad',cErsatz:'Solo como suplente',
     captain:'¿Te animarías a ser capitán/capitana de un equipo?',
@@ -280,7 +294,7 @@ const T={
     notInList:'I\'m not on the list →',backToList:'← Search the list instead',namePh:'First name Last name',
     year:'Year of birth',lkPh:'e.g. 18 · empty = don\'t know',men:'Men',women:'Women',
     participate:'Do you want to play?',yes:'✓ Yes',no:'✗ No',
-    cats:'Which categories?',catsHint:'Multiple choice · only age groups you are eligible for are shown',
+    cats:'Which categories?',catsHint:'Tap in order of priority — your preferred team first. Only age groups you are eligible for are shown.',catsReset:'Reset order',
     catsNeed:'Enter year of birth and Men/Women to see the categories.',from:'born ≤',
     commit:'How often can you play?',cAll:'(Almost) every match day',cHalf:'About half',cErsatz:'Only as a substitute',
     captain:'Would you take on a team as captain?',
@@ -325,10 +339,10 @@ function applyT(){
   setText('t-men',tr('men'));setText('t-women',tr('women'));
   setText('t-participate',tr('participate'));setText('t-yes1',tr('yes'));setText('t-no1',tr('no'));
   setText('t-yes2',tr('yes'));setText('t-no2',tr('no'));
-  setText('t-cats',tr('cats'));setText('t-catshint',tr('catsHint'));
+  setText('t-cats',tr('cats'));setText('t-catshint',tr('catsHint'));setText('t-catsreset',tr('catsReset'));
   setText('t-commit',tr('commit'));setText('t-c-all',tr('cAll'));setText('t-c-half',tr('cHalf'));setText('t-c-ersatz',tr('cErsatz'));
   setText('t-captain',tr('captain'));setText('t-comment',tr('comment'));setText('t-optional',tr('optional'));
-  setText('submit',tr('submit'));setText('t-deadline',tr('deadline').replace('{d}',SURVEY.deadline));
+  setText('submit',tr('submit'));setText('t-deadline',SURVEY.deadline?tr('deadline').replace('{d}',SURVEY.deadline):'');
   setText('t-thanks',tr('thanks'));setText('t-thankssub',tr('thanksSub'));setText('t-edit',tr('edit'));
   if(players.length===0&&!document.getElementById('find-status').dataset.err)setText('find-status',tr('loading'));
   renderChips();updateExistingNotice();
@@ -336,6 +350,8 @@ function applyT(){
 
 // ── Data ──
 async function loadAll(){
+  await _seasonReady;
+  applyT();
   try{
     const[pl,rs]=await Promise.all([
       sbGetAll('players',`season_id=eq.${ACTIVE_SEASON}&select=id,name,raw_name,lk_str,year,gender&order=name,id`),
@@ -417,11 +433,16 @@ function renderChips(){
   if(!cats){el.innerHTML=`<div class="hint" style="margin:0">${esc(tr('catsNeed'))}</div>`;return;}
   const names=new Set(cats.map(c=>c.n));
   form.categories.forEach(c=>{if(!names.has(c))form.categories.delete(c);});
-  el.innerHTML=cats.map(c=>`<span class="chip${form.categories.has(c.n)?' on':''}" data-v="${esc(c.n)}">${esc(c.n)}${c.h?`<small>${esc(c.h)}</small>`:''}</span>`).join('');
+  // form.categories is a Set → keeps tap order = priority (1 = Wunschteam)
+  const order=[...form.categories];
+  el.innerHTML=cats.map(c=>{const i=order.indexOf(c.n);
+    return`<span class="chip${i>=0?' on':''}" data-v="${esc(c.n)}">${i>=0?`<span class="num">${i+1}</span>`:''}${esc(c.n)}${c.h?`<small>${esc(c.h)}</small>`:''}</span>`;}).join('');
   el.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>{
-    const v=ch.dataset.v;form.categories.has(v)?form.categories.delete(v):form.categories.add(v);ch.classList.toggle('on');
+    const v=ch.dataset.v;form.categories.has(v)?form.categories.delete(v):form.categories.add(v);renderChips();
   });
+  document.getElementById('t-catsreset').classList.toggle('hidden',form.categories.size<2);
 }
+function resetCats(){form.categories.clear();renderChips();}
 
 // ── Single-choice controls ──
 function bindSeg(id,key,parse){

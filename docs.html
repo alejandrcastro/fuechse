@@ -215,7 +215,6 @@ li[data-lang].visible{display:list-item}
       <tr><th data-t="th_layer"></th><th data-t="th_tech"></th><th data-t="th_notes"></th></tr>
       <tr><td><strong>Frontend</strong></td><td>HTML + CSS + JS</td><td data-t="td_fe"></td></tr>
       <tr><td><strong>Backend</strong></td><td>Supabase (PostgreSQL)</td><td data-t="td_be"></td></tr>
-      <tr><td><strong data-t="td_auth_label"></strong></td><td>Supabase Auth (SDK v2)</td><td data-t="td_auth"></td></tr>
       <tr><td><strong>PDF</strong></td><td>PDF.js (Mozilla)</td><td data-t="td_pdf"></td></tr>
       <tr><td><strong data-t="td_font_label"></strong></td><td>Bebas Neue + DM Sans</td><td>Google Fonts</td></tr>
     </table>
@@ -233,8 +232,6 @@ li[data-lang].visible{display:list-item}
 │        │                 │                  │       │
 │        └────────┬────────┘                  │       │
 │                 │                           │       │
-│            getHDR()                       HDR       │
-│         (JWT des Users)                (anon key)   │
 └─────────────────┬─────────────────────────┬─────────┘
                   │                         │
             REST API v1               REST API v1
@@ -252,7 +249,6 @@ li[data-lang].visible{display:list-item}
   <!-- DB TABLES -->
   <section id="tables">
     <h2 data-t="h_db"></h2>
-    <p><code>kepbpcttbvkbcckqoecv.supabase.co</code></p>
     <h3 data-t="h_tables"></h3>
     <table>
       <tr><th data-t="th_table"></th><th data-t="th_desc"></th></tr>
@@ -285,10 +281,6 @@ li[data-lang].visible{display:list-item}
   <section id="admin">
     <h2 data-t="h_admin"></h2>
     <p data-t="admin_p1"></p>
-    <div class="role-block admin">
-      <h4 data-t="admin_access_title"></h4>
-      <p data-t="admin_access_body"></p>
-    </div>
 
     <h3 id="admin-tabs" data-t="h_tabs"></h3>
 
@@ -366,7 +358,6 @@ li[data-lang].visible{display:list-item}
     <div class="role-block player">
       <h4 data-t="idx_flow_title"></h4>
       <ol class="steps">
-        <li data-t="idx_step1"></li>
         <li data-t="idx_step2"></li>
         <li data-t="idx_step3"></li>
         <li data-t="idx_step4"></li>
@@ -493,8 +484,6 @@ li[data-lang].visible{display:list-item}
     <ul>
       <li data-t="dev_li1"></li>
       <li data-t="dev_li2"></li>
-      <li data-t="dev_li3"></li>
-      <li data-t="dev_li4"></li>
       <li data-t="dev_li5"></li>
       <li data-t="dev_li6"></li>
       <li data-t="dev_li7"></li>
@@ -554,12 +543,11 @@ const T = {
     intro_p1:'Club Manager ist eine standalone Webanwendung aus drei unabhängigen HTML-Dateien, jeweils für eine andere Rolle im Verein. Kein Framework, kein Build-Schritt — alles läuft direkt im Browser, verbunden mit einem Supabase-Backend.',
     card_admin:'Sportwart — vollständige Vereinsverwaltung: Spieler, Mannschaften, Spiele, Aufstellungen, PDF-Import und Sperren.',
     card_kap:'Kapitän — Verfügbarkeit, Aufstellung und Sperren für die eigenen Mannschaften.',
-    card_idx:'Spieler — Verfügbarkeit per Spiel bestätigen. Mobile-first, ohne Konto.',
+    card_idx:'Spieler — Verfügbarkeit per Spiel bestätigen. Mobile-first.',
 
     h_stack:'Stack',
     th_layer:'Ebene', th_tech:'Technologie', th_notes:'Hinweise',
     td_fe:'Kein Framework, kein Build-Schritt', td_be:'REST-API direkt aus dem Browser',
-    td_auth_label:'Authentifizierung', td_auth:'admin und kapitaen nutzen JWT; Spieler nicht',
     td_pdf:'Import offizieller TVBB-Dokumente', td_font_label:'Schriften',
 
     h_arch:'Architektur',
@@ -585,8 +573,7 @@ const T = {
     col_4er:'Manueller Override für 4er-Format unabhängig von der Saison',
 
     h_admin:'admin.html — Sportwart',
-    admin_p1:'Vollständige Vereinsverwaltung. Erfordert Login mit Supabase Auth-Konto.',
-    admin_access_title:'Zugang', admin_access_body:'Login mit E-Mail und Passwort. Das JWT wird pro Request als Authorization: Bearer <token> gesendet.',
+    admin_p1:'Vollständige Vereinsverwaltung.',
     h_tabs:'Tabs',
     tab_import_title:'PDF importieren', tab_import_body:'Import aus den drei offiziellen TVBB-PDFs. Siehe Abschnitt PDF-Import.',
     tab_spieler_body:'Vollständige Kaderliste mit Filtern nach Mannschaft, Kategorie und Geschlecht. Mannschaftszuordnung und Stammmannschaft-Flag (is_mainteam) editierbar.',
@@ -610,7 +597,7 @@ const T = {
     import_p2:'Jeder Import zeigt eine Vorschau vor der Bestätigung. Mehrere PDFs desselben Typs können in einer Sitzung importiert werden.',
 
     h_kap:'kapitaen.html — Kapitän',
-    kap_p1:'Operative Ansicht für den Kapitän. Zeigt nur die eigenen Mannschaften. Erfordert Supabase Auth Login.',
+    kap_p1:'Operative Ansicht für den Kapitän. Zeigt nur die eigenen Mannschaften.',
     kap_sidebar:'Listet die Mannschaften des Kapitäns. Bei Auswahl einer Mannschaft wird die Spielliste geladen.',
     kap_spiele_p:'Verfügbarkeit gruppiert nach Status für das gewählte Spiel, mit Aufstellungszuweisung:',
     kap_li1:'Drag & Drop zwischen Slots',
@@ -623,9 +610,8 @@ const T = {
     kap_sperren_p:'Sperrenübersicht der Kategorie (nur lesen). LK > 20-Regel wird hier nicht angezeigt.',
 
     h_idx:'index.html — Spieler',
-    idx_p1:'Mobile-first Interface für die Verfügbarkeitsbestätigung. Kein Supabase-Konto erforderlich.',
+    idx_p1:'Mobile-first Interface für die Verfügbarkeitsbestätigung.',
     idx_flow_title:'Ablauf',
-    idx_step1:'Spieler gibt das Vereinspasswort ein.',
     idx_step2:'Sucht seinen Namen im Kader.',
     idx_step3:'Wählt ein Spiel und bestätigt die Verfügbarkeit.',
     idx_step4:'Status wird automatisch in Supabase gespeichert.',
@@ -689,8 +675,6 @@ const T = {
     h_dev:'Entwicklungskonventionen',
     dev_li1:'Eine Datei, eine Rolle — keine Imports zwischen Dateien.',
     dev_li2:'Alle Supabase-Aufrufe laufen über sbGet(), sbUpsert() und sbDelete().',
-    dev_li3:'admin.html und kapitaen.html nutzen getHDR(), das das JWT des authentifizierten Nutzers injiziert.',
-    dev_li4:'index.html nutzt den Anon-Key direkt (Spieler haben keine Supabase-Konten).',
     dev_li5:'Kurznamen werden aus raw_name ("Nachname, Vorname") generiert.',
     dev_li6:'teamSize(team) gibt 4 oder 6 zurück, basierend auf Saison und is_4er.',
     dev_li7:'Der Ersatz-Slot ist immer Index size des lineup-Arrays.',
@@ -746,12 +730,11 @@ const T = {
     intro_p1:'Club Manager es una aplicación web standalone compuesta por tres archivos HTML independientes, cada uno para un rol diferente dentro del club. Sin framework ni build step — todo corre en el navegador conectado a Supabase.',
     card_admin:'Sportwart — gestión completa: jugadores, equipos, partidos, alineaciones, PDF y bloqueos.',
     card_kap:'Capitán — disponibilidad, alineaciones y bloqueos para sus equipos asignados.',
-    card_idx:'Jugador — confirmar disponibilidad por partido. Mobile-first, sin cuenta.',
+    card_idx:'Jugador — confirmar disponibilidad por partido. Mobile-first.',
 
     h_stack:'Stack técnico',
     th_layer:'Capa', th_tech:'Tecnología', th_notes:'Notas',
     td_fe:'Sin frameworks ni build step', td_be:'REST API directa desde el navegador',
-    td_auth_label:'Autenticación', td_auth:'admin y kapitaen usan JWT; jugadores no',
     td_pdf:'Importación de documentos TVBB Berlin', td_font_label:'Fuentes',
 
     h_arch:'Arquitectura',
@@ -777,8 +760,7 @@ const T = {
     col_4er:'Override manual para formato 4er independiente de la temporada',
 
     h_admin:'admin.html — Sportwart',
-    admin_p1:'Vista completa de gestión. Requiere login con cuenta Supabase Auth.',
-    admin_access_title:'Acceso', admin_access_body:'Login con email y contraseña. El JWT se envía como Authorization: Bearer <token> en cada request.',
+    admin_p1:'Vista completa de gestión.',
     h_tabs:'Pestañas',
     tab_import_title:'Importar PDF', tab_import_body:'Importación desde los tres PDFs oficiales del TVBB. Ver sección Importar PDF.',
     tab_spieler_body:'Listado del plantel con filtros por equipo, categoría y género. Edición de asignaciones y flag Stammmannschaft (is_mainteam).',
@@ -802,7 +784,7 @@ const T = {
     import_p2:'Cada importación muestra una vista previa antes de confirmar. Se pueden importar múltiples PDFs del mismo tipo en una sesión.',
 
     h_kap:'kapitaen.html — Capitán',
-    kap_p1:'Vista operativa para el capitán. Muestra solo los equipos asignados al usuario logueado. Requiere Supabase Auth.',
+    kap_p1:'Vista operativa para el capitán. Muestra solo los equipos asignados al usuario logueado.',
     kap_sidebar:'Lista los equipos del capitán. Al seleccionar uno se carga la lista de partidos correspondiente.',
     kap_spiele_p:'Disponibilidad agrupada por estado para el partido seleccionado, con asignación de alineación:',
     kap_li1:'Drag & drop entre slots',
@@ -815,9 +797,8 @@ const T = {
     kap_sperren_p:'Vista de bloqueos de la categoría (solo lectura). La regla LK > 20 no se muestra aquí.',
 
     h_idx:'index.html — Jugador',
-    idx_p1:'Interfaz mobile-first para confirmar disponibilidad. No requiere cuenta Supabase.',
+    idx_p1:'Interfaz mobile-first para confirmar disponibilidad.',
     idx_flow_title:'Flujo',
-    idx_step1:'El jugador ingresa la contraseña del club.',
     idx_step2:'Busca su nombre en el plantel.',
     idx_step3:'Selecciona un partido y confirma disponibilidad.',
     idx_step4:'El estado se guarda automáticamente en Supabase.',
@@ -881,8 +862,6 @@ const T = {
     h_dev:'Convenciones de desarrollo',
     dev_li1:'Un archivo, un rol — sin imports entre archivos.',
     dev_li2:'Todas las llamadas Supabase van por sbGet(), sbUpsert() y sbDelete().',
-    dev_li3:'admin.html y kapitaen.html usan getHDR() que inyecta el JWT del usuario autenticado.',
-    dev_li4:'index.html usa la anon key directamente (jugadores no tienen cuenta Supabase).',
     dev_li5:'Los nombres cortos se generan desde raw_name ("Apellido, Nombre").',
     dev_li6:'teamSize(team) devuelve 4 o 6 según temporada e is_4er.',
     dev_li7:'El slot Ersatz es siempre el índice size del array lineup.',
@@ -938,12 +917,11 @@ const T = {
     intro_p1:'Club Manager is a standalone web application made up of three independent HTML files, each targeting a different role within the club. No framework, no build step — everything runs directly in the browser, connected to a Supabase backend.',
     card_admin:'Sportwart — full club management: players, teams, matches, lineups, PDF import and blocks.',
     card_kap:'Captain — availability, lineups and blocks for their assigned teams.',
-    card_idx:'Player — confirm availability per match. Mobile-first, no account required.',
+    card_idx:'Player — confirm availability per match. Mobile-first.',
 
     h_stack:'Tech Stack',
     th_layer:'Layer', th_tech:'Technology', th_notes:'Notes',
     td_fe:'No frameworks, no build step', td_be:'Direct REST API from the browser',
-    td_auth_label:'Auth', td_auth:'admin and kapitaen use JWT; players do not',
     td_pdf:'Import of official TVBB Berlin documents', td_font_label:'Fonts',
 
     h_arch:'Architecture',
@@ -969,8 +947,7 @@ const T = {
     col_4er:'Manual override for 4-player format regardless of season',
 
     h_admin:'admin.html — Sportwart',
-    admin_p1:'Full club management view. Requires Supabase Auth login.',
-    admin_access_title:'Access', admin_access_body:'Login with email and password. The JWT is sent as Authorization: Bearer <token> on every request.',
+    admin_p1:'Full club management view.',
     h_tabs:'Tabs',
     tab_import_title:'PDF Import', tab_import_body:'Import from the three official TVBB PDFs. See PDF Import section.',
     tab_spieler_body:'Full roster with filters by team, category and gender. Edit team assignments and Stammmannschaft flag (is_mainteam).',
@@ -994,7 +971,7 @@ const T = {
     import_p2:'Each import shows a preview before confirming. Multiple PDFs of the same type can be imported in one session.',
 
     h_kap:'kapitaen.html — Captain',
-    kap_p1:'Operational view for the captain. Shows only the teams assigned to the logged-in user. Requires Supabase Auth.',
+    kap_p1:'Operational view for the captain. Shows only the teams assigned to the logged-in user.',
     kap_sidebar:'Lists the captain\'s teams. Selecting a team loads the corresponding match list.',
     kap_spiele_p:'Availability grouped by status for the selected match, with lineup assignment:',
     kap_li1:'Drag & drop between slots',
@@ -1007,9 +984,8 @@ const T = {
     kap_sperren_p:'Category block view (read-only). LK > 20 rule is not shown here.',
 
     h_idx:'index.html — Player',
-    idx_p1:'Mobile-first interface for confirming availability. No Supabase account required.',
+    idx_p1:'Mobile-first interface for confirming availability.',
     idx_flow_title:'Flow',
-    idx_step1:'Player enters the club password.',
     idx_step2:'Searches their name in the roster.',
     idx_step3:'Selects a match and confirms availability.',
     idx_step4:'Status is saved automatically to Supabase.',
@@ -1073,8 +1049,6 @@ const T = {
     h_dev:'Development Conventions',
     dev_li1:'One file, one role — no imports between files.',
     dev_li2:'All Supabase calls go through sbGet(), sbUpsert() and sbDelete().',
-    dev_li3:'admin.html and kapitaen.html use getHDR() which injects the authenticated user\'s JWT.',
-    dev_li4:'index.html uses the anon key directly (players do not have Supabase accounts).',
     dev_li5:'Short names are derived from raw_name ("Lastname, Firstname").',
     dev_li6:'teamSize(team) returns 4 or 6 based on season and is_4er.',
     dev_li7:'The Ersatz slot is always index size of the lineup array.',

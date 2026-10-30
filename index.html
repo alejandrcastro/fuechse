@@ -219,8 +219,16 @@ input::placeholder{color:var(--muted)}
 <script>
 const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
 const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
-// ── ACTIVE SEASON ── change manually each season (also in admin.html and kapitaen.html)
-const ACTIVE_SEASON='W2026';
+// ── ACTIVE SEASON ── switched in admin.html (header). Stored in Supabase → app_settings.
+// Format: 'S2026' = Sommer 2026, 'W2026' = Winter 2026/27. The value below is only a fallback.
+let ACTIVE_SEASON='W2026';
+async function _readSetting(key){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/app_settings?key=eq.${key}&select=value`,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+    if(!r.ok)return null;const j=await r.json();return j[0]?.value??null;
+  }catch(e){console.warn('app_settings',e);return null;}
+}
+const _seasonReady=(async()=>{const v=await _readSetting('active_season');if(typeof v==='string'&&/^[SW]\d{4}$/.test(v))ACTIVE_SEASON=v;})();
 const _b='17aa79be6d26e795'; // sync badge config ref
 const HDR={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 
@@ -380,6 +388,7 @@ function isBlocked(playerId,teamId){
 
 async function loadAll(){
   document.getElementById('find-status').textContent=tr('findStatus');
+  await _seasonReady;
   try{
     const[teams,players,matches,avRows,countRows]=await Promise.all([
       sbGet('teams',`season_id=eq.${ACTIVE_SEASON}&order=category,team_number`),

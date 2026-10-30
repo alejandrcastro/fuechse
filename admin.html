@@ -81,6 +81,7 @@ select option{background:#1b2926}
 .status-open{background:#ffd70033;color:#ffd700;border:1px solid #ffd70055}
 .status-ready{background:#2d6a4f44;color:var(--court);border:1px solid var(--court)44}
 .avail-table{width:100%;border-collapse:collapse}
+.um-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
 .avail-table th{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:6px 10px;text-align:left;border-bottom:1px solid #2e4a42}
 .avail-table td{padding:7px 10px;border-bottom:1px solid #1b292611;font-size:12px;vertical-align:middle}
 .avail-table tr:last-child td{border-bottom:none}
@@ -294,6 +295,7 @@ window.doLogin=async function(){
       <button class="lang-btn" onclick="setLang('en')">EN</button>
     </div>
     <a id="download-spieler-btn" href="spieler.html" download="spieler.html" style="padding:3px 9px;font-size:10px;font-weight:600;border:1px solid var(--court)55;border-radius:20px;color:var(--court);background:#1a2e26;text-decoration:none;white-space:nowrap">↓ Spieler-App</a>
+    <select id="season-switch" onchange="onSeasonSwitch(this)" title="Saison" style="width:auto;padding:3px 8px;font-size:11px;font-weight:700;background:#111;border:1px solid var(--court)55;border-radius:20px;color:var(--court);font-family:'DM Sans',sans-serif;cursor:pointer"></select>
     <div id="sync-badge" class="sync-badge sync-ing">⟳</div>
     <div class="tvbb-badge">TVBB</div>
   </div>
@@ -626,6 +628,17 @@ window.doLogin=async function(){
     <button class="btn btn-outline btn-sm" onclick="loadUmfrage()" id="um-reload"></button>
     <button class="btn btn-outline btn-sm" onclick="exportUmfrageCSV()" id="um-csv"></button>
   </div>
+  <div class="card" id="um-active">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--court);margin-bottom:8px" id="um-active-title"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <div><div class="um-lbl" id="um-l-season"></div><input id="um-a-season" placeholder="S2027" style="width:90px"></div>
+      <div><div class="um-lbl" id="um-l-comp"></div><select id="um-a-comp" style="width:auto"><option value="sommer"></option><option value="ferienrunde"></option><option value="winter"></option></select></div>
+      <div><div class="um-lbl" id="um-l-year"></div><input id="um-a-year" type="number" style="width:80px"></div>
+      <div><div class="um-lbl" id="um-l-deadline"></div><input id="um-a-deadline" placeholder="30.11.2026" style="width:110px"></div>
+      <button class="btn btn-primary btn-sm" onclick="saveActiveSurvey()" id="um-a-save"></button>
+      <span id="um-a-msg" style="font-size:12px;color:var(--court)"></span>
+    </div>
+  </div>
   <div id="um-content"></div>
 </div>
 
@@ -671,10 +684,17 @@ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/p
 
 const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
 const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
-// ── ACTIVE SEASON ── change manually each season (also in kapitaen.html and index.html)
-// Format: 'S2026' = Sommer 2026, 'W2026' = Winter 2026/27. Older seasons stay archived in the DB.
-const ACTIVE_SEASON='W2026';
-const ACTIVE_SEASON_KIND=ACTIVE_SEASON.startsWith('W')?'Winter':'Sommer';
+// ── ACTIVE SEASON ── switched in admin.html (header). Stored in Supabase → app_settings.
+// Format: 'S2026' = Sommer 2026, 'W2026' = Winter 2026/27. The value below is only a fallback.
+let ACTIVE_SEASON='W2026';
+async function _readSetting(key){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/app_settings?key=eq.${key}&select=value`,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+    if(!r.ok)return null;const j=await r.json();return j[0]?.value??null;
+  }catch(e){console.warn('app_settings',e);return null;}
+}
+let ACTIVE_SEASON_KIND='Winter';
+const _seasonReady=(async()=>{const v=await _readSetting('active_season');if(typeof v==='string'&&/^[SW]\d{4}$/.test(v))ACTIVE_SEASON=v;ACTIVE_SEASON_KIND=ACTIVE_SEASON.startsWith('W')?'Winter':'Sommer';})();
 const HDR={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 function getHDR(){
   // Use session JWT if available, otherwise fall back to publishable key
@@ -953,6 +973,8 @@ let _loadAllRunning=false;
 async function loadAll(){
   if(_loadAllRunning)return;
   _loadAllRunning=true;
+  await _seasonReady;
+  if(typeof renderSeasonSwitch==='function')renderSeasonSwitch();
   setSync('ing',tr('syncIng'));
   try{
     const[teams,players,matches,avRows,lineupRows,countRows]=await Promise.all([
@@ -1003,6 +1025,7 @@ async function loadAll(){
 function setLang(l){lang=l;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));applyT();renderAll();}
 function applyT(){
   if(document.getElementById('sec-umfrage')?.classList.contains('active'))renderUmfrage();
+  if(typeof renderSeasonSwitch==='function'&&_knownSeasons)renderSeasonSwitch();
   document.querySelectorAll('[data-tab]').forEach((tab,i)=>{tab.textContent=T[lang].tabs[i];});
   document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(T[lang][k]!==undefined)el.textContent=T[lang][k];});
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{const k=el.getAttribute('data-i18n-placeholder');if(T[lang][k]!==undefined)el.placeholder=T[lang][k];});
@@ -3835,25 +3858,28 @@ setLang('de');
 const UM_T={
   de:{title:'Umfrage',sub:'Antworten aus umfrage.html · eine Umfrage pro Saison und Wettbewerb',reload:'↻ Neu laden',csv:'↓ CSV',
     comp:{sommer:'Sommer',ferienrunde:'Mixed/Doppel',winter:'Winter'},
+    aTitle:'Aktive Umfrage (umfrage.html)',aSeason:'Saison-ID',aComp:'Wettbewerb',aYear:'AK-Jahr',aDeadline:'Frist',aSave:'Speichern',aSaved:'✓ Gespeichert — umfrage.html zeigt jetzt diese Umfrage',aErr:'Bitte Saison-ID (z.B. S2027) und Jahr angeben.',
     none:'Noch keine Antworten.',loading:'Lade...',err:'Fehler beim Laden (Tabelle survey_responses angelegt?).',
     answers:'Antworten',yes:'Ja',no:'Nein',captains:'MF-Kandidaten',
-    byCat:'Zusagen pro Kategorie',cat:'Kategorie',total:'Ja',all:'Jeder Spieltag',half:'Hälfte',ersatz:'Ersatz',
+    byCat:'Zusagen pro Kategorie',cat:'Kategorie',total:'Ja',first:'1. Wahl',all:'Jeder Spieltag',half:'Hälfte',ersatz:'Ersatz',
     list:'Alle Antworten',name:'Name',lk:'LK',year:'Jg.',part:'Spielt',cats:'Kategorien',freq:'Häufigkeit',mf:'MF',comment:'Anmerkung',date:'Datum',
     newP:'neu',del:'Antwort von {n} löschen?',
     freqL:{all:'jeder Spieltag',half:'Hälfte',ersatz:'Ersatz'}},
   es:{title:'Encuesta',sub:'Respuestas de umfrage.html · una encuesta por temporada y competencia',reload:'↻ Recargar',csv:'↓ CSV',
     comp:{sommer:'Verano',ferienrunde:'Mixed/Doppel',winter:'Invierno'},
+    aTitle:'Encuesta activa (umfrage.html)',aSeason:'ID de temporada',aComp:'Competencia',aYear:'Año AK',aDeadline:'Plazo',aSave:'Guardar',aSaved:'✓ Guardado — umfrage.html muestra ahora esta encuesta',aErr:'Poné el ID de temporada (ej. S2027) y el año.',
     none:'Todavía no hay respuestas.',loading:'Cargando...',err:'Error al cargar (¿está creada la tabla survey_responses?).',
     answers:'Respuestas',yes:'Sí',no:'No',captains:'Candidatos a MF',
-    byCat:'Confirmados por categoría',cat:'Categoría',total:'Sí',all:'Todas las fechas',half:'Mitad',ersatz:'Suplente',
+    byCat:'Confirmados por categoría',cat:'Categoría',total:'Sí',first:'1ª opción',all:'Todas las fechas',half:'Mitad',ersatz:'Suplente',
     list:'Todas las respuestas',name:'Nombre',lk:'LK',year:'Año',part:'Juega',cats:'Categorías',freq:'Frecuencia',mf:'MF',comment:'Comentario',date:'Fecha',
     newP:'nuevo',del:'¿Borrar la respuesta de {n}?',
     freqL:{all:'todas',half:'mitad',ersatz:'suplente'}},
   en:{title:'Survey',sub:'Answers from umfrage.html · one survey per season and competition',reload:'↻ Reload',csv:'↓ CSV',
     comp:{sommer:'Summer',ferienrunde:'Mixed/Doubles',winter:'Winter'},
+    aTitle:'Active survey (umfrage.html)',aSeason:'Season ID',aComp:'Competition',aYear:'AK year',aDeadline:'Deadline',aSave:'Save',aSaved:'✓ Saved — umfrage.html now shows this survey',aErr:'Please enter a season ID (e.g. S2027) and year.',
     none:'No answers yet.',loading:'Loading...',err:'Loading failed (is the survey_responses table created?).',
     answers:'Answers',yes:'Yes',no:'No',captains:'Captain candidates',
-    byCat:'Commitments per category',cat:'Category',total:'Yes',all:'Every match day',half:'Half',ersatz:'Substitute',
+    byCat:'Commitments per category',cat:'Category',total:'Yes',first:'1st choice',all:'Every match day',half:'Half',ersatz:'Substitute',
     list:'All answers',name:'Name',lk:'LK',year:'Born',part:'Plays',cats:'Categories',freq:'Frequency',mf:'Capt.',comment:'Comment',date:'Date',
     newP:'new',del:'Delete the answer from {n}?',
     freqL:{all:'every match day',half:'half',ersatz:'substitute'}},
@@ -3865,6 +3891,7 @@ function umKey(r){return r.season_id+'|'+r.competition;}
 function umLabel(k){const[sid,c]=k.split('|');return `${sid} · ${umT('comp')[c]||c}`;}
 
 async function loadUmfrage(){
+  loadActiveSurvey();
   document.getElementById('um-content').innerHTML=`<div style="color:var(--muted);font-size:13px">${umT('loading')}</div>`;
   try{_umRows=await sbGetAll('survey_responses','order=updated_at.desc,id');_umErr=false;}
   catch(e){console.error(e);_umRows=[];_umErr=true;}
@@ -3876,6 +3903,7 @@ function renderUmfrage(){
   document.getElementById('um-sub').textContent=umT('sub');
   document.getElementById('um-reload').textContent=umT('reload');
   document.getElementById('um-csv').textContent=umT('csv');
+  renderActiveSurveyForm();
   const out=document.getElementById('um-content');
   if(_umRows===null)return;
   if(_umErr){out.innerHTML=`<div style="color:var(--danger);font-size:13px">${umT('err')}</div>`;return;}
@@ -3892,8 +3920,9 @@ function renderUmfrage(){
   // per category
   const cats={};
   for(const r of yes)for(const c of(r.categories||[])){
-    cats[c]=cats[c]||{total:0,all:0,half:0,ersatz:0};
+    cats[c]=cats[c]||{total:0,first:0,all:0,half:0,ersatz:0};
     cats[c].total++;if(r.commitment&&cats[c][r.commitment]!==undefined)cats[c][r.commitment]++;
+    if((r.categories||[])[0]===c)cats[c].first++; // categories are stored in priority order
   }
   const catNames=Object.keys(cats).sort((a,b)=>{
     const ma=a.startsWith('Mixed'),mb=b.startsWith('Mixed');if(ma!==mb)return ma?1:-1;
@@ -3906,8 +3935,8 @@ function renderUmfrage(){
     <div class="stats-row">${stat(rows.length,umT('answers'))}${stat(yes.length,umT('yes'))}${stat(rows.length-yes.length,umT('no'))}${stat(caps.length,umT('captains'))}</div>
     <div class="card" style="overflow-x:auto">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--court);margin-bottom:6px">${umT('byCat')}</div>
-      ${catNames.length?`<table class="avail-table"><thead><tr><th>${umT('cat')}</th><th>${umT('total')}</th><th>${umT('all')}</th><th>${umT('half')}</th><th>${umT('ersatz')}</th></tr></thead><tbody>
-        ${catNames.map(c=>`<tr><td style="font-weight:600">${umEsc(c)}</td><td style="color:var(--court);font-weight:700">${cats[c].total}</td><td>${cats[c].all}</td><td>${cats[c].half}</td><td>${cats[c].ersatz}</td></tr>`).join('')}
+      ${catNames.length?`<table class="avail-table"><thead><tr><th>${umT('cat')}</th><th>${umT('total')}</th><th>${umT('first')}</th><th>${umT('all')}</th><th>${umT('half')}</th><th>${umT('ersatz')}</th></tr></thead><tbody>
+        ${catNames.map(c=>`<tr><td style="font-weight:600">${umEsc(c)}</td><td style="color:var(--court);font-weight:700">${cats[c].total}</td><td>${cats[c].first}</td><td>${cats[c].all}</td><td>${cats[c].half}</td><td>${cats[c].ersatz}</td></tr>`).join('')}
       </tbody></table>`:`<div style="color:var(--muted);font-size:12px">—</div>`}
     </div>
     <div class="card" style="overflow-x:auto">
@@ -3917,7 +3946,7 @@ function renderUmfrage(){
         <td style="font-weight:600;white-space:nowrap">${umEsc(r.name)}${r.player_id?'':` <span style="font-size:10px;color:var(--warn)">${umT('newP')}</span>`}</td>
         <td>${umEsc(r.lk||'—')}</td><td>${umEsc(r.birth_year||'')}</td>
         <td style="color:${r.participates?'var(--court)':'var(--danger)'};font-weight:700">${r.participates?'✓ '+umT('yes'):'✗ '+umT('no')}</td>
-        <td>${umEsc((r.categories||[]).join(', '))}</td>
+        <td>${(r.categories||[]).map((c,i)=>`<span style="white-space:nowrap"><b style="color:var(--court)">${i+1}.</b> ${umEsc(c)}</span>`).join(' &nbsp;')}</td>
         <td>${r.commitment?umEsc(umT('freqL')[r.commitment]):''}</td>
         <td>${r.captain?'✓':''}</td>
         <td style="max-width:220px;color:var(--muted)">${umEsc(r.comment||'')}</td>
@@ -3939,12 +3968,79 @@ function exportUmfrageCSV(){
   if(!_umRows)return;
   const cur=document.getElementById('um-survey').value;
   const rows=_umRows.filter(r=>umKey(r)===cur);
-  const head=['Name','LK','Jahrgang','Geschlecht','Spielt','Kategorien','Häufigkeit','Mannschaftsführer','Anmerkung','Im Kader','Datum'];
+  const head=['Name','LK','Jahrgang','Geschlecht','Spielt','Kategorien (Priorität)','Häufigkeit','Mannschaftsführer','Anmerkung','Im Kader','Datum'];
   const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
-  const lines=[head.map(q).join(';'),...rows.map(r=>[r.name,r.lk,r.birth_year,r.gender,r.participates?'Ja':'Nein',(r.categories||[]).join(', '),r.commitment?UM_T.de.freqL[r.commitment]:'',r.participates?(r.captain?'Ja':'Nein'):'',r.comment,r.player_id?'Ja':'Nein',(r.updated_at||'').slice(0,10)].map(q).join(';'))];
+  const lines=[head.map(q).join(';'),...rows.map(r=>[r.name,r.lk,r.birth_year,r.gender,r.participates?'Ja':'Nein',(r.categories||[]).map((c,i)=>`${i+1}. ${c}`).join(', '),r.commitment?UM_T.de.freqL[r.commitment]:'',r.participates?(r.captain?'Ja':'Nein'):'',r.comment,r.player_id?'Ja':'Nein',(r.updated_at||'').slice(0,10)].map(q).join(';'))];
   const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Umfrage_${cur.replace('|','_')}.csv`;a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+// ── ACTIVE SURVEY (app_settings 'active_survey') ──
+let _activeSurvey=null;
+async function loadActiveSurvey(){_activeSurvey=await _readSetting('active_survey');renderActiveSurveyForm(true);}
+function renderActiveSurveyForm(fill){
+  const set=(id,t)=>{const e=document.getElementById(id);if(e)e.textContent=t;};
+  set('um-active-title',umT('aTitle'));set('um-l-season',umT('aSeason'));set('um-l-comp',umT('aComp'));
+  set('um-l-year',umT('aYear'));set('um-l-deadline',umT('aDeadline'));set('um-a-save',umT('aSave'));
+  document.querySelectorAll('#um-a-comp option').forEach(o=>o.textContent=umT('comp')[o.value]);
+  if(fill&&_activeSurvey){
+    document.getElementById('um-a-season').value=_activeSurvey.season_id||'';
+    document.getElementById('um-a-comp').value=_activeSurvey.competition||'sommer';
+    document.getElementById('um-a-year').value=_activeSurvey.year||'';
+    document.getElementById('um-a-deadline').value=_activeSurvey.deadline||'';
+  }
+}
+async function saveActiveSurvey(){
+  const v={season_id:document.getElementById('um-a-season').value.trim().toUpperCase(),
+    competition:document.getElementById('um-a-comp').value,
+    year:parseInt(document.getElementById('um-a-year').value),
+    deadline:document.getElementById('um-a-deadline').value.trim()};
+  const msg=document.getElementById('um-a-msg');
+  if(!/^[A-Z]\d{4}$/.test(v.season_id)||!v.year){msg.style.color='var(--danger)';msg.textContent=umT('aErr');return;}
+  try{
+    await sbUpsert('app_settings',[{key:'active_survey',value:v,updated_at:new Date().toISOString()}]);
+    _activeSurvey=v;msg.style.color='var(--court)';msg.textContent=umT('aSaved');
+    setTimeout(()=>msg.textContent='',3500);
+  }catch(e){console.error(e);msg.style.color='var(--danger)';msg.textContent=e.message;}
+}
+// ── SEASON SWITCH (header) → app_settings 'active_season', read by all pages ──
+const SEASON_T={
+  de:{newOpt:'+ Neue Saison…',prompt:'Neue Saison-ID (S = Sommer, W = Winter), z.B. S2027:',bad:'Ungültig. Format: S2027 oder W2027.',
+      confirm:(a,b)=>`Aktive Saison von ${a} auf ${b} umstellen?\n\nGilt für admin, kapitaen, index und umfrage. Die alte Saison bleibt archiviert.`,
+      label:id=>`${id.startsWith('W')?'Winter':'Sommer'} ${id.startsWith('W')?id.slice(1)+'/'+String(+id.slice(1)+1).slice(2):id.slice(1)}`,empty:'(leer)'},
+  es:{newOpt:'+ Nueva temporada…',prompt:'ID de la nueva temporada (S = verano, W = invierno), ej. S2027:',bad:'Inválido. Formato: S2027 o W2027.',
+      confirm:(a,b)=>`¿Cambiar la temporada activa de ${a} a ${b}?\n\nVale para admin, kapitaen, index y umfrage. La temporada vieja queda archivada.`,
+      label:id=>`${id.startsWith('W')?'Winter':'Sommer'} ${id.startsWith('W')?id.slice(1)+'/'+String(+id.slice(1)+1).slice(2):id.slice(1)}`,empty:'(vacía)'},
+  en:{newOpt:'+ New season…',prompt:'New season ID (S = summer, W = winter), e.g. S2027:',bad:'Invalid. Format: S2027 or W2027.',
+      confirm:(a,b)=>`Switch the active season from ${a} to ${b}?\n\nApplies to admin, kapitaen, index and umfrage. The old season stays archived.`,
+      label:id=>`${id.startsWith('W')?'Winter':'Sommer'} ${id.startsWith('W')?id.slice(1)+'/'+String(+id.slice(1)+1).slice(2):id.slice(1)}`,empty:'(empty)'},
+};
+function sT(k){return SEASON_T[lang]?.[k]??SEASON_T.de[k];}
+let _knownSeasons=null;
+async function renderSeasonSwitch(){
+  const sel=document.getElementById('season-switch');if(!sel)return;
+  if(!_knownSeasons){
+    try{const rows=await sbGetAll('teams','select=season_id&order=season_id');_knownSeasons=[...new Set(rows.map(r=>r.season_id).filter(Boolean))];}
+    catch(e){console.error(e);_knownSeasons=[];}
+  }
+  const ids=[...new Set([..._knownSeasons,ACTIVE_SEASON])].filter(x=>/^[SW]\d{4}$/.test(x))
+    .sort((a,b)=>a.slice(1).localeCompare(b.slice(1))||(a[0]==='S'?-1:1)); // chronological: S2026, W2026, S2027…
+  sel.innerHTML=ids.map(id=>`<option value="${id}"${id===ACTIVE_SEASON?' selected':''}>● ${sT('label')(id)}${_knownSeasons.includes(id)?'':' '+sT('empty')}</option>`).join('')
+    +`<option value="__new">${sT('newOpt')}</option>`;
+}
+async function onSeasonSwitch(sel){
+  let v=sel.value;
+  if(v==='__new'){
+    v=(prompt(sT('prompt'))||'').trim().toUpperCase();
+    if(!v){sel.value=ACTIVE_SEASON;return;}
+    if(!/^[SW]\d{4}$/.test(v)){alert(sT('bad'));sel.value=ACTIVE_SEASON;return;}
+  }
+  if(v===ACTIVE_SEASON){sel.value=ACTIVE_SEASON;return;}
+  if(!confirm(sT('confirm')(ACTIVE_SEASON,v))){sel.value=ACTIVE_SEASON;return;}
+  try{
+    await sbUpsert('app_settings',[{key:'active_season',value:v,updated_at:new Date().toISOString()}]);
+    location.reload();
+  }catch(e){console.error(e);alert(e.message);sel.value=ACTIVE_SEASON;}
 }
 </script>
 </body>
