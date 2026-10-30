@@ -1,0 +1,64 @@
+# Publishes the site to GitHub Pages:
+#   main → https://alejandrcastro.github.io/fuechse/
+#   dev  → https://alejandrcastro.github.io/fuechse/beta/
+# Runs on every push to main, after every push to dev (via "Beta trigger"), or by hand.
+# Requires: Settings → Pages → Source = "GitHub Actions".
+name: Pages (main + beta)
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["Beta trigger"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: site
+      - name: Checkout dev
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: dev
+          path: beta
+      - name: Assemble site
+        run: |
+          rm -rf site/.git site/.github
+          if [ -d beta ]; then
+            rm -rf beta/.git beta/.github
+            mkdir -p site/beta
+            cp -r beta/. site/beta/
+          fi
+          touch site/.nojekyll
+          ls -R site | head -50
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

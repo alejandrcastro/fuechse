@@ -1,0 +1,13 @@
+# Runs on every push to dev. Its only job is to make "Pages (main + beta)"
+# (which runs on main, the branch allowed to deploy) publish the new beta.
+name: Beta trigger
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "dev updated → Pages (main + beta) will republish /beta/"
