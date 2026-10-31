@@ -738,6 +738,15 @@ async function sbGet(t,p=''){
 }
 // Supabase returns max. 1000 rows per request → always page through big tables (stable order required)
 async function sbGetAll(t,p=''){let out=[],off=0;while(true){const b=await sbGet(t,`${p}${p?'&':''}limit=1000&offset=${off}`);out=out.concat(b);if(b.length<1000)break;off+=1000;}return out;}
+// Rows whose <col> is one of <ids>, fetched in chunks so the URL stays short (R1: load only the active season)
+async function sbGetIn(t,col,ids,p=''){
+  const list=[...new Set(ids)].filter(Boolean),out=[];
+  for(let i=0;i<list.length;i+=150){
+    const chunk=list.slice(i,i+150).map(encodeURIComponent).join(',');
+    out.push(...await sbGetAll(t,`${col}=in.(${chunk})${p?'&'+p:''}`));
+  }
+  return out;
+}
 async function sbUpsert(t,d){
   const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...getHDR(),'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(Array.isArray(d)?d:[d])});
   if(!r.ok)throw new Error(await r.text());
@@ -979,13 +988,21 @@ async function loadAll(){
   setSync('ing','⟳');
   await _seasonReady;
   try{
-    const[teams,players,matches,avRows,lineupRows,countRows]=await Promise.all([
+    // Active season only (R1) and only the columns that are used (R2): teams + players first, then what belongs to them
+    const[teams,players]=await Promise.all([
       sbGet('teams',`season_id=eq.${ACTIVE_SEASON}&order=category,team_number`),
-      sbGetAll('players',`season_id=eq.${ACTIVE_SEASON}&order=lk,id`),
-      sbGetAll('matches','order=date,id'),
-      sbGetAll('availability','order=match_id,player_id'),
-      sbGetAll('lineups','order=match_id'),
-      sbGetAll('player_match_counts','order=player_id,team_id')
+      sbGetAll('players',`season_id=eq.${ACTIVE_SEASON}&order=lk,id`)
+    ]);
+    const _tids=teams.map(t=>t.id);
+    const[matches,countRows,ptAll]=await Promise.all([
+      sbGetIn('matches','team_id',_tids,'order=date,id'),
+      sbGetIn('player_match_counts','team_id',_tids,'select=player_id,team_id,matches_played&order=player_id,team_id'),
+      sbGetIn('player_teams','team_id',_tids,'select=player_id,team_id,rank,is_mainteam&order=player_id,team_id')
+    ]);
+    const _mids=matches.map(m=>m.id);
+    const[avRows,lineupRows]=await Promise.all([
+      sbGetIn('availability','match_id',_mids,'select=match_id,player_id,status&order=match_id,player_id'),
+      sbGetIn('lineups','match_id',_mids,'select=match_id,slots&order=match_id')
     ]);
     state.allTeams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender||catGender(t.category)}));
     const _activeTeamIds=new Set(state.allTeams.map(t=>t.id));
@@ -1006,14 +1023,7 @@ async function loadAll(){
     for(const r of lineupRows)state.lineups[r.match_id]=r.slots;
     state.matchCounts={};
     for(const r of countRows){if(!state.matchCounts[r.player_id])state.matchCounts[r.player_id]={};state.matchCounts[r.player_id][r.team_id]=r.matches_played;}
-    // Load player_teams paginated
-    let ptRows=[],ptOffset=0;
-    while(true){
-      const batch=await sbGet('player_teams',`order=player_id,team_id&limit=1000&offset=${ptOffset}`);
-      ptRows=ptRows.concat(batch);
-      if(batch.length<1000)break;
-      ptOffset+=1000;
-    }
+    const ptRows=ptAll;
     state.rankByTeam={};
     state.mainTeam={};
     for(const r of ptRows){
