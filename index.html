@@ -92,7 +92,7 @@ input::placeholder{color:var(--muted)}
 .back-btn:hover{border-color:var(--court);color:var(--court)}
 
 </style>
-<script src="common.js?v=1"></script>
+<script src="common.js?v=2"></script>
 </head>
 <body>
 <div id="sp-login" style="position:fixed;inset:0;background:#0d2015;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Sans',sans-serif;">
@@ -100,15 +100,15 @@ input::placeholder{color:var(--muted)}
     <div style="text-align:center;margin-bottom:24px">
       <img src="logo.svg" alt="Füchse Berlin" style="width:56px;height:56px;object-fit:contain;display:block;margin:0 auto 10px">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:.1em;color:#74c69d">FÜCHSE BERLIN</div>
-      <div style="font-size:.7rem;color:#74c69d;letter-spacing:.08em;text-transform:uppercase;margin-top:3px">Spieler-App</div>
+      <div style="font-size:.7rem;color:#74c69d;letter-spacing:.08em;text-transform:uppercase;margin-top:3px" data-ct="playerApp">Spieler-App</div>
     </div>
     <div style="margin-bottom:20px">
-      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#74c69d;display:block;margin-bottom:5px">Passwort</label>
+      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#74c69d;display:block;margin-bottom:5px" data-ct="password">Passwort</label>
       <input id="sp-pw" type="password" autocomplete="off"
         style="width:100%;background:#111;border:1px solid #2d6a4f;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none"
         placeholder="••••••••" onkeydown="if(event.key==='Enter')spLogin()">
     </div>
-    <button onclick="spLogin()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer">Einloggen</button>
+    <button onclick="spLogin()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer" data-ct="loginBtn">Einloggen</button>
     <div id="sp-err" style="margin-top:12px;font-size:.8rem;color:#ff6b5b;text-align:center;min-height:18px"></div>
   </div>
 </div>
@@ -216,7 +216,7 @@ const T={
   }
 };
 
-let lang='de';
+let lang=savedLang(); // language chosen last time on this device
 let state={players:[],teams:[],matches:[],availability:{},matchCounts:{},playerTeams:[],rankByTeam:{}};
 let activeTeamFilters=new Set();
 let selectedPlayer=null;
@@ -224,7 +224,7 @@ let selectedPlayer=null;
 function tr(k){return T[lang][k]||T.de[k]||k}
 
 function setLang(l){
-  lang=l;
+  lang=l;rememberLang(l);applyCT();
   document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));
   applyT();
   if(selectedPlayer&&document.getElementById('step-matches')?.classList.contains('active'))renderMatchList();
@@ -349,7 +349,7 @@ function makeICS(m,team){
     `DTSTART:${dtStart}`,`DTEND:${dtEnd}`,
     `SUMMARY:${summary}`,
     `LOCATION:${loc}`,
-    `DESCRIPTION:${m.home} · ${m.time}`,
+    `DESCRIPTION:${homeAwayLabel(m.home)} · ${m.time}`,
     `UID:${uid2}`,
     'END:VEVENT','END:VCALENDAR'
   ].join('\r\n');
@@ -493,7 +493,7 @@ function renderMatchList(){
         </div>
         <div class="match-info" style="flex:1">
           <div class="match-teams">${team?.name||'?'} vs ${(m.opponent||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
-          <div class="match-meta">${m.time} · ${m.home}${blocked?' · ⛔':''}${m.moved_from?(()=>{const o=(state.movedMatches||[]).find(x=>x.id===m.moved_from);return o?` · <span style="color:var(--warn)">⇄ ${tr('movedFrom')} ${fmtDate(o.date).full}</span>`:'';})():''}</div>
+          <div class="match-meta">${m.time} · ${homeAwayLabel(m.home)}${blocked?' · ⛔':''}${m.moved_from?(()=>{const o=(state.movedMatches||[]).find(x=>x.id===m.moved_from);return o?` · <span style="color:var(--warn)">⇄ ${tr('movedFrom')} ${fmtDate(o.date).full}</span>`:'';})():''}</div>
         </div>
         <button onclick="makeICS(state.matches.find(x=>x.id==='${m.id}'),teamById('${m.team_id}'))"
           style="background:none;border:1px solid #333;border-radius:8px;color:var(--muted);padding:4px 8px;font-size:11px;cursor:pointer;white-space:nowrap">
@@ -557,14 +557,13 @@ function groupByWeekend(list,cards){
   return html;
 }
 
-setLang('de');
-applyT();
+setLang(lang);
 function onClubLogin(){loadAll();}
 if(_clubRead())loadAll(); // data only loads after the club login
 </script>
 <footer style="text-align:center;padding:18px 28px;font-size:11px;color:var(--muted);border-top:1px solid #1e1e1e;margin-top:32px">
-  Daten basieren auf öffentlichen TVBB-Informationen · Nur für interne Vereinszwecke<br>
-  Sportwart der Tennisabteilung · Füchse Berlin Reinickendorf e.V.
+  <span data-ct="footer1">Daten basieren auf öffentlichen TVBB-Informationen · Nur für interne Vereinszwecke</span><br>
+  <span data-ct="footer2">Sportwart der Tennisabteilung · Füchse Berlin Reinickendorf e.V.</span>
 </footer>
 <!-- PRIORITY MODAL -->
 <div id="priority-modal" style="display:none;position:fixed;inset:0;background:#000000bb;z-index:500;align-items:center;justify-content:center;padding:20px">

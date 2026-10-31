@@ -183,7 +183,7 @@ input:focus,select:focus{border-color:var(--court)}
 .mv-wa{padding:8px 16px;border-radius:8px;border:none;background:#25d366;color:#08210f;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
 .mv-err{font-size:12px;color:var(--danger);min-height:16px;margin-top:8px}
 </style>
-<script src="common.js?v=1"></script>
+<script src="common.js?v=2"></script>
 </head>
 <body>
 
@@ -193,19 +193,19 @@ input:focus,select:focus{border-color:var(--court)}
     <div class="login-brand">
       <img src="logo.svg" alt="Füchse Berlin" style="width:56px;height:56px;object-fit:contain;display:block;margin:0 auto 10px">
       <div class="name">FÜCHSE BERLIN</div>
-      <div class="sub">Kapitän-App</div>
+      <div class="sub" data-ct="captainApp">Kapitän-App</div>
     </div>
     <div class="login-field">
-      <label>Benutzername</label>
-      <input id="login-email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Benutzername"
+      <label data-ct="username">Benutzername</label>
+      <input id="login-email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Benutzername" data-ct-ph="username"
         onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
     </div>
     <div class="login-field" style="margin-bottom:20px">
-      <label>Passwort</label>
+      <label data-ct="password">Passwort</label>
       <input id="login-pass" type="password" autocomplete="current-password" placeholder="••••••••"
         onkeydown="if(event.key==='Enter')doLogin()">
     </div>
-    <button class="login-btn" id="login-btn" onclick="doLogin()">Einloggen</button>
+    <button class="login-btn" id="login-btn" onclick="doLogin()" data-ct="loginBtn">Einloggen</button>
     <div class="login-err" id="login-err"></div>
   </div>
 </div>
@@ -216,7 +216,7 @@ input:focus,select:focus{border-color:var(--court)}
     <img class="logo-img" src="logo.svg" alt="Füchse Berlin">
     <div>
       <h1>FÜCHSE BERLIN</h1>
-      <span>Kapitän-App</span>
+      <span data-ct="captainApp">Kapitän-App</span>
     </div>
   </div>
   <div class="header-right">
@@ -253,7 +253,7 @@ input:focus,select:focus{border-color:var(--court)}
   <div style="min-width:0" id="main-content-wrapper">
     <!-- CONTENT: Spiele & Aufstellung -->
     <div id="view-spiele">
-    <div id="no-team-selected" class="empty" style="margin-top:60px">
+    <div id="no-team-selected" class="empty" style="margin-top:60px" data-ct="pickTeamLeft">
       &#8592; Mannschaft auswählen
     </div>
     <div id="team-content" style="display:none">
@@ -292,7 +292,7 @@ input:focus,select:focus{border-color:var(--court)}
         <div style="border-top:1px solid var(--border);margin-bottom:14px"></div>
 
         <!-- Availability table BELOW -->
-        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Verfügbarkeit</div>
+        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px" data-ct="availability">Verfügbarkeit</div>
         <div id="avail-list"></div>
       </div>
     </div>
@@ -323,9 +323,9 @@ input:focus,select:focus{border-color:var(--court)}
         </div>
         <div style="display:flex;gap:4px;margin-left:auto">
           <button id="kap-ov-btn-matches" onclick="setKapOverviewMode('matches')"
-            style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--court);background:var(--court);color:#0d1a10">📋 Spiele</button>
+            style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--court);background:var(--court);color:#0d1a10" data-ct="ovMatches">📋 Spiele</button>
           <button id="kap-ov-btn-players" onclick="setKapOverviewMode('players')"
-            style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border2);background:transparent;color:var(--muted)">👥 Spieler</button>
+            style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border2);background:transparent;color:var(--muted)" data-ct="ovPlayers">👥 Spieler</button>
         </div>
       </div>
       <div id="kap-overview-content" style="overflow-x:auto"></div>
@@ -380,7 +380,7 @@ function _rlCheck(errEl){
   const now=Date.now();
   if(_rl.lockedUntil>now){
     const secs=Math.ceil((_rl.lockedUntil-now)/1000);
-    errEl.textContent=`Zu viele Versuche. Bitte ${secs}s warten.`;
+    errEl.textContent=ct('tooManyWait')(secs);
     return false;
   }
   return true;
@@ -391,9 +391,9 @@ function _rlFail(errEl){
   if(timeout>0){
     _rl.lockedUntil=Date.now()+timeout;
     const mins=Math.ceil(timeout/60000);
-    errEl.textContent=`Zu viele Versuche. ${mins} Minute${mins>1?'n':''} gesperrt.`;
+    errEl.textContent=ct('tooManyLocked')(mins);
   } else {
-    errEl.textContent='Falscher Benutzer oder Passwort';
+    errEl.textContent=ct('wrongLogin');
   }
   setTimeout(()=>{if(Date.now()>=_rl.lockedUntil)errEl.textContent='';},3500);
 }
@@ -546,13 +546,13 @@ function openMoveModal(){
   document.getElementById('move-modal-box').innerHTML=`
     <h2>⇄ ${tr('moveTitle')}</h2>
     <div style="font-size:12px;color:var(--muted)">${tr('moveSub')}</div>
-    <div class="orig"><b>${esc(team?.name)} vs ${esc(m.opponent)}</b>${fmtDate(m.date)} · ${m.time} · ${m.home}</div>
+    <div class="orig"><b>${esc(team?.name)} vs ${esc(m.opponent)}</b>${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)}</div>
     <div class="row2">
       <div class="field"><label>${tr('moveDate')}</label><input type="date" id="mv-date" value="${m.date}"></div>
       <div class="field"><label>${tr('moveTime')}</label><input type="time" id="mv-time" value="${m.time||''}"></div>
     </div>
     <div class="field"><label>${tr('movePlace')}</label>
-      <select id="mv-home" onchange="document.getElementById('mv-nuliga').style.display=this.value==='Heim'?'':'none'"><option value="Heim" ${m.home==='Heim'?'selected':''}>Heim</option><option value="Auswärts" ${m.home!=='Heim'?'selected':''}>Auswärts</option></select>
+      <select id="mv-home" onchange="document.getElementById('mv-nuliga').style.display=this.value==='Heim'?'':'none'"><option value="Heim" ${m.home==='Heim'?'selected':''}>${ct('home')}</option><option value="Auswärts" ${m.home!=='Heim'?'selected':''}>${ct('away')}</option></select>
     </div>
     <div class="field"><label>${tr('moveNote')}</label><input type="text" id="mv-note" maxlength="140" placeholder="${esc(tr('moveNotePh'))}"></div>
     <label class="check"><input type="checkbox" id="mv-amtlich"><span>${tr('moveAmtlich')}<small>${tr('moveAmtlichSub')(fmtDate(spieltagOf(m)))}</small></span></label>
@@ -673,7 +673,7 @@ async function doLogin(){
   if(!_rlCheck(err))return;
   err.textContent='';btn.textContent='...';btn.disabled=true;
   const {data,error}=await _sbClient.auth.signInWithPassword({email,password:pass});
-  btn.textContent='Einloggen';btn.disabled=false;
+  btn.textContent=ct('loginBtn');btn.disabled=false;
   if(error){
     _rlFail(err);
     document.getElementById('login-pass').value='';
@@ -739,16 +739,14 @@ const T={
     noBlocked:'Keine Sperren',
     sperrenTitle:'Sperren',sperrenSub:'Übersicht der gesperrten Spieler nach Stammkader- und Stammmannschaftsregel',
     ruleBoxSK:'Stammkader: Pos. 1–6 (Sommer) / 1–4 (Winter) → Mannschaft 1, usw. Spieler dürfen nicht in niedrigere Mannschaft der Kategorie.',
-    ruleBoxSKBody:'Pos. 1–6 (Sommer) / 1–4 (Winter) → Mannschaft 1, usw. Spieler dürfen nicht in niedrigere Mannschaft der Kategorie.',
     ruleBoxSM:'Stammmannschaft: 2 Spiele in einer Mannschaft → gesperrt für alle niedrigeren in dieser Kategorie.',
-    ruleBoxSMBody:'2 Einsätze in höheren Mannschaften (zusammengezählt) → in dieser Mannschaft gesperrt.',
     colPlayer:'Spieler',colLK:'LK',colYear:'Jg.',
     legendSK:'■ SK = Stammkader',legendSKBlock:'■ SK⛔ = Stammkader gesperrt',legendSMBlock:'■ SM = Stammmannschaft gesperrt',legendWarn:'■ ⚠️ = 1 Spiel',legendCount:'■ Zahl = Spiele',
     legendLabels:['Aufstellung','Ersatz','Verfügbar','Im Notfall','Nein','★ Stammmannschaft'],
     overviewIconYes:'Ja',overviewIconNotfall:'Notfall',
   },
   es:{
-    tabSpiele:'Partidos & Alineación',tabOverview:'Overview',tabSperren:'Bloqueos',
+    tabSpiele:'Partidos & Alineación',tabOverview:'Resumen',tabSperren:'Bloqueos',
     logout:'Cerrar sesión',teamsTitle:'Equipos',loading:'Cargando...',
     countBtn:'Confirmar partido y contador +1',alreadyCounted:'Este partido ya fue contado mientras tanto. Se actualiza la página.',alreadyUndone:'Este partido ya no está contado. Se actualiza la página.',countedShort:'Contado',countedLabel:e=>`Ya contado${e?' (incl. Ersatz)':''}`,undoBtn:'Deshacer',
     whoPlayed:'¿Quién jugó?',tooManyPlayed:n=>`Máximo ${n} jugadores.`,morePlayed:n=>`Más de ${n}: solo si alguien jugó únicamente el dobles. Si un jugador fue reemplazado, desmarcalo.`,addDoublesPlayer:'Agregar jugador (solo dobles)',countDone:n=>`✓ ${n} jugadores +1`,undoConfirm:'¿Deshacer el contador de este partido?',
@@ -757,7 +755,7 @@ const T={
     moveAmtlich:'Movido de oficio (Spielleiter)',moveAmtlichSub:d=>`Solo así la nueva fecha cuenta como Spieltag. Si no, el Spieltag sigue siendo el ${d} (WSpO § 11 Abs. 4).`,
     movedBadge:'POSTERGADO',movedNewDate:'Nueva fecha',movedOn:(d,u)=>`movido el ${d}${u?` por ${u}`:''}`,newBadge:'NUEVO',
     movedFromInfo:(d,t)=>`<b>Movido</b> desde el ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} jugadores respondieron para la nueva fecha.`,
-    wkPlay:'aufgestellt',wkErsatz:'Ersatz',wkPlayTitle:(d,dt,t,tm)=>`${d} ${dt}: en la alineación de ${t} (${tm})`,wkAnsTitle:(d,dt,t)=>`${d} ${dt}: confirmó para ${t}, todavía no alineado`,
+    wkPlay:'alineado',wkErsatz:'Ersatz',wkPlayTitle:(d,dt,t,tm)=>`${d} ${dt}: en la alineación de ${t} (${tm})`,wkAnsTitle:(d,dt,t)=>`${d} ${dt}: confirmó para ${t}, todavía no alineado`,
     shareBtn:'Compartir',shareTitle:'Compartir alineación',shareSub:'Podés editar el texto antes de mandarlo (ej. punto de encuentro). El mensaje sale siempre en alemán.',shareWa:'WhatsApp',shareNative:'Compartir…',shareCopy:'Copiar',shareCopied:'✓ Copiado',shareClose:'Cerrar',
     moveBtn:'Mover',moveTitle:'Mover partido',moveSub:'Se crea una fecha nueva. La anterior queda visible como „verlegt“.',
     moveDate:'Nueva fecha',moveTime:'Hora',movePlace:'Lugar',moveNote:'Comentario (opcional)',moveNotePh:'p. ej. cancha ocupada, acordado con el rival',
@@ -773,9 +771,7 @@ const T={
     noBlocked:'Sin bloqueos',
     sperrenTitle:'Bloqueos',sperrenSub:'Resumen de jugadores bloqueados por regla Stammkader y Stammmannschaft',
     ruleBoxSK:'Stammkader: Pos. 1–6 (verano) / 1–4 (invierno) → Equipo 1, etc. Los jugadores no pueden jugar en equipos de número mayor.',
-    ruleBoxSKBody:'Pos. 1–6 (verano) / 1–4 (invierno) → Equipo 1, etc. Los jugadores no pueden jugar en equipos de número mayor.',
     ruleBoxSM:'Stammmannschaft: 2 partidos en un equipo → bloqueado para todos los inferiores de esa categoría.',
-    ruleBoxSMBody:'2 partidos en equipos superiores (sumados) → bloqueado en este equipo.',
     colPlayer:'Jugador',colLK:'LK',colYear:'Año',
     legendSK:'■ SK = Stammkader',legendSKBlock:'■ SK⛔ = Stammkader bloqueado',legendSMBlock:'■ SM = Stammmannschaft bloqueado',legendWarn:'■ ⚠️ = 1 partido',legendCount:'■ Número = partidos',
     legendLabels:['Aufstellung','Ersatz','Disponible','Si es necesario','No','★ Stammmannschaft'],
@@ -807,19 +803,17 @@ const T={
     noBlocked:'No blocks',
     sperrenTitle:'Blocks',sperrenSub:'Overview of blocked players by Stammkader and Stammmannschaft rule',
     ruleBoxSK:'Stammkader: Pos. 1–6 (summer) / 1–4 (winter) → Team 1, etc. Players may not play in a lower-numbered team.',
-    ruleBoxSKBody:'Pos. 1–6 (summer) / 1–4 (winter) → Team 1, etc. Players may not play in a lower-numbered team.',
     ruleBoxSM:'Stammmannschaft: 2 matches in a team → blocked for all lower-ranked teams in that category.',
-    ruleBoxSMBody:'2 matches in higher teams (added up) → blocked in this team.',
     colPlayer:'Player',colLK:'LK',colYear:'Year',
     legendSK:'■ SK = Stammkader',legendSKBlock:'■ SK⛔ = Stammkader blocked',legendSMBlock:'■ SM = Stammmannschaft blocked',legendWarn:'■ ⚠️ = 1 match',legendCount:'■ Number = matches',
     legendLabels:['Lineup','Ersatz','Available','If needed','No','★ Stammmannschaft'],
     overviewIconYes:'Yes',overviewIconNotfall:'If nec.',
   }
 };
-let lang='de';
+let lang=savedLang(); // language chosen last time on this device
 function tr(k){return T[lang][k]??T.de[k]??k;}
 function setLang(l){
-  lang=l;
+  lang=l;rememberLang(l);applyCT();renderWhoBadge();
   document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));
   const t=T[l];
   document.getElementById('tab-spiele').textContent=t.tabSpiele;
@@ -957,7 +951,7 @@ function selectTeam(teamId){
 function renderTeamContent(){
   const team=teamById(selectedTeamId);if(!team)return;
   document.getElementById('content-team-name').textContent=team.name;
-  document.getElementById('content-team-meta').textContent=`${team.liga} · ${team.season} · ${teamSize(team)} Spieler`;
+  document.getElementById('content-team-meta').textContent=`${team.liga} · ${seasonKindLabel(team.season)} · ${ct('nPlayers')(teamSize(team))}`;
   const matches=[...state.matches,...(state.movedMatches||[])].filter(m=>m.teamId===selectedTeamId).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
   if(!matches.length){
     document.getElementById('match-list').innerHTML='<div class="empty">Keine Spiele für diese Mannschaft</div>';
@@ -971,7 +965,7 @@ function renderTeamContent(){
         <div class="match-header">
           <div>
             <div class="match-title">${team.name} vs ${opp}</div>
-            <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${m.home}</div>
+            <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)}</div>
           </div>
           <span class="match-status status-moved">⇄ ${tr('movedBadge')}</span>
         </div>
@@ -991,12 +985,12 @@ function renderTeamContent(){
       <div class="match-header">
         <div>
           <div class="match-title">${team.name} vs ${opp}${m.movedFrom?`<span class="status-new">${tr('newBadge')}</span>`:''}</div>
-          <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${m.home}</div>
+          <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)}</div>
         </div>
-        <span class="match-status ${hasLineup||m.counted?'status-ready':'status-open'}">${m.counted?'✔ '+tr('countedShort'):hasLineup?'✓ Aufstellung':'⏳ offen'}</span>
+        <span class="match-status ${hasLineup||m.counted?'status-ready':'status-open'}">${m.counted?'✔ '+tr('countedShort'):hasLineup?ct('lineupOk'):ct('open')}</span>
       </div>
       <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">${yes}/${tp.length} verfügbar</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${yes}/${tp.length} ${ct('available')}</div>
     </div>`;
   }).join('');
 }
@@ -1012,7 +1006,6 @@ function selectMatch(matchId){
 
 // ── WOCHENENDE: other matches on the same Sat/Sun (different day) ──
 // Only a hint, never a block: playing Sat + Sun in different teams is allowed.
-const _WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
 function _wdOf(date){return date?new Date(date+'T12:00:00').getDay():null;}
 function _addDays(date,n){const d=new Date(date+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
 function weekendOtherDate(match){
@@ -1038,7 +1031,7 @@ function weekendBadges(pid,match){
   for(const om of weekendMatches(match)){
     const ot=teamById(om.teamId);const sz=teamSize(ot);
     const slots=state.lineups[om.id]||[];
-    const day=_WD[_wdOf(om.date)];
+    const day=ct('wd')[_wdOf(om.date)];
     const inMain=slots.slice(0,sz).includes(pid),inErsatz=slots[sz]===pid;
     if(inMain||inErsatz){
       const lbl=inMain?tr('wkPlay'):tr('wkErsatz');
@@ -1046,7 +1039,7 @@ function weekendBadges(pid,match){
     }else{
       const st=state.availability[om.id]?.[pid];
       if(st==='yes'||st==='conditional')
-        ans.push(`<span class="wk-badge ans" title="${tr('wkAnsTitle')(day,fmtDate(om.date),ot?.name||'?')}">${day}: ${st==='yes'?'Ja':'(Ja)'} ${_teamShort(ot)}</span>`);
+        ans.push(`<span class="wk-badge ans" title="${tr('wkAnsTitle')(day,fmtDate(om.date),ot?.name||'?')}">${day}: ${st==='yes'?ct('stYes'):'('+ct('stYes')+')'} ${_teamShort(ot)}</span>`);
     }
   }
   return play[0]||ans[0]||''; // only one badge: aufgestellt beats zugesagt
@@ -1056,8 +1049,8 @@ function renderAvailPanel(){
   const match=state.matches.find(m=>m.id===selectedMatchId);if(!match)return;
   const team=teamById(match.teamId);
   document.getElementById('panel-match-title').textContent=`${team?.name||'?'} vs ${match.opponent}`;
-  document.getElementById('panel-match-meta').textContent=`${fmtDate(match.date)} · ${match.time} · ${match.home}`;
-  document.getElementById('lineup-label').textContent=`Aufstellung (${teamSize(team)} Einzel)`;
+  document.getElementById('panel-match-meta').textContent=`${fmtDate(match.date)} · ${match.time} · ${homeAwayLabel(match.home)}`;
+  document.getElementById('lineup-label').textContent=ct('nSingles')(teamSize(team));
   // Verlegen: only admins/super users or the team's own login
   const mb=document.getElementById('move-btn');
   if(mb){mb.style.display=canEditTeam(match.teamId)&&!match.counted?'':'none';mb.textContent='⇄ '+tr('moveBtn');}
@@ -1219,10 +1212,10 @@ async function onSlotDrop(e,destIndex){
   while(newLineup.length<=Math.max(_dragSrcIndex,destIndex))newLineup.push(null);
   [newLineup[_dragSrcIndex],newLineup[destIndex]]=[newLineup[destIndex],newLineup[_dragSrcIndex]];
   state.lineups[selectedMatchId]=newLineup;
-  document.getElementById('save-indicator').innerHTML='<span class="spinner"></span>Speichern...';
+  document.getElementById('save-indicator').innerHTML='<span class="spinner"></span>'+ct('saving');
   try{
     await sbUpsert('lineups',[{match_id:selectedMatchId,slots:newLineup}]);
-    document.getElementById('save-indicator').textContent='✓ Gespeichert';
+    document.getElementById('save-indicator').textContent=ct('saved');
     setTimeout(()=>document.getElementById('save-indicator').textContent='',2000);
   }catch(e){console.error(e);}
   renderLineupSlots();
@@ -1274,7 +1267,7 @@ function renderLineupSlots(){
   if(hints.length)warnHtml+=`<details class="warn-group amber"${window.innerWidth>700?' open':''}><summary>⚠️ ${tr('nHints')(hints.length)}</summary><ul>${li(hints,/^\u26A0[\uFE0E\uFE0F]?\s*/)}</ul></details>`;
   if(!blockedWarnings.length&&!hints.length){
     if(filledCount>=size)
-      warnHtml=`<div class="ok-banner">✓ Aufstellung vollständig</div>`;
+      warnHtml=`<div class="ok-banner">${ct('lineupComplete')}</div>`;
     else if(filledCount>0)
       warnHtml+=`<div style="background:#2e2a15;border:1px solid #ffd70044;border-radius:8px;padding:6px 12px;margin-bottom:10px;font-size:12px;color:#ffd700">⏳ Aufstellung unvollständig (${filledCount}/${size})</div>`;
   }
@@ -1331,7 +1324,7 @@ function renderLineupSlots(){
   if(ersatzPid){
     const otherLineup=state.matches.find(om=>om.id!==selectedMatchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(ersatzPid));
     const otherErsatz=state.matches.find(om=>om.id!==selectedMatchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===ersatzPid);
-    if(otherLineup){const ot=teamById(otherLineup.teamId);ersatzWarn=`⚠️ Bereits Aufstellung: <strong>${ot?.name||'?'}</strong>`;}
+    if(otherLineup){const ot=teamById(otherLineup.teamId);ersatzWarn=`${ct('alreadyLineup')} <strong>${ot?.name||'?'}</strong>`;}
     else if(otherErsatz){const ot=teamById(otherErsatz.teamId);ersatzWarn=`⚠️ Bereits Ersatz: <strong>${ot?.name||'?'}</strong>`;}
   }
   slotsHtml+=`<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)">
@@ -1356,10 +1349,10 @@ async function sortLineupKap(){
   const sorted=lineup.filter(Boolean).sort((a,b)=>playerRankInTeam(a,match.teamId)-playerRankInTeam(b,match.teamId));
   while(sorted.length<lineup.length)sorted.push(null);
   state.lineups[selectedMatchId]=sorted;
-  document.getElementById('save-indicator').innerHTML='<span class="spinner"></span>Speichern...';
+  document.getElementById('save-indicator').innerHTML='<span class="spinner"></span>'+ct('saving');
   try{
     await sbUpsert('lineups',[{match_id:selectedMatchId,slots:sorted}]);
-    document.getElementById('save-indicator').textContent='✓ Gespeichert';
+    document.getElementById('save-indicator').textContent=ct('saved');
     setTimeout(()=>document.getElementById('save-indicator').textContent='',2000);
   }catch(e){console.error(e);}
   renderLineupSlots();
@@ -1370,13 +1363,13 @@ async function setSlot(pos,playerId){
   if(!selectedMatchId)return;
   if(!state.lineups[selectedMatchId])state.lineups[selectedMatchId]=[];
   state.lineups[selectedMatchId][pos]=playerId||null;
-  document.getElementById('save-indicator').innerHTML='<span class="spinner"></span>Speichern...';
+  document.getElementById('save-indicator').innerHTML='<span class="spinner"></span>'+ct('saving');
   try{
     await sbUpsert('lineups',[{match_id:selectedMatchId,slots:state.lineups[selectedMatchId]}]);
-    document.getElementById('save-indicator').textContent='✓ Gespeichert';
+    document.getElementById('save-indicator').textContent=ct('saved');
     setTimeout(()=>document.getElementById('save-indicator').textContent='',2000);
   }catch(e){
-    document.getElementById('save-indicator').textContent='Fehler beim Speichern';
+    document.getElementById('save-indicator').textContent=ct('saveErr');
     console.error(e);
   }
   renderLineupSlots();
@@ -1417,8 +1410,8 @@ function renderBlocking(){
   const filterCat=catSel?.value||'';
   const catsToShow=filterCat?[filterCat]:cats;
   let html=`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <div class="rule-box" style="flex:1;margin:0"><strong>Stammkader:</strong> ${tr('ruleBoxSKBody')}</div>
-    <div class="rule-box warn" style="flex:1;margin:0"><strong>Stammmannschaft:</strong> ${tr('ruleBoxSMBody')}</div>
+    <div class="rule-box" style="flex:1;margin:0"><strong>Stammkader:</strong> ${ct('ruleSK')}</div>
+    <div class="rule-box warn" style="flex:1;margin:0"><strong>Stammmannschaft:</strong> ${ct('ruleSM')}</div>
   </div>`;
   let anyEntry=false;
   for(const cat of catsToShow){
@@ -1472,13 +1465,13 @@ async function runAutoLineup(){
   )].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
   const slots=Array.from({length:size},(_,i)=>available[i]?.id||null);
   state.lineups[selectedMatchId]=slots;
-  document.getElementById('save-indicator').innerHTML='<span class="spinner"></span>Speichern...';
+  document.getElementById('save-indicator').innerHTML='<span class="spinner"></span>'+ct('saving');
   try{
     await sbUpsert('lineups',[{match_id:selectedMatchId,slots}]);
     document.getElementById('save-indicator').textContent='✓ Auto-Aufstellung gespeichert';
     setTimeout(()=>document.getElementById('save-indicator').textContent='',2500);
   }catch(e){
-    document.getElementById('save-indicator').textContent='Fehler beim Speichern';
+    document.getElementById('save-indicator').textContent=ct('saveErr');
     console.error(e);
   }
   renderLineupSlots();
@@ -1588,7 +1581,7 @@ function _buildTeamsPanelContent(panel){
     scopeTeams().filter(t=>_kapOvSelectedCats.includes(t.category));
   
   if(!availableTeams.length){
-    panel.innerHTML='<div style="padding:10px;color:var(--muted);font-size:12px">Keine Teams verfügbar</div>';
+    panel.innerHTML='<div style="padding:10px;color:var(--muted);font-size:12px">'+ct('noTeams')+'</div>';
     return;
   }
   
@@ -2028,38 +2021,40 @@ function shortPN(p){
       <div>
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
           <span style="color:var(--court);font-size:14px">●</span>
-          <span style="color:var(--muted)">Vollständig aufgestellt</span>
+          <span style="color:var(--muted)">${ct('fullLineup')}</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
           <span style="color:#ffd700;font-size:14px">●</span>
-          <span style="color:var(--muted)">Teilweise aufgestellt</span>
+          <span style="color:var(--muted)">${ct('partLineup')}</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
           <span style="color:var(--muted);font-size:14px">●</span>
-          <span style="color:var(--muted)">Noch offen</span>
+          <span style="color:var(--muted)">${ct('stillOpen')}</span>
         </div>
       </div>
       <div>
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
           <span style="color:#52c97a;font-size:14px">✓</span>
-          <span style="color:var(--muted)">Ja (Prio I)</span>
+          <span style="color:var(--muted)">${ct('yesPrio1')}</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
           <span style="color:rgba(82,201,122,.7);font-size:14px">(✓)</span>
-          <span style="color:var(--muted)">Prio II</span>
+          <span style="color:var(--muted)">${ct('prio2')}</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
           <span style="color:var(--warn);font-size:14px">!</span>
-          <span style="color:var(--muted)">Notfall</span>
+          <span style="color:var(--muted)">${ct('notfall')}</span>
         </div>
       </div>
     </div>
   </div>`;
   el.innerHTML=html;
 }
+// open in the language chosen last time (static texts are German)
+if(lang!=='de')setLang(lang);
 </script>
 <footer style="text-align:center;padding:18px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:40px">
-  Füchse Berlin Reinickendorf e.V. · Kapitän-App · TVBB Berlin
+  Füchse Berlin Reinickendorf e.V. · <span data-ct="captainApp">Kapitän-App</span> · TVBB Berlin
 </footer>
 <!-- MODAL: Spiel verlegen -->
 <div class="mv-bg" id="move-modal" onclick="if(event.target===this)closeMoveModal()">

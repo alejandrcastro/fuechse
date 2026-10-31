@@ -61,11 +61,83 @@ window.spLogin=async function(){
     setTimeout(()=>o.style.display='none',300);
     if(typeof onClubLogin==='function')onClubLogin();
   }else{
-    err.textContent='Falsches Passwort';
+    err.textContent=ct('wrongPw');
     inp.value='';
     setTimeout(()=>err.textContent='',2000);
   }
 };
+
+// ── COMMON TEXTS ── (DE → ES → EN) texts shared by several pages, plus a few that had no translation yet.
+// ct(key) uses the page's current language. Elements with data-ct="key" (or data-ct-ph for a placeholder) are filled by applyCT().
+const CT={
+  de:{winter4:'Winter-Mannschaften spielen immer zu viert.',to4er:x=>x?'Auf 4er-Mannschaft (4 Spieler) umstellen?':'Auf normale Mannschaft (6 Spieler) umstellen?',storageBlocked:'Der Browser-Speicher ist blockiert – die Ansicht kann nicht gewechselt werden.',
+      wd:['So','Mo','Di','Mi','Do','Fr','Sa'],
+      groupYes:'✓ Ja',groupConditional:'(Ja) — Prio II',groupNotfall:'Im Notfall',groupNo:'✗ Nein',winter:'Winter',summer:'Sommer',playerCol:'Spieler',
+      ruleSK:'Pos. 1–6 (Sommer) / 1–4 (Winter) → Mannschaft 1, usw. Spieler dürfen nicht in niedrigere Mannschaft der Kategorie.',
+      ruleSM:'2 Einsätze in höheren Mannschaften (zusammengezählt) → in dieser Mannschaft gesperrt.',
+      stDate:'Datum',stMatch:'Partie',stAns:'Antw.',stYes:'Ja',stNotfall:'Notfall',stNo:'Nein',stLK:'LK ⌀<br>Aufstellung',stSM:'Stammsp.<br>Verfügbar',
+      stMatches:'Spiele analysiert',stRate:'Antwortquote',stLKAvg:'LK ⌀ Aufstellung:',statsMatches:'🎾 Spiele',
+      home:'Heim',away:'Auswärts',available:'verfügbar',open:'⏳ offen',lineupOk:'✓ Aufstellung',lineupWord:'Aufstellung',lineupComplete:'✓ Aufstellung vollständig',
+      alreadyLineup:'⚠️ Bereits Aufstellung:',noAnswer:'— Keine Angabe',alreadyCounted:'✓ Bereits gezählt',inclErsatz:' (inkl. Ersatz)',undo:'↶ Rückgängig',
+      countBtn:'✔ Spiel bestätigen & Zähler +1',saved:'✓ Gespeichert',saving:'Speichern...',saveErr:'Fehler beim Speichern',
+      fullLineup:'Vollständig aufgestellt',partLineup:'Teilweise aufgestellt',stillOpen:'Noch offen',yesPrio1:'Ja (Prio I)',prio2:'Prio II',notfall:'Notfall',
+      nPlayers:n=>`${n} Spieler`,nSingles:n=>`Aufstellung (${n} Einzel)`,teams:'Mannschaften',noTeams:'Keine Teams verfügbar',addMatch:'+ Spiel hinzufügen',pickTeamLeft:'← Mannschaft auswählen',
+      availability:'Verfügbarkeit',ovMatches:'📋 Spiele',ovPlayers:'👥 Spieler',
+      footer1:'Daten basieren auf öffentlichen TVBB-Informationen · Nur für interne Vereinszwecke',footer2:'Sportwart der Tennisabteilung · Füchse Berlin Reinickendorf e.V.',
+      playerApp:'Spieler-App',captainApp:'Kapitän-App',playerAppLink:'↗ Spieler-App',username:'Benutzername',password:'Passwort',loginBtn:'Einloggen',
+      wrongPw:'Falsches Passwort',wrongLogin:'Falscher Benutzer oder Passwort',
+      tooManyWait:s=>`Zu viele Versuche. Bitte ${s}s warten.`,tooManyLocked:m=>`Zu viele Versuche. ${m} Minute${m>1?'n':''} gesperrt.`,
+      capOnly:'Angemeldet · darf nur die eigene Mannschaft bearbeiten'},
+  es:{winter4:'Los equipos de invierno siempre son de 4.',to4er:x=>x?'¿Pasar a equipo de 4 (4 jugadores)?':'¿Pasar a equipo normal (6 jugadores)?',storageBlocked:'El almacenamiento del navegador está bloqueado: no se puede cambiar la vista.',
+      wd:['Do','Lu','Ma','Mi','Ju','Vi','Sá'],
+      groupYes:'✓ Sí',groupConditional:'(Sí) — Prio II',groupNotfall:'Si es necesario',groupNo:'✗ No',winter:'Invierno',summer:'Verano',playerCol:'Jugador',
+      ruleSK:'Pos. 1–6 (verano) / 1–4 (invierno) → Equipo 1, etc. Los jugadores no pueden jugar en equipos de número mayor de la categoría.',
+      ruleSM:'2 partidos en equipos superiores (sumados) → bloqueado en este equipo.',
+      stDate:'Fecha',stMatch:'Partido',stAns:'Resp.',stYes:'Sí',stNotfall:'Si es nec.',stNo:'No',stLK:'LK ⌀<br>alineación',stSM:'Stammsp.<br>disponibles',
+      stMatches:'partidos analizados',stRate:'tasa de respuesta',stLKAvg:'LK ⌀ alineación:',statsMatches:'🎾 Partidos',
+      home:'Local',away:'Visitante',available:'disponibles',open:'⏳ pendiente',lineupOk:'✓ Alineación',lineupWord:'alineación',lineupComplete:'✓ Alineación completa',
+      alreadyLineup:'⚠️ Ya en la alineación:',noAnswer:'— Sin respuesta',alreadyCounted:'✓ Ya contado',inclErsatz:' (incl. Ersatz)',undo:'↶ Deshacer',
+      countBtn:'✔ Confirmar partido y contador +1',saved:'✓ Guardado',saving:'Guardando...',saveErr:'Error al guardar',
+      fullLineup:'Alineación completa',partLineup:'Alineación incompleta',stillOpen:'Pendiente',yesPrio1:'Sí (Prio I)',prio2:'Prio II',notfall:'Si es necesario',
+      nPlayers:n=>`${n} jugadores`,nSingles:n=>`Alineación (${n} singles)`,teams:'Equipos',noTeams:'No hay equipos',addMatch:'+ Agregar partido',pickTeamLeft:'← Elegí un equipo',
+      availability:'Disponibilidad',ovMatches:'📋 Partidos',ovPlayers:'👥 Jugadores',
+      footer1:'Datos basados en información pública del TVBB · Solo para uso interno del club',footer2:'Sportwart de la sección de tenis · Füchse Berlin Reinickendorf e.V.',
+      playerApp:'App de jugadores',captainApp:'App de capitanes',playerAppLink:'↗ App de jugadores',username:'Usuario',password:'Contraseña',loginBtn:'Entrar',
+      wrongPw:'Contraseña incorrecta',wrongLogin:'Usuario o contraseña incorrectos',
+      tooManyWait:s=>`Demasiados intentos. Esperá ${s} s.`,tooManyLocked:m=>`Demasiados intentos. Bloqueado por ${m} minuto${m>1?'s':''}.`,
+      capOnly:'Conectado · solo puede editar su propio equipo'},
+  en:{winter4:'Winter teams are always 4 players.',to4er:x=>x?'Change to 4er (4 players)?':'Change to standard (6 players)?',storageBlocked:'Browser storage blocked — cannot switch the admin view.',
+      wd:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+      groupYes:'✓ Yes',groupConditional:'(Yes) — Prio II',groupNotfall:'If needed',groupNo:'✗ No',winter:'Winter',summer:'Summer',playerCol:'Player',
+      ruleSK:'Pos. 1–6 (summer) / 1–4 (winter) → team 1, etc. Players may not play in a lower team (higher number) of the category.',
+      ruleSM:'2 matches in higher teams (added up) → blocked in this team.',
+      stDate:'Date',stMatch:'Match',stAns:'Ans.',stYes:'Yes',stNotfall:'If needed',stNo:'No',stLK:'LK ⌀<br>lineup',stSM:'Stammsp.<br>available',
+      stMatches:'matches analysed',stRate:'response rate',stLKAvg:'LK ⌀ lineup:',statsMatches:'🎾 Matches',
+      home:'Home',away:'Away',available:'available',open:'⏳ open',lineupOk:'✓ Lineup',lineupWord:'lineup',lineupComplete:'✓ Lineup complete',
+      alreadyLineup:'⚠️ Already in a lineup:',noAnswer:'— No answer',alreadyCounted:'✓ Already counted',inclErsatz:' (incl. sub)',undo:'↶ Undo',
+      countBtn:'✔ Confirm match & counter +1',saved:'✓ Saved',saving:'Saving...',saveErr:'Error while saving',
+      fullLineup:'Lineup complete',partLineup:'Lineup partly set',stillOpen:'Still open',yesPrio1:'Yes (Prio I)',prio2:'Prio II',notfall:'If needed',
+      nPlayers:n=>`${n} players`,nSingles:n=>`Lineup (${n} singles)`,teams:'Teams',noTeams:'No teams available',addMatch:'+ Add match',pickTeamLeft:'← Choose a team',
+      availability:'Availability',ovMatches:'📋 Matches',ovPlayers:'👥 Players',
+      footer1:'Based on public TVBB information · For internal club use only',footer2:'Sportwart of the tennis section · Füchse Berlin Reinickendorf e.V.',
+      playerApp:'Player app',captainApp:'Captain app',playerAppLink:'↗ Player app',username:'Username',password:'Password',loginBtn:'Log in',
+      wrongPw:'Wrong password',wrongLogin:'Wrong username or password',
+      tooManyWait:s=>`Too many attempts. Please wait ${s}s.`,tooManyLocked:m=>`Too many attempts. Locked for ${m} minute${m>1?'s':''}.`,
+      capOnly:'Logged in · may only edit their own team'}
+};
+function ct(k){const L=(typeof lang==='string'&&CT[lang])?lang:'de';return CT[L][k]??CT.de[k]??k;}
+// matches store home/away as 'Heim' / 'Auswärts'; this is only the label shown
+function seasonKindLabel(v){return v==='Winter'?ct('winter'):v==='Sommer'?ct('summer'):(v||'');}
+function homeAwayLabel(v){return v==='Heim'?ct('home'):v==='Auswärts'?ct('away'):(v||'');}
+function applyCT(){
+  document.querySelectorAll('[data-ct]').forEach(e=>{e.textContent=ct(e.dataset.ct);});
+  document.querySelectorAll('[data-ct-ph]').forEach(e=>{e.placeholder=ct(e.dataset.ctPh);});
+  document.querySelectorAll('[data-ct-title]').forEach(e=>{e.title=ct(e.dataset.ctTitle);});
+}
+// The language chosen last time on this device (all pages share it), so the login screen opens in it too
+const LANG_KEY='fcb_lang';
+function savedLang(){try{const l=localStorage.getItem(LANG_KEY);return['de','es','en'].includes(l)?l:'de';}catch(e){return'de';}}
+function rememberLang(l){try{localStorage.setItem(LANG_KEY,l);}catch(e){}}
 
 // ── TEAMS & CATEGORIES ──
 function teamNumber(team){

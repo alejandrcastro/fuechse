@@ -66,7 +66,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 .done .big{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;color:var(--court);margin-bottom:8px}
 .hidden{display:none!important}
 </style>
-<script src="common.js?v=1"></script>
+<script src="common.js?v=2"></script>
 </head>
 <body>
 <div id="sp-login" style="position:fixed;inset:0;background:#0d2015;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Sans',sans-serif;">
@@ -74,15 +74,15 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     <div style="text-align:center;margin-bottom:24px">
       <img src="logo.svg" alt="Füchse Berlin" style="width:56px;height:56px;object-fit:contain;display:block;margin:0 auto 10px">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:.1em;color:#74c69d">FÜCHSE BERLIN</div>
-      <div style="font-size:.7rem;color:#74c69d;letter-spacing:.08em;text-transform:uppercase;margin-top:3px">Spieler-App</div>
+      <div style="font-size:.7rem;color:#74c69d;letter-spacing:.08em;text-transform:uppercase;margin-top:3px" data-ct="playerApp">Spieler-App</div>
     </div>
     <div style="margin-bottom:20px">
-      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#74c69d;display:block;margin-bottom:5px">Passwort</label>
+      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#74c69d;display:block;margin-bottom:5px" data-ct="password">Passwort</label>
       <input id="sp-pw" type="password" autocomplete="off"
         style="width:100%;background:#111;border:1px solid #2d6a4f;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none"
         placeholder="••••••••" onkeydown="if(event.key==='Enter')spLogin()">
     </div>
-    <button onclick="spLogin()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer">Einloggen</button>
+    <button onclick="spLogin()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer" data-ct="loginBtn">Einloggen</button>
     <div id="sp-err" style="margin-top:12px;font-size:.8rem;color:#ff6b5b;text-align:center;min-height:18px"></div>
   </div>
 </div>
@@ -273,7 +273,7 @@ const T={
   }
 };
 
-let lang='de';
+let lang=savedLang(); // language chosen last time on this device
 let players=[],responses=[];
 let mode='found',selected=null;
 const form={gender:null,participates:null,categories:new Set(),commitment:null,captain:null};
@@ -286,7 +286,7 @@ function nameKey(n){return n.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase
 function compName(){return COMP_NAME[lang][SURVEY.competition]+' '+SURVEY.year;}
 
 function setLang(l){
-  lang=l;document.documentElement.lang=l;
+  lang=l;document.documentElement.lang=l;rememberLang(l);applyCT();
   document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));
   applyT();
 }
@@ -502,7 +502,7 @@ function showForm(){
   updateExistingNotice();
 }
 
-applyT();
+setLang(lang);
 function onClubLogin(){loadAll();}
 if(_clubRead())loadAll(); // data only loads after the club login
 </script>
