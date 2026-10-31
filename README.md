@@ -153,21 +153,21 @@ A player's category-specific rank (from `player_teams.rank`) determines which te
 
 ### Stammmannschaft
 
-If a player plays 2 or more matches for a team in their category, they are blocked from all higher-numbered teams in that same category for the rest of the season.
+Matches played in **all higher teams** of the category are **added up**: 2 or more → the player is blocked in this team for the rest of the season; exactly 1 → warning. Example: 1 match in Herren I and 1 in Herren II → blocked in Herren III.
 
 - The rule applies **per category** independently (Herren, Herren 30, Damen, etc.)
 - The admin can manually set `is_mainteam` to highlight the recommended team (gold `★ SM` badge)
 - The Ersatz slot is **not counted by default** but can be opted-in per match via checkbox
 
-### LK > 20 Rule (Local Club Rule)
+### Spieltag (WSpO § 10 (3), § 11 (4))
 
-This is a **local club rule**, not an official TVBB rule. Its purpose is to keep the rosters of higher-ranked teams (Herren I / II) shorter and to concentrate new players (typically those with LK > 20) in the entry-level teams (Mannschaft 3 onwards), unless explicitly declared otherwise by the club and the coaches.
+A match moved by the captains keeps its **original date as Spieltag** (unless the Spielleiter moves it "von Amts wegen"; then the new date counts). A player who already played on that Spieltag cannot be fielded in the moved match.
 
-In practice, players with LK > 20 can only play in Herren team #3 or higher. This rule:
-- **Only applies** in the admin Sperren tab view
-- **Does not** generate warnings in lineup views (kapitaen and admin)
-- **Does not** affect the `isPlayerBlockedForLineup()` check used in warnings
-- Can be **overridden manually** when the club and coaches declare otherwise
+### Import cut (local club rule)
+
+Not a TVBB rule. When the Meldeliste is imported, players with an LK worse than 18 are **not put on the Herren I list**, unless Herren I is their own Stammkader team (`H1_MAX_LK` in `admin.html`). It only decides which team lists a player lands in; it does not block anyone.
+
+All blocking rules live in `common.js` and are checked by `tests/rules.test.js`.
 
 ### Rank Warnings (LK Order)
 
