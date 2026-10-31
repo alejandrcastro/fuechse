@@ -61,6 +61,9 @@ input::placeholder{color:var(--muted)}
 .btn-outline:hover{border-color:var(--court);color:var(--court)}
 .btn-sm{width:auto;display:inline-block;padding:7px 16px;font-size:13px;margin:0}
 
+.wk-head{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:18px 2px 7px}
+.wk-head:first-child{margin-top:4px}
+.wk-head span:last-child{font-weight:500;letter-spacing:.5px}
 .match-item{background:#1b2d24;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:9px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:12px}
 .match-item:hover{border-color:var(--court)99;background:#243330;transform:translateY(-1px)}
 .match-date{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--court);line-height:1;min-width:40px;text-align:center}
@@ -273,6 +276,7 @@ const T={
     backMatches:'← Zurück zu den Spielen',
     blockedWarn:'⛔ Du bist für dieses Spiel gesperrt (Stammkader / Stammmannschaft).',
     noMatches:'Keine Spiele für deine Mannschaft gefunden.',
+    weekend:'Wochenende',week:'Woche',nMatches:n=>n===1?'1 Spiel':n+' Spiele',
     noPlayers:'Keine Spieler gefunden.',
     priorityTitle:'Welches Spiel ist dein Hauptspiel?',priorityHint:'Du hast an diesem Tag bereits zugesagt. Wähle dein Hauptspiel — das andere wird als (Ja) eingetragen.',
     filterHint:'Tippe auf ein Team, um nur dessen Spiele zu sehen. Du siehst alle Teams, für die du spielberechtigt bist.',
@@ -289,6 +293,7 @@ const T={
     backMatches:'← Volver a los partidos',
     blockedWarn:'⛔ Estás bloqueado para este partido (Stammkader / Stammmannschaft).',
     noMatches:'No hay partidos para tu equipo.',
+    weekend:'Fin de semana',week:'Semana',nMatches:n=>n===1?'1 partido':n+' partidos',
     noPlayers:'No se encontraron jugadores.',
     priorityTitle:'¿Cuál es tu partido principal?',priorityHint:'Ya confirmaste para otro partido ese día. Elegí cuál es tu principal — el otro quedará como (Sí).',
     filterHint:'Tocá un equipo para ver solo sus partidos. Ves todos los equipos en los que tenés Spielberechtigung.',
@@ -305,6 +310,7 @@ const T={
     backMatches:'← Back to matches',
     blockedWarn:'⛔ You are blocked for this match (Stammkader / Stammmannschaft).',
     noMatches:'No matches found for your team.',
+    weekend:'Weekend',week:'Week',nMatches:n=>n===1?'1 match':n+' matches',
     noPlayers:'No players found.',
     priorityTitle:'Which is your main match?',priorityHint:'You already confirmed for another match that day. Choose your main one — the other will become (Yes).',
     filterHint:'Tap a team to filter matches. You see all teams you are eligible to play for (Spielberechtigt).',
@@ -323,6 +329,7 @@ function setLang(l){
   lang=l;
   document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));
   applyT();
+  if(selectedPlayer&&document.getElementById('step-matches')?.classList.contains('active'))renderMatchList();
 }
 
 function applyT(){
@@ -628,7 +635,7 @@ function renderMatchList(){
   const myMatches=[...state.matches,...(state.movedMatches||[])].filter(m=>filterIds.includes(m.team_id)).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
   const el=document.getElementById('match-list');
   if(!myMatches.length){el.innerHTML=`<div class="empty">${tr('noMatches')}</div>`;return;}
-  el.innerHTML=myMatches.map(m=>{
+  const cards=myMatches.map(m=>{
     const team=teamById(m.team_id);
     if(m.status==='verlegt'){
       const d0=fmtDate(m.date);const nm=state.matches.find(x=>x.id===m.moved_to);const nd=nm?fmtDate(nm.date):null;
@@ -684,7 +691,40 @@ function renderMatchList(){
           ✗ ${tr('noBtn').replace('✗ ','')}</button>
       </div>
     </div>`;
-  }).join('');
+  });
+  el.innerHTML=groupByWeekend(myMatches,cards);
+}
+
+// ── WEEKEND GROUPS ── one header per calendar week (Mon–Sun), labelled by its weekend
+function _d(iso){return new Date(iso+'T12:00:00');}
+function _iso(d){return d.toISOString().slice(0,10);}
+function weekKey(iso){const d=_d(iso);d.setDate(d.getDate()-((d.getDay()+6)%7));return _iso(d);} // Monday of that week
+function weekLabel(mondayIso,dates){
+  const mon=_d(mondayIso),sat=new Date(mon),sun=new Date(mon);sat.setDate(mon.getDate()+5);sun.setDate(mon.getDate()+6);
+  const onlyWeekend=dates.every(x=>{const wd=_d(x).getDay();return wd===0||wd===6;});
+  const from=onlyWeekend?sat:mon,to=sun;
+  const loc=lang==='de'?'de-DE':lang==='es'?'es-AR':'en-GB';
+  const month=d=>d.toLocaleDateString(loc,{month:'long'});
+  const sameMonth=from.getMonth()===to.getMonth();
+  let range;
+  if(lang==='de')range=sameMonth?`${from.getDate()}.${onlyWeekend?'/':'–'}${to.getDate()}. ${month(to)}`:`${from.getDate()}. ${month(from)} – ${to.getDate()}. ${month(to)}`;
+  else if(lang==='es')range=sameMonth?`${from.getDate()}${onlyWeekend?'/':'–'}${to.getDate()} de ${month(to)}`:`${from.getDate()} de ${month(from)} – ${to.getDate()} de ${month(to)}`;
+  else range=sameMonth?`${from.getDate()}${onlyWeekend?'/':'–'}${to.getDate()} ${month(to)}`:`${from.getDate()} ${month(from)} – ${to.getDate()} ${month(to)}`;
+  return `${onlyWeekend?tr('weekend'):tr('week')} ${range}`;
+}
+function groupByWeekend(list,cards){
+  let html='',cur=null;
+  list.forEach((m,i)=>{
+    const k=weekKey(m.date);
+    if(k!==cur){
+      cur=k;
+      const inWeek=list.filter(x=>weekKey(x.date)===k);
+      const count=inWeek.filter(x=>x.status!=='verlegt').length;
+      html+=`<div class="wk-head"><span>${weekLabel(k,inWeek.map(x=>x.date))}</span><span>${tr('nMatches')(count)}</span></div>`;
+    }
+    html+=cards[i];
+  });
+  return html;
 }
 
 function selectMatch(id){
