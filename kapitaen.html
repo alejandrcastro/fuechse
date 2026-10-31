@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kapitän – Füchse Berlin</title>
 <link href="fonts/fonts.css?v=1" rel="stylesheet">
-<link href="match.css?v=1" rel="stylesheet">
+<link href="match.css?v=2" rel="stylesheet">
 <style>
 :root{
   --green:#2d6a4f;--green-light:#40916c;--court:#74c69d;
@@ -88,30 +88,8 @@ input:focus,select:focus{border-color:var(--court)}
 
 /* Drag & drop lineup slots */
 /* ── VERLEGT ── */
-.move-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--warn)66;background:#2e2414;color:var(--warn);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
-.move-btn:hover{background:var(--warn);color:#1a1205}
-.mv-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:5000;padding:16px}
-.mv-bg.open{display:flex}
-.mv{background:var(--card);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:440px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.6);max-height:calc(100vh - 32px);overflow-y:auto}
-.mv h2{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:var(--warn);margin-bottom:2px}
-.mv .orig{background:#181818;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--muted);margin:12px 0 16px}
-.mv .orig b{display:block;color:var(--white);font-size:13px;margin-bottom:2px;text-decoration:line-through;text-decoration-color:var(--warn)}
-.mv .field{margin-bottom:12px}
-.mv .field label{display:block;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
-.mv .row2{display:grid;grid-template-columns:1.4fr 1fr;gap:10px}
-.mv .check{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--white);margin:4px 0 10px;cursor:pointer}
-.mv .check input{width:auto;margin-top:2px;accent-color:var(--court)}
-.mv .check small{display:block;color:var(--muted);font-size:11px;margin-top:1px}
-.mv-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
-.mv-ghost{padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
-.mv-go{padding:8px 16px;border-radius:8px;border:none;background:var(--warn);color:#1a1205;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
-.mv-go:disabled{opacity:.5;cursor:default}
-.mv textarea.share-text{width:100%;min-height:260px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.45;outline:none;resize:vertical}
-.mv textarea.share-text:focus{border-color:var(--court)}
-.mv-wa{padding:8px 16px;border-radius:8px;border:none;background:#25d366;color:#08210f;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
-.mv-err{font-size:12px;color:var(--danger);min-height:16px;margin-top:8px}
 </style>
-<script src="common.js?v=3"></script>
+<script src="common.js?v=4"></script>
 </head>
 <body>
 
@@ -200,7 +178,7 @@ input:focus,select:focus{border-color:var(--court)}
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="move-btn" id="move-btn" onclick="openMoveModal()" style="display:none">⇄ Verlegen</button>
-            <button class="auto-btn" id="auto-btn" onclick="runAutoLineup()">&#9889; Auto-Aufstellung</button>
+            <button class="auto-btn" id="auto-btn" onclick="runAutoLineup()" data-ct="autoLineup">⚡ Auto-Aufstellung</button>
             <button class="auto-btn" id="sort-btn" onclick="sortLineupKap()" style="background:transparent;border-color:var(--court)44;color:var(--muted)">↕ Sort</button>
             <button class="auto-btn" id="share-btn" onclick="openShareModal()" style="background:#14301f;border-color:#25d36666;color:#25d366">📤 Teilen</button>
           </div>
@@ -405,135 +383,10 @@ async function kapUndoMatchCount(){
     renderTeamContent();renderAvailPanel();renderBlocking();
   }catch(e){console.error(e);setSync('err','✕ '+tr('moveErrSave'));}
 }
-// ── SPIEL VERLEGEN ── creates a new match with the new date/time and marks the original as 'verlegt'
-function openMoveModal(){
-  const m=state.matches.find(x=>x.id===selectedMatchId);if(!m)return;
-  if(!canEditTeam(m.teamId))return;
-  const team=teamById(m.teamId);
-  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-  const hasLineup=(state.lineups[m.id]||[]).some(Boolean);
-  document.getElementById('move-modal-box').innerHTML=`
-    <h2>⇄ ${tr('moveTitle')}</h2>
-    <div style="font-size:12px;color:var(--muted)">${tr('moveSub')}</div>
-    <div class="orig"><b>${esc(team?.name)} vs ${esc(m.opponent)}</b>${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)}</div>
-    <div class="row2">
-      <div class="field"><label>${tr('moveDate')}</label><input type="date" id="mv-date" value="${m.date}"></div>
-      <div class="field"><label>${tr('moveTime')}</label><input type="time" id="mv-time" value="${m.time||''}"></div>
-    </div>
-    <div class="field"><label>${tr('movePlace')}</label>
-      <select id="mv-home" onchange="document.getElementById('mv-nuliga').style.display=this.value==='Heim'?'':'none'"><option value="Heim" ${m.home==='Heim'?'selected':''}>${ct('home')}</option><option value="Auswärts" ${m.home!=='Heim'?'selected':''}>${ct('away')}</option></select>
-    </div>
-    <div class="field"><label>${tr('moveNote')}</label><input type="text" id="mv-note" maxlength="140" placeholder="${esc(tr('moveNotePh'))}"></div>
-    <label class="check"><input type="checkbox" id="mv-amtlich"><span>${tr('moveAmtlich')}<small>${tr('moveAmtlichSub')(fmtDate(spieltagOf(m)))}</small></span></label>
-    <label class="check"><input type="checkbox" id="mv-lineup" ${hasLineup?'checked':''}><span>${tr('moveKeepLineup')}<small>${tr('moveKeepLineupSub')}</small></span></label>
-    <label class="check"><input type="checkbox" id="mv-avail"><span>${tr('moveKeepAvail')}<small>${tr('moveKeepAvailSub')}</small></span></label>
-    <div class="rule-box warn" id="mv-nuliga" style="margin:6px 0 0;${m.home==='Heim'?'':'display:none'}">${tr('moveNuliga')}</div>
-    <div class="mv-err" id="mv-err"></div>
-    <div class="mv-actions">
-      <button class="mv-ghost" onclick="closeMoveModal()">${tr('moveCancel')}</button>
-      <button class="mv-go" id="mv-go" onclick="doMoveMatch()">${tr('moveGo')}</button>
-    </div>`;
-  document.getElementById('move-modal').classList.add('open');
-}
-// ── SHARE (WhatsApp / native share / copy) ──
-// Builds a plain-text summary of the selected match + lineup. Always German: it goes to the team chat.
-function buildShareText(m){
-  const team=teamById(m.teamId);
-  const size=teamSize(team);
-  const slots=state.lineups[m.id]||[];
-  const WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
-  const d=m.date?new Date(m.date+'T12:00:00'):null;
-  const heim=m.home==='Heim';
-  const L=[];
-  L.push(`🎾 *${team?.name||'?'} – ${m.opponent}*`);
-  if(team?.liga)L.push(team.liga);
-  L.push('');
-  L.push(`📅 ${d?WD[d.getDay()]+', ':''}${fmtDate(m.date)} · ${m.time||'?'} Uhr`);
-  L.push(heim?'🏠 Heimspiel':'🚗 Auswärtsspiel');
-  if(m.venue){
-    L.push(`📍 ${m.venue}`);
-    L.push(`https://maps.google.com/?q=${encodeURIComponent(m.venue)}`);
-  }
-  const orig=m.movedFrom?(state.movedMatches||[]).find(x=>x.id===m.movedFrom):null;
-  if(orig)L.push(`⇄ Verlegt vom ${fmtDate(orig.date)} ${orig.time||''}`.trim());
-  if(spieltagOf(m)!==m.date)L.push(`(Spieltag ${fmtDate(spieltagOf(m))})`);
-  L.push('');
-  L.push('*Aufstellung*');
-  for(let i=0;i<size;i++){
-    const p=slots[i]?playerById(slots[i]):null;
-    L.push(`${i+1}. ${p?p.name+(p.lkStr?` (${p.lkStr})`:''):'— offen —'}`);
-  }
-  const e=slots[size]?playerById(slots[size]):null;
-  L.push(`Ersatz: ${e?e.name+(e.lkStr?` (${e.lkStr})`:''):'—'}`);
-  return L.join('\n');
-}
-function openShareModal(){
-  const m=state.matches.find(x=>x.id===selectedMatchId);if(!m)return;
-  const canNative=!!navigator.share;
-  document.getElementById('share-modal-box').innerHTML=`
-    <h2 style="color:#25d366">📤 ${tr('shareTitle')}</h2>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">${tr('shareSub')}</div>
-    <textarea class="share-text" id="share-text"></textarea>
-    <div class="mv-err" id="share-msg" style="color:var(--court)"></div>
-    <div class="mv-actions" style="flex-wrap:wrap">
-      <button class="mv-ghost" onclick="closeShareModal()">${tr('shareClose')}</button>
-      <button class="mv-ghost" onclick="copyShareText()">${tr('shareCopy')}</button>
-      ${canNative?`<button class="mv-ghost" onclick="nativeShare()">${tr('shareNative')}</button>`:''}
-      <button class="mv-wa" onclick="shareWhatsApp()">${tr('shareWa')}</button>
-    </div>`;
-  document.getElementById('share-text').value=buildShareText(m);
-  document.getElementById('share-modal').classList.add('open');
-}
-function closeShareModal(){document.getElementById('share-modal').classList.remove('open');}
-function _shareVal(){return document.getElementById('share-text').value;}
-function shareWhatsApp(){window.open('https://wa.me/?text='+encodeURIComponent(_shareVal()),'_blank');}
-async function nativeShare(){try{await navigator.share({text:_shareVal()});}catch(e){if(e.name!=='AbortError')console.error(e);}}
-async function copyShareText(){
-  const t=_shareVal();
-  try{await navigator.clipboard.writeText(t);}
-  catch(e){const ta=document.getElementById('share-text');ta.select();document.execCommand('copy');}
-  const msg=document.getElementById('share-msg');msg.textContent=tr('shareCopied');setTimeout(()=>msg.textContent='',2000);
-}
-function closeMoveModal(){document.getElementById('move-modal').classList.remove('open');}
-async function doMoveMatch(){
-  const m=state.matches.find(x=>x.id===selectedMatchId);if(!m)return;
-  if(!canEditTeam(m.teamId)){closeMoveModal();return;}
-  const date=document.getElementById('mv-date').value;
-  const time=document.getElementById('mv-time').value;
-  const home=document.getElementById('mv-home').value;
-  const note=document.getElementById('mv-note').value.trim();
-  const keepLineup=document.getElementById('mv-lineup').checked;
-  const keepAvail=document.getElementById('mv-avail').checked;
-  const amtlich=document.getElementById('mv-amtlich').checked;
-  const err=document.getElementById('mv-err');
-  if(!date||!time){err.textContent=tr('moveErrMissing');return;}
-  if(date===m.date&&time===m.time&&home===m.home){err.textContent=tr('moveErrSame');return;}
-  const btn=document.getElementById('mv-go');btn.disabled=true;btn.textContent='...';
-  setSync('ing','⟳');
-  const newId=uid();
-  try{
-    // 1) new match
-    // Spieltag stays the original one (WSpO § 11 (4)) unless moved "von Amts wegen"
-    await sbUpsert('matches',[{id:newId,team_id:m.teamId,opponent:m.opponent,date,time,home,venue:m.venue,moved_from:m.id,spieltag:amtlich?date:spieltagOf(m)}]);
-    // 2) copy lineup / availability if requested
-    if(keepLineup&&(state.lineups[m.id]||[]).some(Boolean))await sbUpsert('lineups',[{match_id:newId,slots:state.lineups[m.id]}]);
-    if(keepAvail){
-      const rows=Object.entries(state.availability[m.id]||{}).map(([pid,status])=>({match_id:newId,player_id:pid,status}));
-      for(let i=0;i<rows.length;i+=100)await sbUpsert('availability',rows.slice(i,i+100));
-    }
-    // 3) mark original as verlegt
-    const r=await fetch(`${SB_URL}/rest/v1/matches?id=eq.${m.id}`,{method:'PATCH',headers:getHDR(),
-      body:JSON.stringify({status:'verlegt',moved_to:newId,move_note:note||null,moved_at:new Date().toISOString(),moved_by:currentUsername()})});
-    if(!r.ok)throw new Error(await r.text());
-    closeMoveModal();
-    selectedMatchId=newId;
-    await loadAll();
-    selectMatch(newId);
-  }catch(e){
-    console.error(e);setSync('err','✕ '+tr('moveErrSave'));
-    err.textContent=tr('moveErrSave');btn.disabled=false;btn.textContent=tr('moveGo');
-  }
-}
+// ── SPIEL VERLEGEN + TEILEN ── the dialogs are in common.js (the same in admin); captains only for their own team
+function openMoveModal(){const m=state.matches.find(x=>x.id===selectedMatchId);if(m&&canEditTeam(m.teamId))mvOpenMove(selectedMatchId);}
+function openShareModal(){mvOpenShare(selectedMatchId);}
+async function onMatchMoved(newId){selectedMatchId=newId;await loadAll();selectMatch(newId);}
 async function doLogin(){
   const email=usernameToEmail(document.getElementById('login-email').value);
   const pass=document.getElementById('login-pass').value;
@@ -851,17 +704,7 @@ function renderAvailPanel(){
   const mb=document.getElementById('move-btn');
   if(mb){mb.style.display=canEditTeam(match.teamId)&&!match.counted?'':'none';mb.textContent='⇄ '+tr('moveBtn');}
   const shb=document.getElementById('share-btn');if(shb)shb.textContent='📤 '+tr('shareBtn');
-  const mi=document.getElementById('move-info');
-  if(mi){
-    const orig=match.movedFrom?(state.movedMatches||[]).find(x=>x.id===match.movedFrom):null;
-    if(orig){
-      const tp=state.players.filter(p=>p.teamIds.includes(match.teamId));
-      const answered=tp.filter(p=>(state.availability[match.id]||{})[p.id]).length;
-      const note=orig.moveNote?` — <i>${orig.moveNote.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</i>`:'';
-      const stInfo=spieltagOf(match)!==match.date?`<br>${tr('spieltagInfo')(fmtDate(spieltagOf(match)))}`:'';
-      mi.innerHTML=`<div class="info-banner">⇄ ${tr('movedFromInfo')(fmtDate(orig.date),orig.time)}${note}${stInfo}<br>${tr('movedAnswers')(answered,tp.length)}</div>`;
-    }else mi.innerHTML='';
-  }
+  const mi=document.getElementById('move-info');if(mi)mi.innerHTML=mvMoveInfoHtml(match);
 
   document.getElementById('avail-list').innerHTML=mvAvailHtml(match);
   renderLineupSlots();
@@ -1638,13 +1481,5 @@ if(lang!=='de')setLang(lang);
 <footer style="text-align:center;padding:18px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:40px">
   Füchse Berlin Reinickendorf e.V. · <span data-ct="captainApp">Kapitän-App</span> · TVBB Berlin
 </footer>
-<!-- MODAL: Spiel verlegen -->
-<div class="mv-bg" id="move-modal" onclick="if(event.target===this)closeMoveModal()">
-  <div class="mv" id="move-modal-box"></div>
-</div>
-<!-- MODAL: Aufstellung teilen -->
-<div class="mv-bg" id="share-modal" onclick="if(event.target===this)closeShareModal()">
-  <div class="mv" id="share-modal-box"></div>
-</div>
 </body>
 </html>

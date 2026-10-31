@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sportwart – Füchse Berlin</title>
 <link href="fonts/fonts.css?v=1" rel="stylesheet">
-<link href="match.css?v=1" rel="stylesheet">
+<link href="match.css?v=2" rel="stylesheet">
 <script src="vendor/pdf-3.11.174.min.js" integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"></script>
 <style>
 :root{
@@ -150,7 +150,7 @@ select option{background:#1b2926}
 }
 #sec-spieleadmin{padding:0!important}
 </style>
-<script src="common.js?v=3"></script>
+<script src="common.js?v=4"></script>
 </head>
 <body>
 <div id="login-overlay" style="position:fixed;inset:0;background:#0d1a10;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Sans',sans-serif;">
@@ -506,10 +506,13 @@ window.doLogin=async function(){
                 <div style="font-size:11px;color:var(--muted);margin-top:2px" id="sa-panel-meta"></div>
               </div>
               <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <button class="auto-btn" id="sa-auto-btn" onclick="saAutoLineup()" data-i18n="autoLineup"></button>
+                <button class="move-btn" id="sa-move-btn" onclick="mvOpenMove(_saMatchId)">⇄ Verlegen</button>
+                <button class="auto-btn" id="sa-auto-btn" onclick="saAutoLineup()" data-ct="autoLineup">⚡ Auto-Aufstellung</button>
                 <button class="auto-btn" id="sa-sort-btn" onclick="saSortLineup()" style="background:transparent;border-color:var(--court)44;color:var(--muted)">↕ Sort</button>
+                <button class="auto-btn" id="sa-share-btn" onclick="mvOpenShare(_saMatchId)" style="background:#14301f;border-color:#25d36666;color:#25d366">📤 Teilen</button>
               </div>
             </div>
+            <div id="sa-move-info"></div>
             <!-- Lineup (same view as kapitaen: common.js → MATCH VIEW) -->
             <div class="lineup-section" style="margin-top:0;margin-bottom:18px">
               <div class="lineup-title" id="sa-lineup-label"></div>
@@ -2016,6 +2019,8 @@ function renderSAMatchList(){
   document.getElementById('sa-match-list').innerHTML=matches.length?mvMatchCardsHtml(team,matches,{selected:_saMatchId,open:'saSelectMatch'}):'<div class="empty">Keine Spiele für diese Mannschaft</div>';
 }
 
+// after Verlegen (common.js): reload and open the new match
+async function onMatchMoved(newId){await loadAll();if(_saTeamId)saSelectTeam(_saTeamId);saSelectMatch(newId);}
 function saSelectMatch(matchId){
   _saMatchId=matchId;
   renderSAMatchList();
@@ -2029,6 +2034,9 @@ function renderSAPanel(){
   const team=teamById(match.teamId);
   document.getElementById('sa-panel-title').textContent=`${team?.name||'?'} vs ${match.opponent}`;
   document.getElementById('sa-panel-meta').textContent=`${fmtDate(match.date)} · ${match.time} · ${homeAwayLabel(match.home)}`;
+  const mb=document.getElementById('sa-move-btn');if(mb){mb.style.display=match.counted?'none':'';mb.textContent='⇄ '+ct('moveBtn');}
+  const sb=document.getElementById('sa-share-btn');if(sb)sb.textContent='📤 '+ct('shareBtn');
+  document.getElementById('sa-move-info').innerHTML=mvMoveInfoHtml(match);
   renderSALineup();
   renderSAAvail();
 }

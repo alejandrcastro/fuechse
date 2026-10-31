@@ -70,7 +70,8 @@ window.spLogin=async function(){
 // ── COMMON TEXTS ── (DE → ES → EN) texts shared by several pages, plus a few that had no translation yet.
 // ct(key) uses the page's current language. Elements with data-ct="key" (or data-ct-ph for a placeholder) are filled by applyCT().
 const CT={
-  de:{countedShort:'Gezählt',movedBadge:'VERLEGT',newBadge:'NEU',movedNewDate:'Neuer Termin',movedOn:(d,u)=>`verlegt am ${d}${u?` von ${u}`:''}`,
+  de:{autoLineup:'⚡ Auto-Aufstellung',spieltagInfo:d=>`Spieltag laut WSpO: <b>${d}</b> – wer an diesem Tag schon gespielt hat, ist gesperrt.`,moveAmtlich:'Verlegung von Amts wegen (Spielleiter)',moveAmtlichSub:d=>`Nur dann gilt der neue Termin als Spieltag. Sonst bleibt der Spieltag ${d} (WSpO § 11 Abs. 4).`,movedFromInfo:(d,t)=>`<b>Verlegt</b> vom ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} Spieler haben für den neuen Termin geantwortet.`,shareBtn:'Teilen',shareTitle:'Aufstellung teilen',shareSub:'Text vor dem Senden anpassen (z.B. Treffpunkt). Die Nachricht ist immer auf Deutsch.',shareWa:'WhatsApp',shareNative:'Teilen…',shareCopy:'Kopieren',shareCopied:'✓ Kopiert',shareClose:'Schließen',moveBtn:'Verlegen',moveTitle:'Spiel verlegen',moveSub:'Es wird ein neuer Termin angelegt. Der alte bleibt als „verlegt“ sichtbar.',moveDate:'Neues Datum',moveTime:'Uhrzeit',movePlace:'Ort',moveNote:'Hinweis (optional)',moveNotePh:'z. B. Halle belegt, mit Gegner abgesprochen',moveKeepLineup:'Aufstellung übernehmen',moveKeepLineupSub:'Die bisherige Aufstellung wird in den neuen Termin kopiert.',moveKeepAvail:'Verfügbarkeiten übernehmen',moveKeepAvailSub:'Aus: Die Spieler werden für den neuen Termin neu abgefragt (empfohlen, weil sich das Datum ändert).',moveNuliga:'Heimspiel: Die Verlegung muss zusätzlich in <strong>nuLiga</strong> eingetragen werden.',moveCancel:'Abbrechen',moveGo:'Verlegen',moveErrMissing:'Bitte Datum und Uhrzeit angeben.',moveErrSame:'Datum, Uhrzeit und Ort sind unverändert.',moveErrSave:'Fehler beim Speichern',
+      countedShort:'Gezählt',movedBadge:'VERLEGT',newBadge:'NEU',movedNewDate:'Neuer Termin',movedOn:(d,u)=>`verlegt am ${d}${u?` von ${u}`:''}`,
       playedOnSpieltag:(n,d,t)=>`⛔ ${n} hat am Spieltag ${d} bereits für ${t} gespielt (WSpO § 10 Abs. 3).`,isBlocked:(n,t)=>`⛔ ${n} ist gesperrt für ${t}`,
       nBlocks:n=>n===1?'1 Sperre in der Aufstellung':`${n} Sperren in der Aufstellung`,nHints:n=>n===1?'1 Hinweis':`${n} Hinweise`,
       rankOrder:(a,ra,b,rb)=>`Pos. ${a} (Rang ${ra}) vor Pos. ${b} (Rang ${rb})`,alsoPlays:(n,t)=>`${n} spielt auch für <strong>${t}</strong> am selben Tag`,
@@ -102,7 +103,8 @@ const CT={
       wrongPw:'Falsches Passwort',wrongLogin:'Falscher Benutzer oder Passwort',
       tooManyWait:s=>`Zu viele Versuche. Bitte ${s}s warten.`,tooManyLocked:m=>`Zu viele Versuche. ${m} Minute${m>1?'n':''} gesperrt.`,
       capOnly:'Angemeldet · darf nur die eigene Mannschaft bearbeiten'},
-  es:{countedShort:'Contado',movedBadge:'POSTERGADO',newBadge:'NUEVO',movedNewDate:'Nueva fecha',movedOn:(d,u)=>`movido el ${d}${u?` por ${u}`:''}`,
+  es:{autoLineup:'⚡ Alineación automática',spieltagInfo:d=>`Spieltag según la WSpO: <b>${d}</b>: quien ya jugó ese día está bloqueado.`,moveAmtlich:'Movido de oficio (Spielleiter)',moveAmtlichSub:d=>`Solo así la nueva fecha cuenta como Spieltag. Si no, el Spieltag sigue siendo el ${d} (WSpO § 11 Abs. 4).`,movedFromInfo:(d,t)=>`<b>Movido</b> desde el ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} jugadores respondieron para la nueva fecha.`,shareBtn:'Compartir',shareTitle:'Compartir alineación',shareSub:'Podés editar el texto antes de mandarlo (ej. punto de encuentro). El mensaje sale siempre en alemán.',shareWa:'WhatsApp',shareNative:'Compartir…',shareCopy:'Copiar',shareCopied:'✓ Copiado',shareClose:'Cerrar',moveBtn:'Mover',moveTitle:'Mover partido',moveSub:'Se crea una fecha nueva. La anterior queda visible como „verlegt“.',moveDate:'Nueva fecha',moveTime:'Hora',movePlace:'Lugar',moveNote:'Comentario (opcional)',moveNotePh:'p. ej. cancha ocupada, acordado con el rival',moveKeepLineup:'Mantener alineación',moveKeepLineupSub:'La alineación actual se copia a la nueva fecha.',moveKeepAvail:'Mantener disponibilidades',moveKeepAvailSub:'Desactivado: se vuelve a consultar a los jugadores para la nueva fecha (recomendado, porque cambia el día).',moveNuliga:'Partido de local: el cambio también hay que cargarlo en <strong>nuLiga</strong>.',moveCancel:'Cancelar',moveGo:'Mover',moveErrMissing:'Indicá fecha y hora.',moveErrSame:'Fecha, hora y lugar no cambiaron.',moveErrSave:'Error al guardar',
+      countedShort:'Contado',movedBadge:'POSTERGADO',newBadge:'NUEVO',movedNewDate:'Nueva fecha',movedOn:(d,u)=>`movido el ${d}${u?` por ${u}`:''}`,
       playedOnSpieltag:(n,d,t)=>`⛔ ${n} ya jugó el Spieltag ${d} para ${t} (WSpO § 10 Abs. 3).`,isBlocked:(n,t)=>`⛔ ${n} está bloqueado para ${t}`,
       nBlocks:n=>n===1?'1 bloqueo en la alineación':`${n} bloqueos en la alineación`,nHints:n=>n===1?'1 aviso':`${n} avisos`,
       rankOrder:(a,ra,b,rb)=>`Pos. ${a} (Rang ${ra}) antes que Pos. ${b} (Rang ${rb})`,alsoPlays:(n,t)=>`${n} también juega para <strong>${t}</strong> el mismo día`,
@@ -134,7 +136,8 @@ const CT={
       wrongPw:'Contraseña incorrecta',wrongLogin:'Usuario o contraseña incorrectos',
       tooManyWait:s=>`Demasiados intentos. Esperá ${s} s.`,tooManyLocked:m=>`Demasiados intentos. Bloqueado por ${m} minuto${m>1?'s':''}.`,
       capOnly:'Conectado · solo puede editar su propio equipo'},
-  en:{countedShort:'Counted',movedBadge:'RESCHEDULED',newBadge:'NEW',movedNewDate:'New date',movedOn:(d,u)=>`moved on ${d}${u?` by ${u}`:''}`,
+  en:{autoLineup:'⚡ Auto lineup',spieltagInfo:d=>`Match day per WSpO: <b>${d}</b> – anyone who already played that day is blocked.`,moveAmtlich:'Moved officially (Spielleiter)',moveAmtlichSub:d=>`Only then the new date counts as match day. Otherwise it stays ${d} (WSpO § 11 (4)).`,movedFromInfo:(d,t)=>`<b>Rescheduled</b> from ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} players have answered for the new date.`,shareBtn:'Share',shareTitle:'Share lineup',shareSub:'Edit the text before sending (e.g. meeting point). The message is always in German.',shareWa:'WhatsApp',shareNative:'Share…',shareCopy:'Copy',shareCopied:'✓ Copied',shareClose:'Close',moveBtn:'Reschedule',moveTitle:'Reschedule match',moveSub:'A new date is created. The old one stays visible as “verlegt”.',moveDate:'New date',moveTime:'Time',movePlace:'Venue',moveNote:'Note (optional)',moveNotePh:'e.g. court booked, agreed with opponent',moveKeepLineup:'Keep lineup',moveKeepLineupSub:'The current lineup is copied to the new date.',moveKeepAvail:'Keep availability',moveKeepAvailSub:'Off: players are asked again for the new date (recommended, since the day changes).',moveNuliga:'Home match: the change must also be entered in <strong>nuLiga</strong>.',moveCancel:'Cancel',moveGo:'Reschedule',moveErrMissing:'Please enter date and time.',moveErrSame:'Date, time and venue are unchanged.',moveErrSave:'Error while saving',
+      countedShort:'Counted',movedBadge:'RESCHEDULED',newBadge:'NEW',movedNewDate:'New date',movedOn:(d,u)=>`moved on ${d}${u?` by ${u}`:''}`,
       playedOnSpieltag:(n,d,t)=>`⛔ ${n} already played on match day ${d} for ${t} (WSpO § 10 (3)).`,isBlocked:(n,t)=>`⛔ ${n} is blocked for ${t}`,
       nBlocks:n=>n===1?'1 block in the lineup':`${n} blocks in the lineup`,nHints:n=>n===1?'1 note':`${n} notes`,
       rankOrder:(a,ra,b,rb)=>`Pos. ${a} (rank ${ra}) before pos. ${b} (rank ${rb})`,alsoPlays:(n,t)=>`${n} also plays for <strong>${t}</strong> on the same day`,
@@ -553,6 +556,136 @@ function mvMatchCardsHtml(team,matches,o){
       <div style="font-size:11px;color:var(--muted);margin-top:4px">${yes}/${tp.length} ${ct('available')}</div>
     </div>`;
   }).join('');
+}
+
+// ── MOVE A MATCH (Verlegen) + SHARE THE LINEUP ── kapitaen and admin. The page defines onMatchMoved(newId) to reload.
+function _mvModal(id){
+  let el=document.getElementById(id);
+  if(!el){document.body.insertAdjacentHTML('beforeend',`<div class="mv-bg" id="${id}" onclick="if(event.target===this)this.classList.remove('open')"><div class="mv" id="${id}-box"></div></div>`);el=document.getElementById(id);}
+  return el;
+}
+function _mvEsc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+function mvUser(){
+  if(typeof currentUsername==='function')return currentUsername();
+  return((window._sbAuth?._session?.user?.email)||'').split('@')[0];
+}
+// "moved from …" note above the lineup of a moved match
+function mvMoveInfoHtml(match){
+  const orig=match.movedFrom?(state.movedMatches||[]).find(x=>x.id===match.movedFrom):null;
+  if(!orig)return'';
+  const tp=state.players.filter(p=>p.teamIds.includes(match.teamId));
+  const answered=tp.filter(p=>(state.availability[match.id]||{})[p.id]).length;
+  const note=orig.moveNote?` — <i>${_mvEsc(orig.moveNote)}</i>`:'';
+  const st=spieltagOf(match)!==match.date?`<br>${ct('spieltagInfo')(fmtDate(spieltagOf(match)))}`:'';
+  return`<div class="info-banner">⇄ ${ct('movedFromInfo')(fmtDate(orig.date),orig.time)}${note}${st}<br>${ct('movedAnswers')(answered,tp.length)}</div>`;
+}
+let _mvMoveId=null;
+function mvOpenMove(matchId){
+  const m=state.matches.find(x=>x.id===matchId);if(!m)return;
+  _mvMoveId=matchId;
+  const team=teamById(m.teamId),hasLineup=(state.lineups[m.id]||[]).some(Boolean);
+  const modal=_mvModal('move-modal');
+  document.getElementById('move-modal-box').innerHTML=`
+    <h2>⇄ ${ct('moveTitle')}</h2>
+    <div style="font-size:12px;color:var(--muted)">${ct('moveSub')}</div>
+    <div class="orig"><b>${_mvEsc(team?.name)} vs ${_mvEsc(m.opponent)}</b>${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)}</div>
+    <div class="row2">
+      <div class="field"><label>${ct('moveDate')}</label><input type="date" id="mv-date" value="${m.date}"></div>
+      <div class="field"><label>${ct('moveTime')}</label><input type="time" id="mv-time" value="${m.time||''}"></div>
+    </div>
+    <div class="field"><label>${ct('movePlace')}</label>
+      <select id="mv-home" onchange="document.getElementById('mv-nuliga').style.display=this.value==='Heim'?'':'none'"><option value="Heim" ${m.home==='Heim'?'selected':''}>${ct('home')}</option><option value="Auswärts" ${m.home!=='Heim'?'selected':''}>${ct('away')}</option></select>
+    </div>
+    <div class="field"><label>${ct('moveNote')}</label><input type="text" id="mv-note" maxlength="140" placeholder="${_mvEsc(ct('moveNotePh'))}"></div>
+    <label class="check"><input type="checkbox" id="mv-amtlich"><span>${ct('moveAmtlich')}<small>${ct('moveAmtlichSub')(fmtDate(spieltagOf(m)))}</small></span></label>
+    <label class="check"><input type="checkbox" id="mv-lineup" ${hasLineup?'checked':''}><span>${ct('moveKeepLineup')}<small>${ct('moveKeepLineupSub')}</small></span></label>
+    <label class="check"><input type="checkbox" id="mv-avail"><span>${ct('moveKeepAvail')}<small>${ct('moveKeepAvailSub')}</small></span></label>
+    <div class="rule-box warn" id="mv-nuliga" style="margin:6px 0 0;${m.home==='Heim'?'':'display:none'}">${ct('moveNuliga')}</div>
+    <div class="mv-err" id="mv-err"></div>
+    <div class="mv-actions">
+      <button class="mv-ghost" onclick="mvCloseMove()">${ct('moveCancel')}</button>
+      <button class="mv-go" id="mv-go" onclick="mvDoMove()">${ct('moveGo')}</button>
+    </div>`;
+  modal.classList.add('open');
+}
+function mvCloseMove(){document.getElementById('move-modal')?.classList.remove('open');}
+// a new match with the new date/time; the original is marked 'verlegt'
+async function mvDoMove(){
+  const m=state.matches.find(x=>x.id===_mvMoveId);if(!m)return;
+  const date=document.getElementById('mv-date').value,time=document.getElementById('mv-time').value,home=document.getElementById('mv-home').value;
+  const note=document.getElementById('mv-note').value.trim();
+  const keepLineup=document.getElementById('mv-lineup').checked,keepAvail=document.getElementById('mv-avail').checked,amtlich=document.getElementById('mv-amtlich').checked;
+  const err=document.getElementById('mv-err');
+  if(!date||!time){err.textContent=ct('moveErrMissing');return;}
+  if(date===m.date&&time===m.time&&home===m.home){err.textContent=ct('moveErrSame');return;}
+  const btn=document.getElementById('mv-go');btn.disabled=true;btn.textContent='...';
+  if(typeof setSync==='function')setSync('ing','⟳');
+  const newId=uid();
+  try{
+    // Spieltag stays the original one (WSpO § 11 (4)) unless moved "von Amts wegen"
+    await sbUpsert('matches',[{id:newId,team_id:m.teamId,opponent:m.opponent,date,time,home,venue:m.venue,moved_from:m.id,spieltag:amtlich?date:spieltagOf(m)}]);
+    if(keepLineup&&(state.lineups[m.id]||[]).some(Boolean))await sbUpsert('lineups',[{match_id:newId,slots:state.lineups[m.id]}]);
+    if(keepAvail){
+      const rows=Object.entries(state.availability[m.id]||{}).map(([pid,status])=>({match_id:newId,player_id:pid,status}));
+      for(let i=0;i<rows.length;i+=100)await sbUpsert('availability',rows.slice(i,i+100));
+    }
+    const r=await fetch(`${SB_URL}/rest/v1/matches?id=eq.${m.id}`,{method:'PATCH',headers:getHDR(),
+      body:JSON.stringify({status:'verlegt',moved_to:newId,move_note:note||null,moved_at:new Date().toISOString(),moved_by:mvUser()})});
+    if(!r.ok)throw new Error(await r.text());
+    mvCloseMove();
+    if(typeof onMatchMoved==='function')await onMatchMoved(newId);
+  }catch(e){
+    console.error(e);if(typeof setSync==='function')setSync('err','✕ '+ct('saveErr'));
+    err.textContent=ct('saveErr');btn.disabled=false;btn.textContent=ct('moveGo');
+  }
+}
+// plain text of the match + lineup for the team chat. Always German.
+function mvShareText(m){
+  const team=teamById(m.teamId),size=teamSize(team),slots=state.lineups[m.id]||[];
+  const WD=['So','Mo','Di','Mi','Do','Fr','Sa'],d=m.date?new Date(m.date+'T12:00:00'):null;
+  const L=[];
+  L.push(`🎾 *${team?.name||'?'} – ${m.opponent}*`);
+  if(team?.liga)L.push(team.liga);
+  L.push('');
+  L.push(`📅 ${d?WD[d.getDay()]+', ':''}${fmtDate(m.date)} · ${m.time||'?'} Uhr`);
+  L.push(m.home==='Heim'?'🏠 Heimspiel':'🚗 Auswärtsspiel');
+  if(m.venue){L.push(`📍 ${m.venue}`);L.push(`https://maps.google.com/?q=${encodeURIComponent(m.venue)}`);}
+  const orig=m.movedFrom?(state.movedMatches||[]).find(x=>x.id===m.movedFrom):null;
+  if(orig)L.push(`⇄ Verlegt vom ${fmtDate(orig.date)} ${orig.time||''}`.trim());
+  if(spieltagOf(m)!==m.date)L.push(`(Spieltag ${fmtDate(spieltagOf(m))})`);
+  L.push('');
+  L.push('*Aufstellung*');
+  for(let i=0;i<size;i++){const p=slots[i]?playerById(slots[i]):null;L.push(`${i+1}. ${p?p.name+(p.lkStr?` (${p.lkStr})`:''):'— offen —'}`);}
+  const e=slots[size]?playerById(slots[size]):null;
+  L.push(`Ersatz: ${e?e.name+(e.lkStr?` (${e.lkStr})`:''):'—'}`);
+  return L.join('\n');
+}
+function mvOpenShare(matchId){
+  const m=state.matches.find(x=>x.id===matchId);if(!m)return;
+  const modal=_mvModal('share-modal');
+  document.getElementById('share-modal-box').innerHTML=`
+    <h2 style="color:#25d366">📤 ${ct('shareTitle')}</h2>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">${ct('shareSub')}</div>
+    <textarea class="share-text" id="share-text"></textarea>
+    <div class="mv-err" id="share-msg" style="color:var(--court)"></div>
+    <div class="mv-actions" style="flex-wrap:wrap">
+      <button class="mv-ghost" onclick="mvCloseShare()">${ct('shareClose')}</button>
+      <button class="mv-ghost" onclick="mvShareCopy()">${ct('shareCopy')}</button>
+      ${navigator.share?`<button class="mv-ghost" onclick="mvShareNative()">${ct('shareNative')}</button>`:''}
+      <button class="mv-wa" onclick="mvShareWa()">${ct('shareWa')}</button>
+    </div>`;
+  document.getElementById('share-text').value=mvShareText(m);
+  modal.classList.add('open');
+}
+function mvCloseShare(){document.getElementById('share-modal')?.classList.remove('open');}
+function _mvShareVal(){return document.getElementById('share-text').value;}
+function mvShareWa(){window.open('https://wa.me/?text='+encodeURIComponent(_mvShareVal()),'_blank');}
+async function mvShareNative(){try{await navigator.share({text:_mvShareVal()});}catch(e){if(e.name!=='AbortError')console.error(e);}}
+async function mvShareCopy(){
+  const t=_mvShareVal();
+  try{await navigator.clipboard.writeText(t);}
+  catch(e){const ta=document.getElementById('share-text');ta.select();document.execCommand('copy');}
+  const msg=document.getElementById('share-msg');msg.textContent=ct('shareCopied');setTimeout(()=>msg.textContent='',2000);
 }
 
 // ── MATCH COUNTS ── counting a match (and undoing it) for the Stammmannschaft rule. Uses getHDR/sbUpsert of the page.
