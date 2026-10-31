@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Füchse Berlin – Verfügbarkeit</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -77,16 +77,7 @@ input::placeholder{color:var(--muted)}
 .av-maybe{background:#2d2215;color:var(--warn);border:1px solid var(--warn)44}
 .av-open{background:#2e4a3844;color:var(--muted);border:1px solid var(--line)}
 
-.avail-btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-.avail-btn{flex:1;min-width:80px;padding:14px 8px;border-radius:10px;border:1.5px solid transparent;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center}
-.avail-btn.yes{background:#1a3d2a55;color:var(--court);border-color:var(--court)44}
-.avail-btn.yes.on{background:#1a3d2a;color:var(--court);border-color:var(--court);transform:scale(1.04)}
-.avail-btn.maybe{background:#2d221555;color:var(--warn);border-color:var(--warn)44}
-.avail-btn.maybe.on{background:#2d2215;color:var(--warn);border-color:var(--warn);transform:scale(1.04)}
-.avail-btn.no{background:#3d1a1a55;color:#e74c3c;border-color:#e74c3c44}
-.avail-btn.no.on{background:#3d1a1a;color:#e74c3c;border-color:#e74c3c;transform:scale(1.04)}
 
-.saved-msg{font-size:13px;color:var(--court);min-height:20px;margin-top:12px;text-align:center;font-weight:500}
 
 .player-card{display:flex;align-items:center;gap:12px;background:#1b2d24;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:14px}
 .player-card .avatar{width:44px;height:44px;font-size:15px}
@@ -102,7 +93,6 @@ input::placeholder{color:var(--muted)}
 .back-btn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
 .back-btn:hover{border-color:var(--court);color:var(--court)}
 
-@media(max-width:400px){.avail-btn{font-size:13px;padding:10px 6px}}
 </style>
 </head>
 <body>
@@ -211,28 +201,6 @@ window.spLogin=async function(){
   <div id="match-list"></div>
 </div>
 
-<!-- STEP 3: Confirm availability -->
-<div class="step" id="step-confirm">
-  <div class="back-row">
-    <button class="back-btn" onclick="goMatches()">←</button>
-    <div>
-      <div id="confirm-match-name" style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:var(--white)"></div>
-      <div id="confirm-match-meta" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
-    </div>
-  </div>
-  <div id="confirm-player-card"></div>
-  <div id="confirm-blocked"></div>
-  <div class="step-sub" id="sub-step3"></div>
-  <div class="avail-btns">
-    <button class="avail-btn yes" id="btn-yes" onclick="setAvail('yes')" data-i18n="yesBtn"></button>
-    <button class="avail-btn maybe" id="btn-notfall" onclick="setAvail('notfall')" data-i18n="notfallBtn"></button>
-    <button class="avail-btn no" id="btn-no" onclick="setAvail('no')" data-i18n="noBtn"></button>
-  </div>
-  <div class="saved-msg" id="saved-msg"></div>
-  <div style="margin-top:16px;text-align:center">
-    <button class="btn btn-outline btn-sm" onclick="goMatches()" id="btn-back-matches"></button>
-  </div>
-</div>
 
 </main>
 
@@ -269,11 +237,9 @@ const T={
     headerSub:'Spielerverfügbarkeit',movedBadge:'Verlegt',movedFrom:'verlegt vom',
     step1Label:'Schritt 1 von 2',step1Title:'Wer bist du?',step1Sub:'Suche deinen Namen in der Kaderliste.',
     step1Ph:'Namen eingeben...',findStatus:'Lade Spieler...',
-    step2Label:'Schritt 2 von 2',step2Sub:'Tippe auf ein Spiel um deine Verfügbarkeit zu bestätigen.',
-    step3Sub:'Kannst du spielen?',
+    step2Label:'Schritt 2 von 2',step2Sub:'Wähle bei jedem Spiel Ja, Im Notfall oder Nein.',
     yesBtn:'✓ Ja',conditionalBtn:'(Ja)',notfallBtn:'Im Notfall',noBtn:'✗ Nein',
     saved:'✓ Gespeichert',saving:'Speichern...',
-    backMatches:'← Zurück zu den Spielen',
     blockedWarn:'⛔ Du bist für dieses Spiel gesperrt (Stammkader / Stammmannschaft).',
     noMatches:'Keine Spiele für deine Mannschaft gefunden.',
     weekend:'Wochenende',week:'Woche',nMatches:n=>n===1?'1 Spiel':n+' Spiele',
@@ -286,11 +252,9 @@ const T={
     headerSub:'Disponibilidad de jugadores',movedBadge:'Postergado',movedFrom:'movido del',
     step1Label:'Paso 1 de 2',step1Title:'¿Quién sos?',step1Sub:'Buscá tu nombre en el plantel.',
     step1Ph:'Escribí tu nombre...',findStatus:'Cargando jugadores...',
-    step2Label:'Paso 2 de 2',step2Sub:'Tocá un partido para confirmar tu disponibilidad.',
-    step3Sub:'¿Podés jugar?',
+    step2Label:'Paso 2 de 2',step2Sub:'Elegí Sí, Si es necesario o No en cada partido.',
     yesBtn:'✓ Sí',conditionalBtn:'(Sí)',notfallBtn:'Si es necesario',noBtn:'✗ No',
     saved:'✓ Guardado',saving:'Guardando...',
-    backMatches:'← Volver a los partidos',
     blockedWarn:'⛔ Estás bloqueado para este partido (Stammkader / Stammmannschaft).',
     noMatches:'No hay partidos para tu equipo.',
     weekend:'Fin de semana',week:'Semana',nMatches:n=>n===1?'1 partido':n+' partidos',
@@ -303,11 +267,9 @@ const T={
     headerSub:'Player availability',movedBadge:'Rescheduled',movedFrom:'moved from',
     step1Label:'Step 1 of 2',step1Title:'Who are you?',step1Sub:'Search your name in the club roster.',
     step1Ph:'Type your name...',findStatus:'Loading players...',
-    step2Label:'Step 2 of 2',step2Sub:'Tap a match to confirm your availability.',
-    step3Sub:'Can you play?',
+    step2Label:'Step 2 of 2',step2Sub:'Choose Yes, If needed or No for each match.',
     yesBtn:'✓ Yes',conditionalBtn:'(Yes)',notfallBtn:'If needed',noBtn:'✗ No',
     saved:'✓ Saved',saving:'Saving...',
-    backMatches:'← Back to matches',
     blockedWarn:'⛔ You are blocked for this match (Stammkader / Stammmannschaft).',
     noMatches:'No matches found for your team.',
     weekend:'Weekend',week:'Week',nMatches:n=>n===1?'1 match':n+' matches',
@@ -321,7 +283,7 @@ const T={
 let lang='de';
 let state={players:[],teams:[],matches:[],availability:{},matchCounts:{},playerTeams:[],rankByTeam:{}};
 let activeTeamFilters=new Set();
-let selectedPlayer=null,selectedMatch=null;
+let selectedPlayer=null;
 
 function tr(k){return T[lang][k]||T.de[k]||k}
 
@@ -340,11 +302,6 @@ function applyT(){
   document.getElementById('ac-input').placeholder=tr('step1Ph');
   document.getElementById('lbl-step2').textContent=tr('step2Label');
   document.getElementById('sub-step2').textContent=tr('step2Sub');
-  document.getElementById('sub-step3').textContent=tr('step3Sub');
-  document.getElementById('btn-yes').textContent=tr('yesBtn');
-  document.getElementById('btn-notfall').textContent=tr('notfallBtn');
-  document.getElementById('btn-no').textContent=tr('noBtn');
-  document.getElementById('btn-back-matches').textContent=tr('backMatches');
 }
 
 function initials(n){return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
@@ -725,60 +682,6 @@ function groupByWeekend(list,cards){
     html+=cards[i];
   });
   return html;
-}
-
-function selectMatch(id){
-  selectedMatch=state.matches.find(m=>m.id===id);
-  if(!selectedMatch)return;
-  renderConfirm();showStep('confirm');
-}
-
-function renderConfirm(){
-  const m=selectedMatch;const p=selectedPlayer;
-  const team=teamById(m.team_id);
-  const d=fmtDate(m.date);
-  const blocked=isBlocked(p.id,m.team_id);
-  const avail=state.availability[m.id]?.[p.id]||'';
-  document.getElementById('confirm-match-name').textContent=`${team?.name||'?'} vs ${m.opponent}`;
-  document.getElementById('confirm-match-meta').textContent=`${d.full} · ${m.time} · ${m.home}`;
-  document.getElementById('confirm-player-card').innerHTML=`<div class="player-card">
-    <div class="avatar">${initials(p.name)}</div>
-    <div><div style="font-weight:600">${p.name}</div><div style="font-size:12px;color:var(--muted)">${p.lk_str||p.lkStr||''} · Jg. ${p.year||'—'}</div></div>
-  </div>`;
-  document.getElementById('confirm-blocked').innerHTML=blocked?`<div class="blocked-warn">${tr('blockedWarn')}</div>`:'';
-  ['yes','notfall','no'].forEach(s=>{document.getElementById('btn-'+s).classList.toggle('on',avail===s);});
-  document.getElementById('btn-yes').textContent=avail==='conditional'?tr('conditionalBtn'):'✓ '+tr('yesBtn').replace('✓ ','');
-  document.getElementById('btn-yes').style.borderStyle=avail==='conditional'?'dashed':'solid';
-  document.getElementById('saved-msg').textContent=avail?tr('saved'):'';
-}
-
-async function setAvail(status){
-  if(!selectedMatch||!selectedPlayer)return;
-  const matchId=selectedMatch.id,playerId=selectedPlayer.id;
-  if(status==='conditional')return; // cannot set manually
-  document.getElementById('saved-msg').innerHTML=`<span class="spinner"></span>${tr('saving')}`;
-
-  if(status==='yes'){
-    const thisMatch=state.matches.find(m=>m.id===matchId);
-    if(thisMatch){
-      const sameDay=state.matches.filter(m=>
-        m.id!==matchId &&
-        spieltagOf(m)===spieltagOf(thisMatch) &&
-        (state.availability[m.id]?.[playerId]==='yes'||state.availability[m.id]?.[playerId]==='conditional')
-      );
-      if(sameDay.length>0){
-        showPriorityModal(matchId, sameDay, playerId);
-        document.getElementById('saved-msg').textContent='';
-        return;
-      }
-    }
-  }
-
-  await saveAvail(matchId, playerId, status);
-  ['yes','notfall','no'].forEach(s=>document.getElementById('btn-'+s).classList.toggle('on',s===status));
-  document.getElementById('btn-yes').textContent=status==='conditional'?tr('conditionalBtn'):'✓ '+tr('yesBtn').replace('✓ ','');
-  document.getElementById('saved-msg').textContent=tr('saved');
-  setTimeout(()=>{if(selectedPlayer)renderMatchList();},300);
 }
 
 setLang('de');

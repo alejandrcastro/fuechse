@@ -997,6 +997,7 @@ async function loadAll(){
   _loadAllRunning=true;
   await _seasonReady;
   if(typeof renderSeasonSwitch==='function')renderSeasonSwitch();
+  {const ts=document.getElementById('t-season');if(ts)ts.value=ACTIVE_SEASON_KIND;} // E4: new teams default to the season being viewed
   setSync('ing',tr('syncIng'));
   try{
     // Active season only (R1) and only the columns that are used (R2): teams + players first, then what belongs to them
