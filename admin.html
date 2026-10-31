@@ -547,7 +547,7 @@ window.doLogin=async function(){
 
 <!-- OVERVIEW -->
 <div class="section" id="sec-overview">
-  <div class="section-title">Overview</div>
+  <div class="section-title" data-ct="ovTitle">Overview</div>
   <div class="section-sub" id="overview-sub"></div>
   <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;position:relative;z-index:200">
     <div id="ov-multicat" style="position:relative">
@@ -580,7 +580,7 @@ window.doLogin=async function(){
 
 <!-- STATISTIKEN -->
 <div class="section" id="sec-statistiken">
-  <div class="section-title">Statistiken</div>
+  <div class="section-title" data-ct="statsTitle">Statistiken</div>
   <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;position:relative;z-index:200">
     <div id="stats-multicat" style="position:relative">
       <button id="stats-multicat-btn" onclick="toggleStatsMultiCat(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
@@ -599,7 +599,7 @@ window.doLogin=async function(){
     <button id="stats-btn-matches" onclick="setStatsMode('matches')"
       style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border2);background:transparent;color:var(--muted)" data-ct="statsMatches">🎾 Spiele</button>
     <button id="stats-btn-lkanalysis" onclick="setStatsMode('lkanalysis')"
-      style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border2);background:transparent;color:var(--muted)">📊 LK-Analyse</button>
+      style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border2);background:transparent;color:var(--muted)" data-ct="lkAnalysis">📊 LK-Analyse</button>
   </div>
   <div id="stats-content" style="overflow-x:auto"></div>
 </div>
@@ -2163,7 +2163,15 @@ async function saSetAvail(playerId,status){
   renderSAAvail();renderSALineup();renderSAMatchList();
 }
 
-function renderAll(){renderPlayers();renderTeams();renderBlocking();if(_saTeamId)renderSAMatchList();populateTeamSel('m-team');applyT();}
+function renderAll(){
+  renderPlayers();renderTeams();renderBlocking();if(_saTeamId)renderSAMatchList();populateTeamSel('m-team');applyT();
+  // also redraw what is open, so a language switch reaches the open match and the open tab
+  if(_saMatchId&&state.matches.some(m=>m.id===_saMatchId))renderSAPanel();
+  const on=id=>document.getElementById(id)?.classList.contains('active');
+  if(on('sec-overview'))renderOverview();
+  if(on('sec-statistiken'))setStatsMode(_statsMode);
+  if(on('sec-umfrage')&&typeof renderUmfrage==='function')renderUmfrage();
+}
 
 // ── OVERVIEW ──
 let _ovMode='matches';
@@ -2515,7 +2523,7 @@ function renderOverviewMatches(selectedCats){
 
   let html=`<table style="border-collapse:collapse;font-size:12px;min-width:100%">
     <thead><tr style="border-bottom:1px solid var(--border2)">
-      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:100px">Team</th>
+      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:100px">${ct('teamCol')}</th>
       ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
     </tr></thead><tbody>`;
 
@@ -3392,7 +3400,7 @@ function renderStatsLKAnalysis(){
   
   let html='<table style="width:100%;border-collapse:collapse;font-size:11px">';
   html+='<thead><tr style="border-bottom:2px solid var(--border2)">';
-  html+='<th style="text-align:left;padding:8px 12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Team</th>';
+  html+='<th style="text-align:left;padding:8px 12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">'+ct('teamCol')+'</th>';
   html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 1</th>';
   html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 2</th>';
   html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 3</th>';
@@ -3406,7 +3414,7 @@ function renderStatsLKAnalysis(){
   }
   
   html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">LK ⌀ Total</th>';
-  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Spiele</th>';
+  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">'+ct('stMatchesCol')+'</th>';
   html+='</tr></thead><tbody>';
   
   for(const team of sortedTeams){
@@ -3465,7 +3473,7 @@ function renderStatsLKAnalysis(){
   html+='</tbody></table>';
   
   html+=`<div style="margin-top:20px;padding:12px;background:#222;border-radius:8px;font-size:12px;color:var(--muted)">
-    📊 <strong>LK-Analyse:</strong> Durchschnittliche Leistungsklassen pro Position basierend auf tatsächlich gespielten Aufstellungen.
+    📊 ${ct('lkAnalysisNote')}
   </div>`;
   
   el.innerHTML=html;

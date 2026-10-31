@@ -206,7 +206,7 @@ input:focus,select:focus{border-color:var(--court)}
 
     <!-- CONTENT: Overview -->
     <div id="view-overview" style="display:none">
-      <div class="section-title">Overview</div>
+      <div class="section-title" data-ct="ovTitle">Overview</div>
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;position:relative;z-index:200">
         <!-- Multi-select dropdown: shown in both Spiele and Spieler modes -->
         <div id="kap-ov-multicat" style="position:relative">
@@ -1345,7 +1345,7 @@ function shortPN(p){
 
   let html=`<table style="border-collapse:collapse;font-size:12px;min-width:100%">
     <thead><tr style="border-bottom:1px solid var(--border2)">
-      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:100px">Team</th>
+      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:100px">${ct('teamCol')}</th>
       ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
     </tr></thead><tbody>`;
 
