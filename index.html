@@ -366,39 +366,43 @@ function teamSortCmp(a,b){
   return 0;
 }
 
+// ── BLOCKING LOGIC ── identical to admin.html (getStammkaderTeam / getPlayerBlockStatus / isPlayerBlockedForTeam).
+// Keep these three in sync with admin.html and kapitaen.html.
+// Rule 1 – Stammkader: position in the Meldung of the category → that team; blocked in all lower teams (higher number)
+// Rule 2 – Stammmannschaft: matches played in all higher teams are ADDED UP; 2+ → blocked here, exactly 1 → warning
 function getStammkaderTeam(playerId, catGroup){
   const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
   if(!catTeams.length)return null;
-  const firstTeam=catTeams[0];
-  const rankInCat=state.rankByTeam[playerId]?.[firstTeam.id]??playerById(playerId)?.rank??null;
+  // category-specific rank: the first team of the category in which the player has a rank entry
+  const playerRanks=state.rankByTeam[playerId]||{};
+  let rankInCat=null;
+  for(const t of catTeams){const r=playerRanks[t.id];if(r!=null){rankInCat=r;break;}}
   if(rankInCat==null)return null;
   let remaining=rankInCat;
   for(const t of catTeams){const gs=teamSize(t);if(remaining<=gs)return t;remaining-=gs;}
   return catTeams[catTeams.length-1];
 }
 
+function getPlayerBlockStatus(playerId, catGroup){
+  const counts=state.matchCounts[playerId]||{};
+  const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  const stammkaderTeam=getStammkaderTeam(playerId,catGroup);
+  const stammkaderTeamNum=stammkaderTeam?teamNumber(stammkaderTeam):null;
+  const stammkaderBlocked=stammkaderTeamNum!==null?catTeams.filter(t=>teamNumber(t)>stammkaderTeamNum):[];
+  const stammmannschaftBlocked=[],stammmannschaftWarned=[];
+  for(const t of catTeams){
+    const tNum=teamNumber(t);
+    const superiorMatches=catTeams.filter(x=>teamNumber(x)<tNum).reduce((sum,x)=>sum+(counts[x.id]||0),0);
+    if(superiorMatches>=2)stammmannschaftBlocked.push(t);
+    else if(superiorMatches===1)stammmannschaftWarned.push(t);
+  }
+  const allBlockedIds=new Set([...stammkaderBlocked.map(t=>t.id),...stammmannschaftBlocked.map(t=>t.id)]);
+  return{stammkaderTeam,stammkaderBlocked,stammmannschaftBlocked,stammmannschaftWarned,blocked:catTeams.filter(t=>allBlockedIds.has(t.id)),warned:stammmannschaftWarned};
+}
 
-// ── BLOCKING LOGIC ──
-// Same dual-rule system as admin:
-// Rule 1 – Stammkader: LK position within category → locked to team, blocked in higher-numbered teams
-// Rule 2 – Stammmannschaft: 2+ matches in team → blocked in all higher-numbered teams in same category
 function isBlocked(playerId,teamId){
   const team=teamById(teamId);if(!team)return false;
-  const cat=team.category||'Herren';
-  const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
-  const counts=state.matchCounts[playerId]||{};
-  const thisNum=teamNumber(team);
-  // Rule 2: Stammmannschaft — 2+ matches in a higher team → blocked here
-  for(const t of catTeams){const c=counts[t.id]||0;if(c>=2&&teamNumber(t)<thisNum)return true;}
-  // Rule 1: Stammkader — derive SK team from rank stored against first team
-  const firstTeam=catTeams[0];if(!firstTeam)return false;
-  const rankInCat=state.rankByTeam[playerId]?.[firstTeam.id]??null;
-  if(rankInCat==null)return false;
-  let remaining=rankInCat;
-  let skTeam=catTeams[catTeams.length-1];
-  for(const t of catTeams){const gs=teamSize(t);if(remaining<=gs){skTeam=t;break;}remaining-=gs;}
-  if(teamNumber(skTeam)<thisNum)return true;
-  return false;
+  return getPlayerBlockStatus(playerId,team.category).blocked.some(b=>b.id===teamId);
 }
 
 async function loadAll(){
