@@ -22,6 +22,8 @@ Club Manager is a standalone web application made up of three independent HTML f
 
 `common.js` holds the code all pages share: the TVBB blocking rules (Stammkader, Stammmannschaft, Spieltag), the Supabase helpers, the club login and the Sperren table cell. A rule changed there applies everywhere at once. After editing it, raise the `?v=` number in the `<script src="common.js?v=…">` line of every page so browsers fetch the new file.
 
+`match.css` + the MATCH VIEW part of `common.js` draw one match (warnings, lineup, "Wer hat gespielt?", availability) — the same in `kapitaen.html` and in admin → Spiele & Aufstellung. Admin adds the Ja / Notfall / Nein buttons per player.
+
 The rules have tests: `node tests/rules.test.js` (no install needed). They also run on GitHub on every push; if one fails, the site is not updated.
 
 ---

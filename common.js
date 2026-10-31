@@ -70,7 +70,21 @@ window.spLogin=async function(){
 // ── COMMON TEXTS ── (DE → ES → EN) texts shared by several pages, plus a few that had no translation yet.
 // ct(key) uses the page's current language. Elements with data-ct="key" (or data-ct-ph for a placeholder) are filled by applyCT().
 const CT={
-  de:{winter4:'Winter-Mannschaften spielen immer zu viert.',to4er:x=>x?'Auf 4er-Mannschaft (4 Spieler) umstellen?':'Auf normale Mannschaft (6 Spieler) umstellen?',storageBlocked:'Der Browser-Speicher ist blockiert – die Ansicht kann nicht gewechselt werden.',
+  de:{countedShort:'Gezählt',movedBadge:'VERLEGT',newBadge:'NEU',movedNewDate:'Neuer Termin',movedOn:(d,u)=>`verlegt am ${d}${u?` von ${u}`:''}`,
+      playedOnSpieltag:(n,d,t)=>`⛔ ${n} hat am Spieltag ${d} bereits für ${t} gespielt (WSpO § 10 Abs. 3).`,isBlocked:(n,t)=>`⛔ ${n} ist gesperrt für ${t}`,
+      nBlocks:n=>n===1?'1 Sperre in der Aufstellung':`${n} Sperren in der Aufstellung`,nHints:n=>n===1?'1 Hinweis':`${n} Hinweise`,
+      rankOrder:(a,ra,b,rb)=>`Pos. ${a} (Rang ${ra}) vor Pos. ${b} (Rang ${rb})`,alsoPlays:(n,t)=>`${n} spielt auch für <strong>${t}</strong> am selben Tag`,
+      lineupIncomplete:(f,s)=>`⏳ Aufstellung unvollständig (${f}/${s})`,alreadyErsatz:'⚠️ Bereits Ersatz:',dragHint:'Ziehen zum Umsortieren',
+      dropYes:'── ✓ Ja',dropConditional:'── (Ja)',dropNotfall:'── Im Notfall',dropNo:'── ✗ Nein',dropNone:'── ?',
+      countedLocked:'Spiel gezählt – Aufstellung gesperrt. Zum Ändern zuerst „Rückgängig“.',
+      badgeYes:'✓ Ja',badgeNotfall:'Im Notfall',badgeNo:'Nein',rank:'Rang',condTo:t=>`(Ja → ${t})`,
+      inLineupShort:t=>`Bereits aufgestellt (${t})`,inLineupTitle:t=>`Bereits aufgestellt in ${t}`,ersatzTitle:t=>`Ersatz bei ${t}`,
+      frei:'FREI',freiTitle:t=>`Aufstellung von ${t} ist voll, Spieler nicht aufgestellt — frei für dieses Spiel`,
+      wkPlay:'aufgestellt',wkErsatz:'Ersatz',wkPlayTitle:(d,dt,t,tm)=>`${d} ${dt}: in der Aufstellung von ${t} (${tm})`,wkAnsTitle:(d,dt,t)=>`${d} ${dt}: hat für ${t} zugesagt, noch nicht aufgestellt`,
+      countedLabel:e=>`Bereits gezählt${e?' (inkl. Ersatz)':''}`,countAfterMatch:'Bestätigen ist ab dem Spieltag möglich.',countNeedLineup:'Zum Bestätigen muss die Aufstellung vollständig sein.',
+      whoPlayed:'Wer hat gespielt?',addDoublesPlayer:'Spieler hinzufügen (nur Doppel)',tooManyPlayed:n=>`Maximal ${n} Spieler.`,
+      morePlayed:n=>`Mehr als ${n}: nur wenn jemand nur Doppel gespielt hat. Wurde ein Spieler ersetzt, ihn abwählen.`,countDone:n=>`✓ ${n} Spieler +1`,
+      winter4:'Winter-Mannschaften spielen immer zu viert.',to4er:x=>x?'Auf 4er-Mannschaft (4 Spieler) umstellen?':'Auf normale Mannschaft (6 Spieler) umstellen?',storageBlocked:'Der Browser-Speicher ist blockiert – die Ansicht kann nicht gewechselt werden.',
       wd:['So','Mo','Di','Mi','Do','Fr','Sa'],
       groupYes:'✓ Ja',groupConditional:'(Ja) — Prio II',groupNotfall:'Im Notfall',groupNo:'✗ Nein',winter:'Winter',summer:'Sommer',playerCol:'Spieler',
       ruleSK:'Pos. 1–6 (Sommer) / 1–4 (Winter) → Mannschaft 1, usw. Spieler dürfen nicht in niedrigere Mannschaft der Kategorie.',
@@ -88,7 +102,21 @@ const CT={
       wrongPw:'Falsches Passwort',wrongLogin:'Falscher Benutzer oder Passwort',
       tooManyWait:s=>`Zu viele Versuche. Bitte ${s}s warten.`,tooManyLocked:m=>`Zu viele Versuche. ${m} Minute${m>1?'n':''} gesperrt.`,
       capOnly:'Angemeldet · darf nur die eigene Mannschaft bearbeiten'},
-  es:{winter4:'Los equipos de invierno siempre son de 4.',to4er:x=>x?'¿Pasar a equipo de 4 (4 jugadores)?':'¿Pasar a equipo normal (6 jugadores)?',storageBlocked:'El almacenamiento del navegador está bloqueado: no se puede cambiar la vista.',
+  es:{countedShort:'Contado',movedBadge:'POSTERGADO',newBadge:'NUEVO',movedNewDate:'Nueva fecha',movedOn:(d,u)=>`movido el ${d}${u?` por ${u}`:''}`,
+      playedOnSpieltag:(n,d,t)=>`⛔ ${n} ya jugó el Spieltag ${d} para ${t} (WSpO § 10 Abs. 3).`,isBlocked:(n,t)=>`⛔ ${n} está bloqueado para ${t}`,
+      nBlocks:n=>n===1?'1 bloqueo en la alineación':`${n} bloqueos en la alineación`,nHints:n=>n===1?'1 aviso':`${n} avisos`,
+      rankOrder:(a,ra,b,rb)=>`Pos. ${a} (Rang ${ra}) antes que Pos. ${b} (Rang ${rb})`,alsoPlays:(n,t)=>`${n} también juega para <strong>${t}</strong> el mismo día`,
+      lineupIncomplete:(f,s)=>`⏳ Alineación incompleta (${f}/${s})`,alreadyErsatz:'⚠️ Ya es Ersatz en:',dragHint:'Arrastrá para reordenar',
+      dropYes:'── ✓ Sí',dropConditional:'── (Sí)',dropNotfall:'── Si es necesario',dropNo:'── ✗ No',dropNone:'── ?',
+      countedLocked:'Partido contado: alineación bloqueada. Para cambiarla, primero „Deshacer“.',
+      badgeYes:'✓ Sí',badgeNotfall:'Si es necesario',badgeNo:'No',rank:'Rang',condTo:t=>`(Sí → ${t})`,
+      inLineupShort:t=>`Ya alineado (${t})`,inLineupTitle:t=>`Ya alineado en ${t}`,ersatzTitle:t=>`Ersatz en ${t}`,
+      frei:'LIBRE',freiTitle:t=>`La alineación de ${t} está completa, jugador no alineado — libre para este partido`,
+      wkPlay:'alineado',wkErsatz:'Ersatz',wkPlayTitle:(d,dt,t,tm)=>`${d} ${dt}: en la alineación de ${t} (${tm})`,wkAnsTitle:(d,dt,t)=>`${d} ${dt}: confirmó para ${t}, todavía no alineado`,
+      countedLabel:e=>`Ya contado${e?' (incl. Ersatz)':''}`,countAfterMatch:'Se puede confirmar a partir del día del partido.',countNeedLineup:'Para confirmar, la alineación tiene que estar completa.',
+      whoPlayed:'¿Quién jugó?',addDoublesPlayer:'Agregar jugador (solo dobles)',tooManyPlayed:n=>`Máximo ${n} jugadores.`,
+      morePlayed:n=>`Más de ${n}: solo si alguien jugó únicamente el dobles. Si un jugador fue reemplazado, desmarcalo.`,countDone:n=>`✓ ${n} jugadores +1`,
+      winter4:'Los equipos de invierno siempre son de 4.',to4er:x=>x?'¿Pasar a equipo de 4 (4 jugadores)?':'¿Pasar a equipo normal (6 jugadores)?',storageBlocked:'El almacenamiento del navegador está bloqueado: no se puede cambiar la vista.',
       wd:['Do','Lu','Ma','Mi','Ju','Vi','Sá'],
       groupYes:'✓ Sí',groupConditional:'(Sí) — Prio II',groupNotfall:'Si es necesario',groupNo:'✗ No',winter:'Invierno',summer:'Verano',playerCol:'Jugador',
       ruleSK:'Pos. 1–6 (verano) / 1–4 (invierno) → Equipo 1, etc. Los jugadores no pueden jugar en equipos de número mayor de la categoría.',
@@ -106,7 +134,21 @@ const CT={
       wrongPw:'Contraseña incorrecta',wrongLogin:'Usuario o contraseña incorrectos',
       tooManyWait:s=>`Demasiados intentos. Esperá ${s} s.`,tooManyLocked:m=>`Demasiados intentos. Bloqueado por ${m} minuto${m>1?'s':''}.`,
       capOnly:'Conectado · solo puede editar su propio equipo'},
-  en:{winter4:'Winter teams are always 4 players.',to4er:x=>x?'Change to 4er (4 players)?':'Change to standard (6 players)?',storageBlocked:'Browser storage blocked — cannot switch the admin view.',
+  en:{countedShort:'Counted',movedBadge:'RESCHEDULED',newBadge:'NEW',movedNewDate:'New date',movedOn:(d,u)=>`moved on ${d}${u?` by ${u}`:''}`,
+      playedOnSpieltag:(n,d,t)=>`⛔ ${n} already played on match day ${d} for ${t} (WSpO § 10 (3)).`,isBlocked:(n,t)=>`⛔ ${n} is blocked for ${t}`,
+      nBlocks:n=>n===1?'1 block in the lineup':`${n} blocks in the lineup`,nHints:n=>n===1?'1 note':`${n} notes`,
+      rankOrder:(a,ra,b,rb)=>`Pos. ${a} (rank ${ra}) before pos. ${b} (rank ${rb})`,alsoPlays:(n,t)=>`${n} also plays for <strong>${t}</strong> on the same day`,
+      lineupIncomplete:(f,s)=>`⏳ Lineup incomplete (${f}/${s})`,alreadyErsatz:'⚠️ Already sub for:',dragHint:'Drag to reorder',
+      dropYes:'── ✓ Yes',dropConditional:'── (Yes)',dropNotfall:'── If needed',dropNo:'── ✗ No',dropNone:'── ?',
+      countedLocked:'Match counted – lineup locked. Undo first to change it.',
+      badgeYes:'✓ Yes',badgeNotfall:'If needed',badgeNo:'No',rank:'Rank',condTo:t=>`(Yes → ${t})`,
+      inLineupShort:t=>`In lineup (${t})`,inLineupTitle:t=>`Already in the lineup of ${t}`,ersatzTitle:t=>`Substitute for ${t}`,
+      frei:'FREE',freiTitle:t=>`${t} lineup is full, player not in it — free for this match`,
+      wkPlay:'in lineup',wkErsatz:'sub',wkPlayTitle:(d,dt,t,tm)=>`${d} ${dt}: in the lineup of ${t} (${tm})`,wkAnsTitle:(d,dt,t)=>`${d} ${dt}: confirmed for ${t}, not in lineup yet`,
+      countedLabel:e=>`Already counted${e?' (incl. sub)':''}`,countAfterMatch:'Confirming is possible from match day on.',countNeedLineup:'The lineup must be complete to confirm.',
+      whoPlayed:'Who played?',addDoublesPlayer:'Add player (doubles only)',tooManyPlayed:n=>`Max. ${n} players.`,
+      morePlayed:n=>`More than ${n}: only if someone played doubles only. If a player was replaced, untick him.`,countDone:n=>`✓ ${n} players +1`,
+      winter4:'Winter teams are always 4 players.',to4er:x=>x?'Change to 4er (4 players)?':'Change to standard (6 players)?',storageBlocked:'Browser storage blocked — cannot switch the admin view.',
       wd:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
       groupYes:'✓ Yes',groupConditional:'(Yes) — Prio II',groupNotfall:'If needed',groupNo:'✗ No',winter:'Winter',summer:'Summer',playerCol:'Player',
       ruleSK:'Pos. 1–6 (summer) / 1–4 (winter) → team 1, etc. Players may not play in a lower team (higher number) of the category.',
@@ -252,6 +294,265 @@ function isPlayerBlockedForLineup(playerId,teamId,matchId){
   const team=teamById(teamId);if(!team)return false;
   const status=getPlayerBlockStatus(playerId,team.category);
   return status.blocked.some(b=>b.id===teamId);
+}
+
+// ── MATCH VIEW ── one match: warnings, lineup, who played, availability. The same in kapitaen and in
+// admin → Spiele & Aufstellung. The page passes what differs: may it edit, and the names of its handlers.
+function todayISO(){return new Date().toLocaleDateString('sv-SE');}
+function _wdOf(date){return date?new Date(date+'T12:00:00').getDay():null;}
+function _addDays(date,n){const d=new Date(date+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+function weekendOtherDate(match){
+  const wd=_wdOf(match.date);
+  if(wd===6)return _addDays(match.date,1); // Sa → So
+  if(wd===0)return _addDays(match.date,-1); // So → Sa
+  return null; // weekday match: no weekend check
+}
+function weekendMatches(match){
+  const other=weekendOtherDate(match);if(!other)return[];
+  return state.matches.filter(m=>m.id!==match.id&&m.date===other)
+    .sort((a,b)=>(a.time||'').localeCompare(b.time||'')||teamNumber(teamById(a.teamId)||{name:''})-teamNumber(teamById(b.teamId)||{name:''}));
+}
+function _teamShort(t){
+  let n=(t?.name||'?').replace('Seniorinnen','SenF').replace('Senioren','Sen').replace('Herren','H').replace('Damen','D').trim();
+  // first team of a category with more than one team → "H I" (plain "H" is ambiguous)
+  const siblings=(state.allTeams||state.teams).filter(x=>x.category===t?.category);
+  if(t&&siblings.length>1&&teamNumber(t)===1&&!/\b(I|II|III|IV|V|VI|VII|VIII)$/.test(n))n+=' I';
+  return n;
+}
+// the other day of the weekend: in a lineup there (beats) or said yes there
+function weekendBadges(pid,match){
+  const play=[],ans=[];
+  for(const om of weekendMatches(match)){
+    const ot=teamById(om.teamId);const sz=teamSize(ot);
+    const slots=state.lineups[om.id]||[];
+    const day=ct('wd')[_wdOf(om.date)];
+    const inMain=slots.slice(0,sz).includes(pid),inErsatz=slots[sz]===pid;
+    if(inMain||inErsatz){
+      const lbl=inMain?ct('wkPlay'):ct('wkErsatz');
+      play.push(`<span class="wk-badge play" title="${ct('wkPlayTitle')(day,fmtDate(om.date),ot?.name||'?',om.time||'')}">${day}: ${lbl} ${_teamShort(ot)}</span>`);
+    }else{
+      const st=state.availability[om.id]?.[pid];
+      if(st==='yes'||st==='conditional')
+        ans.push(`<span class="wk-badge ans" title="${ct('wkAnsTitle')(day,fmtDate(om.date),ot?.name||'?')}">${day}: ${st==='yes'?ct('stYes'):'('+ct('stYes')+')'} ${_teamShort(ot)}</span>`);
+    }
+  }
+  return play[0]||ans[0]||''; // only one badge: aufgestellt beats zugesagt
+}
+const MV_ORDER={yes:0,conditional:1,notfall:2,'':3,no:4};
+// players of the match's team: Ja, (Ja), Notfall, no answer, Nein — then by rank
+function mvTeamPlayers(match){
+  const avail=state.availability[match.id]||{};
+  return state.players.filter(p=>p.teamIds.includes(match.teamId)).sort((a,b)=>{
+    const ao=MV_ORDER[avail[a.id]||'']??3,bo=MV_ORDER[avail[b.id]||'']??3;
+    return ao-bo||playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);
+  });
+}
+// the other match of the same Spieltag where the player is in the lineup (main = singles, or the Ersatz slot)
+function mvOtherLineup(pid,match,ersatz){
+  return state.matches.find(om=>{
+    if(om.id===match.id||spieltagOf(om)!==spieltagOf(match))return false;
+    const sz=teamSize(teamById(om.teamId)),sl=state.lineups[om.id]||[];
+    return ersatz?sl[sz]===pid:sl.slice(0,sz).includes(pid);
+  })||null;
+}
+// grouped boxes above the lineup: ⛔ Sperren (red, open) and ⚠️ Hinweise (amber)
+function mvWarningsHtml(match){
+  const team=teamById(match.teamId),size=teamSize(team),lineup=state.lineups[match.id]||[];
+  const hints=[];
+  for(let i=0;i<size-1;i++){
+    const p1=lineup[i]?playerById(lineup[i]):null,p2=lineup[i+1]?playerById(lineup[i+1]):null;
+    if(p1&&p2&&playerRankInTeam(p1.id,match.teamId)>playerRankInTeam(p2.id,match.teamId))
+      hints.push(ct('rankOrder')(i+1,playerRankInTeam(p1.id,match.teamId),i+2,playerRankInTeam(p2.id,match.teamId)));
+  }
+  const blocked=lineup.filter(Boolean).map(pid=>{
+    const p=playerById(pid);if(!p)return null;
+    const sp=playedOnSpieltag(pid,match);
+    if(sp)return ct('playedOnSpieltag')(p.name,fmtDate(spieltagOf(match)),teamById(sp.teamId)?.name||'?');
+    if(isPlayerBlockedForLineup(pid,match.teamId,match.id))return ct('isBlocked')(p.name,team?.name||'?');
+    return null;
+  }).filter(Boolean);
+  for(const pid of lineup.slice(0,size).filter(Boolean)){
+    const p=playerById(pid);if(!p||playedOnSpieltag(pid,match))continue; // a Spieltag block is already listed
+    const om=mvOtherLineup(pid,match,false);
+    if(om)hints.push(ct('alsoPlays')(p.name,teamById(om.teamId)?.name||'?'));
+  }
+  const filled=lineup.slice(0,size).filter(Boolean).length;
+  const li=arr=>arr.map(w=>`<li>${w.replace(/^⛔\s*/,'')}</li>`).join('');
+  let html='';
+  if(blocked.length)html+=`<details class="warn-group red" open><summary>⛔ ${ct('nBlocks')(blocked.length)}</summary><ul>${li(blocked)}</ul></details>`;
+  if(hints.length)html+=`<details class="warn-group amber"${window.innerWidth>700?' open':''}><summary>⚠️ ${ct('nHints')(hints.length)}</summary><ul>${li(hints)}</ul></details>`;
+  if(!blocked.length&&!hints.length){
+    if(filled>=size)html=`<div class="ok-banner">${ct('lineupComplete')}</div>`;
+    else if(filled>0)html=`<div class="mx-incomplete">${ct('lineupIncomplete')(filled,size)}</div>`;
+  }
+  return html;
+}
+// lineup slots + Ersatz. o = {ro, lockMsg, set:'setSlot', drag:'onSlot'} → handlers set(i,value), <drag>DragStart/DragOver/DragLeave/Drop/DragEnd
+function mvSlotsHtml(match,o){
+  const team=teamById(match.teamId),size=teamSize(team),lineup=state.lineups[match.id]||[],avail=state.availability[match.id]||{};
+  const sorted=mvTeamPlayers(match);
+  const gl={yes:ct('dropYes'),conditional:ct('dropConditional'),notfall:ct('dropNotfall'),no:ct('dropNo'),'':ct('dropNone')};
+  const opts=sel=>{
+    let h='<option value="">—</option>',last;
+    for(const tp of sorted){
+      const bl=isPlayerBlockedForLineup(tp.id,match.teamId,match.id),grp=avail[tp.id]||'';
+      if(grp!==last){last=grp;h+=`<option disabled style="color:var(--muted);font-size:11px">${gl[grp]}</option>`;}
+      h+=`<option value="${tp.id}" ${sel===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;
+    }
+    return h;
+  };
+  const dis=o.ro?'disabled':'',d=o.drag;
+  let html=o.ro?`<div class="mx-locked">🔒 ${o.lockMsg}</div>`:'';
+  for(let i=0;i<size;i++){
+    const pid=lineup[i]||'',p=pid?playerById(pid):null;
+    const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
+    const rankOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
+    const cls=p?(isPlayerBlockedForLineup(pid,match.teamId,match.id)?'blocked-slot':rankOk?'ok':'warning'):'';
+    html+=`<div class="lineup-slot ${cls}" ${o.ro?'':'draggable="true"'} data-slot-index="${i}"
+      ondragstart="${d}DragStart(event,${i})" ondragover="${d}DragOver(event)" ondragleave="${d}DragLeave(event)" ondrop="${d}Drop(event,${i})" ondragend="${d}DragEnd(event)">
+      <span class="drag-handle" title="${ct('dragHint')}">⠿</span>
+      <div class="lineup-pos">${i+1}</div>
+      <select ${dis} onchange="${o.set}(${i},this.value)">${opts(pid)}</select>
+    </div>`;
+  }
+  const ePid=lineup[size]||'',eP=ePid?playerById(ePid):null;
+  const eBlocked=ePid?isPlayerBlockedForLineup(ePid,match.teamId,match.id):false;
+  let eWarn='';
+  if(ePid){
+    const oL=mvOtherLineup(ePid,match,false),oE=oL?null:mvOtherLineup(ePid,match,true);
+    if(oL)eWarn=`${ct('alreadyLineup')} <strong>${teamById(oL.teamId)?.name||'?'}</strong>`;
+    else if(oE)eWarn=`${ct('alreadyErsatz')} <strong>${teamById(oE.teamId)?.name||'?'}</strong>`;
+  }
+  html+=`<div class="mx-ersatz">
+    <div class="mx-label">Ersatz</div>
+    <div class="lineup-slot ${eP?(eBlocked?'blocked-slot':'ok'):''}" style="opacity:.85;border-style:dashed">
+      <div class="lineup-pos" style="color:var(--muted)">E</div>
+      <select ${dis} onchange="${o.set}(${size},this.value)">${opts(ePid)}</select>
+    </div>
+    ${eWarn?`<div class="warn-banner" style="margin-top:6px;font-size:11px">${eWarn}</div>`:''}
+  </div>`;
+  return html;
+}
+// one row per player. o.actions(p,status) → html for the right side (admin: Ja/Notfall/Nein buttons); without it the status badge
+function mvAvailHtml(match,o={}){
+  const avail=state.availability[match.id]||{};
+  const label={yes:ct('groupYes'),conditional:ct('groupConditional'),notfall:ct('groupNotfall'),no:ct('groupNo'),'':ct('noAnswer')};
+  const color={yes:'var(--court)',conditional:'#52c97a',notfall:'var(--warn)',no:'var(--danger)','':'var(--muted)'};
+  const tag=(title,text,extra='')=>`<span title="${title}" class="mx-tag${extra}">${text}</span>`;
+  let last,html='';
+  for(const p of mvTeamPlayers(match)){
+    const s=avail[p.id]||'';
+    if(s!==last){last=s;html+=`<div class="avail-group-label" style="color:${color[s]}">${label[s]}</div>`;}
+    const blocked=isPlayerBlockedForLineup(p.id,match.teamId,match.id);
+    const sm=!!(state.mainTeam[p.id]?.[match.teamId]);
+    const r=playerRankInTeam(p.id,match.teamId);
+    let badge=s==='yes'?ct('badgeYes'):s==='notfall'?ct('badgeNotfall'):s==='no'?ct('badgeNo'):'—',extra='';
+    if(s==='conditional'||s==='notfall'){
+      const yesMatch=s==='conditional'?state.matches.find(om=>om.id!==match.id&&spieltagOf(om)===spieltagOf(match)&&state.availability[om.id]?.[p.id]==='yes'):null;
+      const yesTeam=yesMatch?teamById(yesMatch.teamId):null;
+      if(s==='conditional')badge=yesTeam?ct('condTo')(yesTeam.name):'('+ct('stYes')+')';
+      const inL=mvOtherLineup(p.id,match,false),inE=inL?null:mvOtherLineup(p.id,match,true);
+      if(inL){const t=teamById(inL.teamId);extra=tag(ct('inLineupTitle')(t.name),ct('inLineupShort')(_teamShort(t)));}
+      else if(inE){const t=teamById(inE.teamId);extra=tag(ct('ersatzTitle')(t.name),`Ersatz (${_teamShort(t)})`,' dashed');}
+      else if(yesTeam){ // the other team's lineup is full without him → free for this match
+        const sz=teamSize(yesTeam),sl=state.lineups[yesMatch.id]||[];
+        if(sl.slice(0,sz).filter(Boolean).length>=sz&&!sl.slice(0,sz).includes(p.id)&&sl[sz]!==p.id)extra=tag(ct('freiTitle')(yesTeam.name),ct('frei'),' frei');
+      }
+    }
+    if(!extra)extra=weekendBadges(p.id,match); // max. one extra badge: same-day beats the weekend hint
+    const bg=s==='yes'?'#1a2e26':s==='conditional'?'rgba(82,201,122,.1)':s==='notfall'?'#2e2a1a':s==='no'?'#2d1a1a':'#252525';
+    const right=o.actions?o.actions(p,s):`<span class="avail-badge" style="background:${bg};color:${color[s]};margin-left:4px">${badge}</span>`;
+    html+=`<div class="avail-row">
+      <div class="avail-avatar${sm?' sm':''}">${initials(p.name)}</div>
+      <div style="flex:1">
+        <div class="avail-name">${p.name}${sm?' <span class="sm-badge">★ SM</span>':''}${blocked?' <span class="blocked-badge">⛔</span>':''}</div>
+        <div class="avail-meta">${p.lkStr||''} · Jg. ${p.year||'—'} · ${ct('rank')} ${r<999?r:'—'}</div>
+      </div>
+      <span class="avail-tags">${extra}</span>${right}
+    </div>`;
+  }
+  return html||`<div class="empty">—</div>`;
+}
+// "Who played?" under a complete lineup → count the match. o = {canEdit, confirm:'fnName', undo:'fnName'}
+function mvCountHtml(match,o){
+  const size=teamSize(teamById(match.teamId)),lineup=state.lineups[match.id]||[],filled=lineup.slice(0,size).filter(Boolean).length;
+  if(match.counted){
+    const who=(match.countedPlayers||[]).map(pid=>playerById(pid)?.name).filter(Boolean);
+    return`<span class="match-status status-ready" style="font-size:12px;padding:5px 12px">✔ ${ct('countedLabel')(match.ersatzCounted)}</span>`+
+      (who.length?`<span style="font-size:11px;color:var(--muted)">${who.join(' · ')}</span>`:'')+
+      (o.canEdit?`<button class="auto-btn" style="background:transparent;border-color:var(--danger)55;color:var(--danger)" onclick="${o.undo}()">${ct('undo')}</button>`:'');
+  }
+  if(!o.canEdit)return'';
+  if(match.date>todayISO())return`<span style="font-size:11px;color:var(--muted)">${ct('countAfterMatch')}</span>`;
+  if(filled<size)return`<span style="font-size:11px;color:var(--muted)">${ct('countNeedLineup')}</span>`;
+  // lineup ticked, Ersatz not; if the Ersatz came in, untick the player he replaced
+  const cand=[...lineup.slice(0,size).map((pid,i)=>({pid,pos:String(i+1),on:true})),...(lineup[size]?[{pid:lineup[size],pos:'E',on:false}]:[])].filter(c=>c.pid);
+  return`<div style="width:100%" id="mx-count" data-mid="${match.id}">
+      <div class="mx-label">${ct('whoPlayed')} <span id="mx-played-count"></span></div>
+      <div id="mx-played-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${cand.map(c=>mvPlayedChip(c.pid,c.pos,c.on)).join('')}</div>
+      <select id="mx-played-add" onchange="mvAddPlayedChip(this.value)" style="width:auto;max-width:100%;font-size:12px;padding:5px 8px;margin-bottom:10px">
+        <option value="">＋ ${ct('addDoublesPlayer')}</option>
+        ${state.players.filter(p=>p.teamIds.includes(match.teamId)&&!cand.some(c=>c.pid===p.id))
+          .sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId))
+          .map(p=>`<option value="${p.id}">${p.name} (${p.lkStr||'–'})</option>`).join('')}
+      </select>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <button class="auto-btn" id="mx-confirm-btn" onclick="${o.confirm}()">${ct('countBtn')}</button>
+        <span id="mx-confirm-status" style="font-size:11px;color:var(--muted)"></span>
+      </div></div>`;
+}
+function mvPlayedChip(pid,pos,on){
+  return`<label class="mx-chip"><input type="checkbox" class="mx-played" value="${pid}" ${on?'checked':''} onchange="mvUpdatePlayedCount()">
+    <span style="color:var(--muted);font-size:11px">${pos}</span> ${playerById(pid)?.name||'?'}</label>`;
+}
+function mvAddPlayedChip(pid){ // a player who only played Doppel
+  if(!pid)return;
+  const list=document.getElementById('mx-played-list');
+  if(list&&!list.querySelector(`.mx-played[value="${pid}"]`))list.insertAdjacentHTML('beforeend',mvPlayedChip(pid,'D',true));
+  const sel=document.getElementById('mx-played-add');
+  if(sel){const op=sel.querySelector(`option[value="${pid}"]`);if(op)op.remove();sel.value='';}
+  mvUpdatePlayedCount();
+}
+function mvPlayedSelection(){return[...document.querySelectorAll('.mx-played:checked')].map(x=>x.value);}
+function mvUpdatePlayedCount(){
+  const m=state.matches.find(x=>x.id===document.getElementById('mx-count')?.dataset.mid);if(!m)return;
+  const size=teamSize(teamById(m.teamId)),n=mvPlayedSelection().length,max=size*2; // every Doppel can be played by others
+  const c=document.getElementById('mx-played-count');if(c){c.textContent=`(${n})`;c.style.color=n>max?'var(--danger)':n>=size?'var(--court)':'var(--warn)';}
+  const b=document.getElementById('mx-confirm-btn');if(b)b.disabled=n===0||n>max;
+  const st=document.getElementById('mx-confirm-status');
+  if(st){
+    if(n>max){st.textContent=ct('tooManyPlayed')(max);st.style.color='var(--danger)';}
+    else if(n>size){st.textContent=ct('morePlayed')(size);st.style.color='var(--warn)';}
+    else st.textContent='';
+  }
+}
+// match cards of one team (moved matches crossed out). o = {selected, open:'fnName'}
+function mvMatchCardsHtml(team,matches,o){
+  if(!matches.length)return`<div class="empty">—</div>`;
+  return matches.map(m=>{
+    const opp=(m.opponent||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    if(m.status==='verlegt'){
+      const nm=state.matches.find(x=>x.id===m.movedTo);
+      return`<div class="match-card moved">
+        <div class="match-header"><div>
+          <div class="match-title">${team.name} vs ${opp}</div>
+          <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)}</div>
+        </div><span class="match-status status-moved">⇄ ${ct('movedBadge')}</span></div>
+        ${nm?`<div class="moved-link">→ ${ct('movedNewDate')}: <b>${fmtDate(nm.date)} · ${nm.time}</b>${m.movedAt?` · ${ct('movedOn')(fmtDate(m.movedAt.slice(0,10)),m.movedBy)}`:''}</div>`:''}
+      </div>`;
+    }
+    const avail=state.availability[m.id]||{},tp=state.players.filter(p=>p.teamIds.includes(m.teamId));
+    const yes=tp.filter(p=>avail[p.id]==='yes').length,pct=tp.length?Math.round(yes/tp.length*100):0;
+    const sz=teamSize(teamById(m.teamId)),hasLineup=(state.lineups[m.id]||[]).slice(0,sz).filter(Boolean).length>=sz;
+    return`<div class="match-card ${o.selected===m.id?'active':''}" onclick="${o.open}('${m.id}')">
+      <div class="match-header"><div>
+        <div class="match-title">${team.name} vs ${opp}${m.movedFrom?`<span class="status-new">${ct('newBadge')}</span>`:''}</div>
+        <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)}</div>
+      </div><span class="match-status ${hasLineup||m.counted?'status-ready':'status-open'}">${m.counted?'✔ '+ct('countedShort'):hasLineup?ct('lineupOk'):ct('open')}</span></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${yes}/${tp.length} ${ct('available')}</div>
+    </div>`;
+  }).join('');
 }
 
 // ── MATCH COUNTS ── counting a match (and undoing it) for the Stammmannschaft rule. Uses getHDR/sbUpsert of the page.

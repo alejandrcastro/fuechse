@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kapitän – Füchse Berlin</title>
 <link href="fonts/fonts.css?v=1" rel="stylesheet">
+<link href="match.css?v=1" rel="stylesheet">
 <style>
 :root{
   --green:#2d6a4f;--green-light:#40916c;--court:#74c69d;
@@ -55,29 +56,9 @@ main{padding:22px;max-width:1080px;margin:0 auto;display:grid;grid-template-colu
 /* mobile: team dropdown instead of the full list (desktop keeps the list) */
 .team-select{display:none;width:100%;background:#111;border:1px solid var(--border2);border-radius:10px;color:var(--white);padding:11px 12px;font:600 14px 'DM Sans',sans-serif}
 @media(max-width:700px){.team-select{display:block}#team-list-sidebar,#sidebar-teams-title,#no-team-selected{display:none!important}.sidebar-card{padding:10px}}
-/* grouped lineup warnings: red = Sperren (blocking), amber = Hinweise */
-.warn-group{border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;line-height:1.5}
-.warn-group summary{font-weight:700;cursor:pointer;list-style:none}
-.warn-group summary::-webkit-details-marker{display:none}
-.warn-group summary::after{content:' ▾';opacity:.7}
-.warn-group[open] summary::after{content:' ▴'}
-.warn-group ul{margin:6px 0 2px 18px}
-.warn-group.red{background:#3a1b18;border:1px solid #ff6b5b55;color:#ffb3aa}
-.warn-group.amber{background:#33260f;border:1px solid #f4a26155;color:#f7c48f}
-.warn-group strong{color:inherit}
-/* availability rows: extra badges before the status; on mobile they move under the name */
-.avail-tags{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
-@media(max-width:700px){.avail-row{flex-wrap:wrap}.avail-tags:not(:empty){order:3;flex-basis:100%;justify-content:flex-start;padding-left:40px;margin-top:-4px}.avail-row>.avail-badge{order:2}.avail-tags span{margin-left:0!important}}
 
 /* SIDEBAR */
 .sidebar{display:flex;flex-direction:column;gap:10px}
-.sidebar-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px}
-.sidebar-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
-.team-btn{width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px;margin-bottom:3px}
-.team-btn:hover{background:#252525;color:var(--white)}
-.team-btn.active{background:#1a2e26;border-color:var(--court)55;color:var(--court)}
-.team-dot{width:7px;height:7px;border-radius:50%;background:var(--court);flex-shrink:0;opacity:.5}
-.team-btn.active .team-dot{opacity:1}
 
 /* MAIN CONTENT */
 .content{min-width:0}
@@ -85,51 +66,16 @@ main{padding:22px;max-width:1080px;margin:0 auto;display:grid;grid-template-colu
 .section-sub{color:var(--muted);font-size:12px;margin-bottom:16px}
 
 /* MATCH LIST */
-.match-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 16px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
-.match-card:hover{border-color:var(--court)44}
-.match-card.active{border-color:var(--court);background:#1a2e26}
-.match-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
-.match-title{font-weight:600;font-size:14px}
-.match-meta{font-size:11px;color:var(--muted);margin-top:2px}
-.match-status{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
-.status-ready{background:#1a2e26;color:var(--court)}
-.status-open{background:#2e2a15;color:#ffd700}
-.prog-bar{height:4px;background:#252525;border-radius:2px;overflow:hidden;margin-top:8px}
-.prog-fill{height:100%;background:var(--court);border-radius:2px;transition:width .3s}
 
 /* AVAILABILITY PANEL */
 .avail-panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-top:14px}
 .avail-panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px}
-.avail-panel-title{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court)}
-.auto-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--court)55;background:#1a2e26;color:var(--court);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
-.auto-btn:hover{background:var(--green);border-color:var(--green);color:#fff}
-.avail-group-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 0 3px;border-top:1px solid var(--border);margin-top:4px;color:var(--muted)}
-.avail-group-label:first-child{border-top:none;margin-top:0}
-.avail-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)22}
-.avail-row:last-child{border-bottom:none}
-.avail-avatar{width:30px;height:30px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
-.avail-name{flex:1;font-size:13px;font-weight:500}
-.avail-meta{font-size:11px;color:var(--muted)}
-.avail-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
 .av-yes{background:#1a2e26;color:var(--court)}
 .av-maybe{background:#2e2a1a;color:var(--warn)}
 .av-no{background:#2d1a1a;color:var(--danger)}
 .av-open{background:#252525;color:var(--muted)}
 
 /* LINEUP */
-.lineup-section{margin-top:18px}
-.lineup-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-.lineup-slot{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);margin-bottom:6px;background:#181818}
-.lineup-slot.ok{border-color:var(--court)33}
-.lineup-slot.warning{border-color:var(--danger)55;background:#2d151522}
-.lineup-slot.blocked-slot{border-color:var(--danger);background:#2d1a1a}
-.lineup-pos{font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--court);min-width:20px;text-align:center}
-.lineup-slot select{flex:1;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none}
-.lineup-slot select:focus{border-color:var(--court)}
-.save-indicator{font-size:11px;color:var(--court);text-align:right;margin-top:4px;min-height:16px}
-.blocked-badge{font-size:11px;background:#2d1a1a;border:1px solid var(--danger)44;color:var(--danger);padding:2px 7px;border-radius:10px}
-.warn-banner{background:#3d1a1a;border:1px solid var(--danger)44;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--danger)}
-.ok-banner{background:#1a2d22;border:1px solid var(--court)33;border-radius:8px;padding:6px 12px;margin-bottom:10px;font-size:12px;color:var(--court)}
 .empty{color:var(--muted);font-size:13px;text-align:center;padding:30px}
 .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--court)44;border-top-color:var(--court);border-radius:50%;animation:spin .6s linear infinite;margin-right:6px;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -141,27 +87,9 @@ input:focus,select:focus{border-color:var(--court)}
 .rule-box strong{color:var(--white)}
 
 /* Drag & drop lineup slots */
-.lineup-slot[draggable]{cursor:grab}
-.lineup-slot[draggable]:active{cursor:grabbing}
-.lineup-slot.drag-over{border-color:var(--court)!important;background:rgba(116,198,157,.1)!important;transform:scale(1.02)}
-.lineup-slot.dragging{opacity:.4}
-.drag-handle{color:var(--muted);font-size:14px;cursor:grab;padding:0 4px;user-select:none;flex-shrink:0}
-.drag-handle:hover{color:var(--court)}
 /* ── VERLEGT ── */
 .move-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--warn)66;background:#2e2414;color:var(--warn);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
 .move-btn:hover{background:var(--warn);color:#1a1205}
-.match-card.moved{opacity:.55;cursor:default;background:#181818;border-style:dashed}
-.match-card.moved:hover{border-color:var(--border)}
-.match-card.moved .match-title,.match-card.moved .match-meta{text-decoration:line-through;text-decoration-color:#7a8a8599}
-.status-moved{background:#2e2414;color:var(--warn);border:1px solid var(--warn)55}
-.status-new{background:#14262e;color:var(--info);border:1px solid var(--info)55;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
-.moved-link{font-size:11px;color:var(--warn);margin-top:6px}
-.moved-link b{color:var(--white);font-weight:600}
-.info-banner{background:#14262e;border:1px solid var(--info)44;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#9cc9e6;line-height:1.5}
-.wk-badge{border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:4px;cursor:help;white-space:nowrap}
-.wk-badge.play{background:#2d1f10;color:var(--warn);border:1px solid #f4a26155}
-.wk-badge.ans{background:#2a2a2a;color:#bbb;border:1px solid #444}
-.info-banner b{color:var(--white)}
 .mv-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:5000;padding:16px}
 .mv-bg.open{display:flex}
 .mv{background:var(--card);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:440px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.6);max-height:calc(100vh - 32px);overflow-y:auto}
@@ -183,7 +111,7 @@ input:focus,select:focus{border-color:var(--court)}
 .mv-wa{padding:8px 16px;border-radius:8px;border:none;background:#25d366;color:#08210f;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
 .mv-err{font-size:12px;color:var(--danger);min-height:16px;margin-top:8px}
 </style>
-<script src="common.js?v=2"></script>
+<script src="common.js?v=3"></script>
 </head>
 <body>
 
@@ -440,66 +368,7 @@ function canEditMatch(matchId){const m=state.matches.find(x=>x.id===matchId);ret
 function isCountedMatch(id){return !!state.matches.find(x=>x.id===id)?.counted;}
 function denyEdit(){if(canEditMatch(selectedMatchId)&&!isCountedMatch(selectedMatchId))return false;setSync('err',tr(isCountedMatch(selectedMatchId)?'countedLocked':'readOnly'));setTimeout(()=>setSync('ok','● sync'),2500);renderLineupSlots();return true;}
 // ── SPIEL BESTÄTIGEN (Zähler für Sperren) ── same logic as admin.html; captains only for their own team
-function todayISO(){return new Date().toLocaleDateString('sv-SE');}
-function renderCountWrap(match,lineup,size,filledCount,canEdit){
-  const el=document.getElementById('count-wrap');if(!el)return;
-  if(match.counted){
-    const who=(match.countedPlayers||[]).map(pid=>playerById(pid)?.name).filter(Boolean);
-    el.innerHTML=`<span class="match-status status-ready" style="font-size:12px;padding:5px 12px">✔ ${tr('countedLabel')(match.ersatzCounted)}</span>`+
-      (who.length?`<span style="font-size:11px;color:var(--muted)">${who.join(' · ')}</span>`:'')+
-      (canEdit?`<button class="auto-btn" style="background:transparent;border-color:var(--danger)55;color:var(--danger)" onclick="kapUndoMatchCount()">↶ ${tr('undoBtn')}</button>`:'');
-    return;
-  }
-  if(!canEdit){el.innerHTML='';return;}
-  if(match.date>todayISO()){el.innerHTML=`<span style="font-size:11px;color:var(--muted)">${tr('countAfterMatch')}</span>`;return;}
-  if(filledCount<size){el.innerHTML=`<span style="font-size:11px;color:var(--muted)">${tr('countNeedLineup')}</span>`;return;}
-  // "Wer hat gespielt?" — lineup checked, Ersatz unchecked; if the Ersatz came in, uncheck the player he replaced
-  const cand=[...lineup.slice(0,size).map((pid,i)=>({pid,pos:String(i+1),on:true})),...(lineup[size]?[{pid:lineup[size],pos:'E',on:false}]:[])].filter(c=>c.pid);
-  el.innerHTML=`<div style="width:100%">
-      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${tr('whoPlayed')} <span id="kap-played-count"></span></div>
-      <div id="kap-played-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${cand.map(c=>playedChip(c.pid,c.pos,c.on)).join('')}</div>
-      <select id="kap-played-add" onchange="addPlayedChip(this.value)" style="width:auto;max-width:100%;font-size:12px;padding:5px 8px;margin-bottom:10px">
-        <option value="">＋ ${tr('addDoublesPlayer')}</option>
-        ${state.players.filter(p=>p.teamIds.includes(match.teamId)&&!cand.some(c=>c.pid===p.id))
-          .sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId))
-          .map(p=>`<option value="${p.id}">${p.name} (${p.lkStr||'–'})</option>`).join('')}
-      </select>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <button class="auto-btn" id="kap-confirm-btn" onclick="kapConfirmMatch()">✔ ${tr('countBtn')}</button>
-        <span id="kap-confirm-status" style="font-size:11px;color:var(--muted)"></span>
-      </div></div>`;
-  updatePlayedCount();
-}
-function playedChip(pid,pos,on){
-  const p=playerById(pid);
-  return`<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 10px;border:1px solid var(--border2);border-radius:20px;cursor:pointer;width:auto">
-    <input type="checkbox" class="kap-played" value="${pid}" ${on?'checked':''} onchange="updatePlayedCount()" style="width:auto;accent-color:var(--court);cursor:pointer">
-    <span style="color:var(--muted);font-size:11px">${pos}</span> ${p?.name||'?'}</label>`;
-}
 // Extra player who only played Doppel
-function addPlayedChip(pid){
-  if(!pid)return;
-  const list=document.getElementById('kap-played-list');
-  if(list&&!list.querySelector(`.kap-played[value="${pid}"]`))list.insertAdjacentHTML('beforeend',playedChip(pid,'D',true));
-  const sel=document.getElementById('kap-played-add');
-  if(sel){const o=sel.querySelector(`option[value="${pid}"]`);if(o)o.remove();sel.value='';}
-  updatePlayedCount();
-}
-function updatePlayedCount(){
-  const m=state.matches.find(x=>x.id===selectedMatchId);if(!m)return;
-  const size=teamSize(teamById(m.teamId));
-  const n=document.querySelectorAll('.kap-played:checked').length;
-  // Up to 2×size: every Doppel can be played by players who did not play Einzel
-  const max=size*2;
-  const c=document.getElementById('kap-played-count');if(c){c.textContent=`(${n})`;c.style.color=n>max?'var(--danger)':n>=size?'var(--court)':'var(--warn)';}
-  const b=document.getElementById('kap-confirm-btn');if(b)b.disabled=n===0||n>max;
-  const st=document.getElementById('kap-confirm-status');
-  if(st){
-    if(n>max){st.textContent=tr('tooManyPlayed')(max);st.style.color='var(--danger)';}
-    else if(n>size){st.textContent=tr('morePlayed')(size);st.style.color='var(--warn)';}
-    else st.textContent='';
-  }
-}
 function _countPlayers(match,includeErsatz){
   if(match.countedPlayers)return match.countedPlayers; // exact list stored at confirmation
   const size=teamSize(teamById(match.teamId));
@@ -511,18 +380,18 @@ async function kapConfirmMatch(){
   const match=state.matches.find(m=>m.id===selectedMatchId);if(!match)return;
   if(!canEditTeam(match.teamId))return;
   const size=teamSize(teamById(match.teamId));
-  const players=[...document.querySelectorAll('.kap-played:checked')].map(x=>x.value);
+  const players=mvPlayedSelection();
   if(!players.length||players.length>size*2)return;
   const includeErsatz=players.includes((state.lineups[match.id]||[])[size]);
-  const btn=document.getElementById('kap-confirm-btn');if(btn){btn.disabled=true;btn.textContent='...';}
+  const btn=document.getElementById('mx-confirm-btn');if(btn){btn.disabled=true;btn.textContent='...';}
   setSync('ing','⟳');
   try{
     const res=await countMatchDB(match,players,includeErsatz);
     if(res==='already'){alert(tr('alreadyCounted'));await loadAll();if(state.matches.find(m=>m.id===selectedMatchId))selectMatch(selectedMatchId);return;}
     setSync('ok','● sync');
     renderTeamContent();renderAvailPanel();renderBlocking();
-    const st=document.getElementById('kap-confirm-status');if(st)st.textContent=tr('countDone')(players.length);
-  }catch(e){console.error(e);setSync('err','✕ '+tr('moveErrSave'));if(btn){btn.disabled=false;btn.textContent='✔ '+tr('countBtn');}}
+    const st=document.getElementById('mx-confirm-status');if(st)st.textContent=tr('countDone')(players.length);
+  }catch(e){console.error(e);setSync('err','✕ '+tr('moveErrSave'));if(btn){btn.disabled=false;btn.textContent=ct('countBtn');}}
 }
 async function kapUndoMatchCount(){
   const match=state.matches.find(m=>m.id===selectedMatchId);if(!match||!match.counted)return;
@@ -833,7 +702,7 @@ function setLang(l){
   // Re-render current views if loaded
   if(state.matches.length){
     renderTeamSidebar();
-    if(selectedMatchId){renderAvailList();renderLineupSlots();renderLineupStatus();}
+    if(selectedMatchId)renderAvailPanel();
     renderKapOverview();
     renderBlocking();
   }
@@ -957,42 +826,7 @@ function renderTeamContent(){
     document.getElementById('match-list').innerHTML='<div class="empty">Keine Spiele für diese Mannschaft</div>';
     return;
   }
-  document.getElementById('match-list').innerHTML=matches.map(m=>{
-    const opp=(m.opponent||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
-    if(m.status==='verlegt'){
-      const nm=state.matches.find(x=>x.id===m.movedTo);
-      return`<div class="match-card moved">
-        <div class="match-header">
-          <div>
-            <div class="match-title">${team.name} vs ${opp}</div>
-            <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)}</div>
-          </div>
-          <span class="match-status status-moved">⇄ ${tr('movedBadge')}</span>
-        </div>
-        ${nm?`<div class="moved-link">→ ${tr('movedNewDate')}: <b>${fmtDate(nm.date)} · ${nm.time}</b>${m.movedAt?` · ${tr('movedOn')(fmtDate(m.movedAt.slice(0,10)),m.movedBy)}`:''}</div>`:''}
-      </div>`;
-    }
-    const avail=state.availability[m.id]||{};
-    const tp=state.players.filter(p=>p.teamIds.includes(m.teamId));
-    const yes=tp.filter(p=>avail[p.id]==='yes').length;
-    const pct=tp.length>0?Math.round(yes/tp.length*100):0;
-    const _lineupTeam=teamById(m.teamId);
-    const _lineupSize=teamSize(_lineupTeam);
-    const _slots=state.lineups[m.id]||[];
-    const hasLineup=_slots.slice(0,_lineupSize).filter(Boolean).length>=_lineupSize;
-    const isActive=selectedMatchId===m.id;
-    return`<div class="match-card ${isActive?'active':''}" onclick="selectMatch('${m.id}')">
-      <div class="match-header">
-        <div>
-          <div class="match-title">${team.name} vs ${opp}${m.movedFrom?`<span class="status-new">${tr('newBadge')}</span>`:''}</div>
-          <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)}</div>
-        </div>
-        <span class="match-status ${hasLineup||m.counted?'status-ready':'status-open'}">${m.counted?'✔ '+tr('countedShort'):hasLineup?ct('lineupOk'):ct('open')}</span>
-      </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">${yes}/${tp.length} ${ct('available')}</div>
-    </div>`;
-  }).join('');
+  document.getElementById('match-list').innerHTML=mvMatchCardsHtml(team,matches,{selected:selectedMatchId,open:'selectMatch'});
 }
 
 // ── MATCH SELECTION ──
@@ -1006,44 +840,6 @@ function selectMatch(matchId){
 
 // ── WOCHENENDE: other matches on the same Sat/Sun (different day) ──
 // Only a hint, never a block: playing Sat + Sun in different teams is allowed.
-function _wdOf(date){return date?new Date(date+'T12:00:00').getDay():null;}
-function _addDays(date,n){const d=new Date(date+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
-function weekendOtherDate(match){
-  const wd=_wdOf(match.date);
-  if(wd===6)return _addDays(match.date,1); // Sa → So
-  if(wd===0)return _addDays(match.date,-1); // So → Sa
-  return null; // weekday match: no weekend check
-}
-function weekendMatches(match){
-  const other=weekendOtherDate(match);if(!other)return[];
-  return state.matches.filter(m=>m.id!==match.id&&m.date===other)
-    .sort((a,b)=>(a.time||'').localeCompare(b.time||'')||teamNumber(teamById(a.teamId)||{name:''})-teamNumber(teamById(b.teamId)||{name:''}));
-}
-function _teamShort(t){
-  let n=(t?.name||'?').replace('Seniorinnen','SenF').replace('Senioren','Sen').replace('Herren','H').replace('Damen','D').trim();
-  // first team of a category with more than one team → "H I" (plain "H" is ambiguous)
-  const siblings=(state.allTeams||state.teams).filter(x=>x.category===t?.category);
-  if(t&&siblings.length>1&&teamNumber(t)===1&&!/\b(I|II|III|IV|V|VI|VII|VIII)$/.test(n))n+=' I';
-  return n;
-}
-function weekendBadges(pid,match){
-  const play=[],ans=[];
-  for(const om of weekendMatches(match)){
-    const ot=teamById(om.teamId);const sz=teamSize(ot);
-    const slots=state.lineups[om.id]||[];
-    const day=ct('wd')[_wdOf(om.date)];
-    const inMain=slots.slice(0,sz).includes(pid),inErsatz=slots[sz]===pid;
-    if(inMain||inErsatz){
-      const lbl=inMain?tr('wkPlay'):tr('wkErsatz');
-      play.push(`<span class="wk-badge play" title="${tr('wkPlayTitle')(day,fmtDate(om.date),ot?.name||'?',om.time||'')}">${day}: ${lbl} ${_teamShort(ot)}</span>`);
-    }else{
-      const st=state.availability[om.id]?.[pid];
-      if(st==='yes'||st==='conditional')
-        ans.push(`<span class="wk-badge ans" title="${tr('wkAnsTitle')(day,fmtDate(om.date),ot?.name||'?')}">${day}: ${st==='yes'?ct('stYes'):'('+ct('stYes')+')'} ${_teamShort(ot)}</span>`);
-    }
-  }
-  return play[0]||ans[0]||''; // only one badge: aufgestellt beats zugesagt
-}
 // ── AVAILABILITY PANEL ──
 function renderAvailPanel(){
   const match=state.matches.find(m=>m.id===selectedMatchId);if(!match)return;
@@ -1067,113 +863,7 @@ function renderAvailPanel(){
     }else mi.innerHTML='';
   }
 
-  const avail=state.availability[selectedMatchId]||{};
-  const tp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>{
-    const order={yes:0,conditional:1,notfall:2,'':3,no:4};
-    const ao=order[avail[a.id]||'']??3, bo=order[avail[b.id]||'']??3;
-    if(ao!==bo)return ao-bo;
-    return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);
-  });
-
-  const groupLabel={yes:tr('groupYes'),conditional:tr('groupConditional'),notfall:tr('groupNotfall'),no:tr('groupNo'),'':tr('groupNone')};
-  const groupColor={yes:'var(--court)',conditional:'#52c97a',notfall:'var(--warn)',no:'var(--danger)','':'var(--muted)'};
-  let lastGroup=undefined;
-  let html='';
-  for(const p of tp){
-    const s=avail[p.id]||'';
-    const blocked=isPlayerBlockedForLineup(p.id,match.teamId,match.id);
-    if(s!==lastGroup){
-      lastGroup=s;
-      html+=`<div class="avail-group-label" style="color:${groupColor[s]}">${groupLabel[s]}</div>`;
-    }
-    const isMainTeam=!!(state.mainTeam[p.id]?.[match.teamId]);
-    html+=`<div class="avail-row">
-      <div class="avail-avatar" style="${isMainTeam?'background:rgba(212,160,23,.25);border:1.5px solid #d4a017':''}">${initials(p.name)}</div>
-      <div style="flex:1">
-        <div class="avail-name">${p.name}${isMainTeam?` <span style="font-size:11px;font-weight:700;color:#d4a017;border:1px solid #d4a01766;background:rgba(212,160,23,.1);padding:1px 6px;border-radius:8px">★ SM</span>`:''}${blocked?` <span class="blocked-badge">⛔</span>`:''}</div>
-        <div class="avail-meta">${p.lkStr||''} · Jg. ${p.year||'—'} · Rang ${playerRankInTeam(p.id,match.teamId)<999?playerRankInTeam(p.id,match.teamId):'—'}</div>
-      </div>
-      ${(()=>{
-        let badgeLabel=s==='yes'?tr('badgeYes'):s==='notfall'?tr('badgeNotfall'):s==='no'?tr('badgeNo'):'—';
-        let extraBadge='';
-        
-        // Original conditional/FREI logic
-        if(s==='conditional'){
-          const yesMatch=state.matches.find(om=>om.id!==match.id&&spieltagOf(om)===spieltagOf(match)&&state.availability[om.id]?.[p.id]==='yes');
-          const yesTeam=yesMatch?teamById(yesMatch.teamId):null;
-          badgeLabel=yesTeam?'(Ja → '+yesTeam.name+')':'(Ja)';
-          
-          // Check if Prio II player is in another lineup on same day
-          const conflictMatch=state.matches.find(om=>
-            om.id!==match.id&&spieltagOf(om)===spieltagOf(match)&&
-            (state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(p.id)
-          );
-          const conflictTeam=conflictMatch?teamById(conflictMatch.teamId):null;
-          // Ersatz in another match on the same Spieltag → just a flag
-          const ersatzMatch=conflictMatch?null:state.matches.find(om=>
-            om.id!==match.id&&spieltagOf(om)===spieltagOf(match)&&
-            (state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===p.id
-          );
-          const ersatzTeam=ersatzMatch?teamById(ersatzMatch.teamId):null;
-          const ersatzFlag=ersatzTeam?'<span title="'+(lang==='de'?'Ersatz bei '+ersatzTeam.name:lang==='es'?'Ersatz en '+ersatzTeam.name:'Substitute for '+ersatzTeam.name)+'" style="background:#2a2a2a;color:#bbb;border:1px dashed #555;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Ersatz ('+_teamShort(ersatzTeam)+')</span>':'';
-          
-          if(conflictTeam){
-            const teamShort=_teamShort(conflictTeam);
-            const bereitTitle=lang==='de'?'Bereits aufgestellt in '+conflictTeam.name:lang==='es'?'Ya alineado en '+conflictTeam.name:'Already in lineup for '+conflictTeam.name;
-            extraBadge='<span title="'+bereitTitle+'" style="background:#2a2a2a;color:#bbb;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Bereits aufgestellt ('+teamShort+')</span>';
-          } else if(ersatzFlag){
-            extraBadge=ersatzFlag;
-          } else if(yesMatch&&yesTeam){
-            try{
-              const ySz=teamSize(yesTeam);
-              const ySlots=state.lineups[yesMatch.id]||[];
-              const yMain=ySlots.slice(0,ySz);
-              const yFull=yMain.filter(Boolean).length>=ySz;
-              const yErsatz=ySlots[ySz]||null;
-              const inYLineup=yMain.includes(p.id)||yErsatz===p.id;
-              if(yFull&&!inYLineup){
-                const freiTitle=lang==='de'?'Aufstellung von '+yesTeam.name+' ist voll, Spieler nicht aufgestellt — frei für dieses Spiel':lang==='es'?'La alineación de '+yesTeam.name+' está completa, jugador no alineado — libre para este partido':yesTeam.name+' lineup is full, player not in lineup — free for this match';
-                extraBadge='<span title="'+freiTitle+'" style="background:#2a2a2a;color:#bbb;border:1px solid #52b78844;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help;box-shadow:0 0 0 1px #52b78822">FREI</span>';
-              }
-            }catch(e){
-              console.error('FREI badge error:',e);
-            }
-          }
-        }
-        
-        // Im Notfall: same "Bereits aufgestellt" check as Prio II
-        if(s==='notfall'){
-          const conflictMatch=state.matches.find(om=>
-            om.id!==match.id&&spieltagOf(om)===spieltagOf(match)&&
-            (state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(p.id)
-          );
-          const conflictTeam=conflictMatch?teamById(conflictMatch.teamId):null;
-          // Ersatz in another match on the same Spieltag → just a flag
-          const ersatzMatch=conflictMatch?null:state.matches.find(om=>
-            om.id!==match.id&&spieltagOf(om)===spieltagOf(match)&&
-            (state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===p.id
-          );
-          const ersatzTeam=ersatzMatch?teamById(ersatzMatch.teamId):null;
-          const ersatzFlag=ersatzTeam?'<span title="'+(lang==='de'?'Ersatz bei '+ersatzTeam.name:lang==='es'?'Ersatz en '+ersatzTeam.name:'Substitute for '+ersatzTeam.name)+'" style="background:#2a2a2a;color:#bbb;border:1px dashed #555;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Ersatz ('+_teamShort(ersatzTeam)+')</span>':'';
-          if(conflictTeam){
-            const teamShort=_teamShort(conflictTeam);
-            const bereitTitle=lang==='de'?'Bereits aufgestellt in '+conflictTeam.name:lang==='es'?'Ya alineado en '+conflictTeam.name:'Already in lineup for '+conflictTeam.name;
-            extraBadge='<span title="'+bereitTitle+'" style="background:#2a2a2a;color:#bbb;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Bereits aufgestellt ('+teamShort+')</span>';
-          }else if(ersatzFlag){
-            extraBadge=ersatzFlag;
-          }
-        }
-
-        const bg=s==='yes'?'#1a2e26':s==='conditional'?'rgba(82,201,122,.1)':s==='notfall'?'#2e2a1a':s==='no'?'#2d1a1a':'#252525';
-        const col=s==='yes'?'var(--court)':s==='conditional'?'#52c97a':s==='notfall'?'var(--warn)':s==='no'?'var(--danger)':'var(--muted)';
-        // max. one extra badge: same-day (Bereits aufgestellt / FREI) wins over the weekend hint
-        if(!extraBadge)extraBadge=weekendBadges(p.id,match);
-        // extra badges first, status badge last → status badges line up on the right
-        return '<span class="avail-tags">'+extraBadge+'</span><span class="avail-badge" style="background:'+bg+';color:'+col+';border-radius:10px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:4px">'+badgeLabel+'</span>';
-      })()}
-    </div>`;
-  }
-  document.getElementById('avail-list').innerHTML=html;
+  document.getElementById('avail-list').innerHTML=mvAvailHtml(match);
   renderLineupSlots();
 }
 
@@ -1223,122 +913,14 @@ async function onSlotDrop(e,destIndex){
 
 function renderLineupSlots(){
   const match=state.matches.find(m=>m.id===selectedMatchId);if(!match)return;
-  const team=teamById(match.teamId);
-  const size=teamSize(team);
-  const avail=state.availability[selectedMatchId]||{};
-  const allTp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
-  const lineup=state.lineups[selectedMatchId]||[];
-
-  // LK-order warnings (same logic as admin renderLineup)
-  const warnings=[];
-  for(let i=0;i<size-1;i++){
-    const p1=lineup[i]?playerById(lineup[i]):null;
-    const p2=lineup[i+1]?playerById(lineup[i+1]):null;
-    if(p1&&p2&&playerRankInTeam(p1.id,match.teamId)>playerRankInTeam(p2.id,match.teamId))
-      warnings.push(`⚠️ Pos. ${i+1} (Rang ${playerRankInTeam(p1.id,match.teamId)}) vor Pos. ${i+2} (Rang ${playerRankInTeam(p2.id,match.teamId)})`);
-
-  }
-  const blockedWarnings=lineup.filter(Boolean).map(pid=>{
-    const p=playerById(pid);if(!p)return null;
-    const _sp=playedOnSpieltag(pid,match);
-    if(_sp)return tr('playedOnSpieltag')(p.name,fmtDate(spieltagOf(match)),teamById(_sp.teamId)?.name||'?');
-    if(isPlayerBlockedForLineup(pid,match.teamId,match.id))return tr('isBlocked')(p.name,team?.name||'?');
-    return null;
-  }).filter(Boolean);
-
-  // Double-booking warnings for the main lineup (same Spieltag, other team)
-  const doubleWarnings=lineup.slice(0,size).filter(Boolean).map(pid=>{
-    const p=playerById(pid);if(!p)return null;
-    if(playedOnSpieltag(pid,match))return null; // already reported as Spieltag block
-    const otherMatch=state.matches.find(om=>
-      om.id!==selectedMatchId&&spieltagOf(om)===spieltagOf(match)&&
-      (state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(pid)
-    );
-    if(!otherMatch)return null;
-    const otherTeam=teamById(otherMatch.teamId);
-    return`⚠️ ${p.name} spielt auch für <strong>${otherTeam?.name||'?'}</strong> am selben Tag`;
-  }).filter(Boolean);
-  const hints=[...warnings,...doubleWarnings];
-
-  const filledCount=lineup.slice(0,size).filter(Boolean).length;
-  let warnHtml='';
-  const li=(arr,re)=>arr.map(w=>`<li>${w.replace(re,'')}</li>`).join('');
-  if(blockedWarnings.length)warnHtml+=`<details class="warn-group red" open><summary>⛔ ${tr('nBlocks')(blockedWarnings.length)}</summary><ul>${li(blockedWarnings,/^⛔\s*/)}</ul></details>`;
-  if(hints.length)warnHtml+=`<details class="warn-group amber"${window.innerWidth>700?' open':''}><summary>⚠️ ${tr('nHints')(hints.length)}</summary><ul>${li(hints,/^\u26A0[\uFE0E\uFE0F]?\s*/)}</ul></details>`;
-  if(!blockedWarnings.length&&!hints.length){
-    if(filledCount>=size)
-      warnHtml=`<div class="ok-banner">${ct('lineupComplete')}</div>`;
-    else if(filledCount>0)
-      warnHtml+=`<div style="background:#2e2a15;border:1px solid #ffd70044;border-radius:8px;padding:6px 12px;margin-bottom:10px;font-size:12px;color:#ffd700">⏳ Aufstellung unvollständig (${filledCount}/${size})</div>`;
-  }
-  document.getElementById('lineup-warnings').innerHTML=warnHtml;
-
-  // Slots — sorted by availability then rank, with group separators (same as admin)
-  const _ao2={yes:0,conditional:1,notfall:2,'':3,no:4};
-  const sorted=[...allTp].sort((a,b)=>{
-    const ao=_ao2[avail[a.id]||'']??2, bo=_ao2[avail[b.id]||'']??2;
-    if(ao!==bo)return ao-bo;
-    return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);
-  });
-
-  const _gl2={yes:tr('dropYes'),conditional:tr('dropConditional'),notfall:tr('dropNotfall'),no:tr('dropNo'),'':tr('dropNone')};
-  function buildOpts(selectedPid){
-    let opts='<option value="">—</option>';let _lgu=undefined;
-    for(const tp of sorted){
-      const bl=isPlayerBlockedForLineup(tp.id,match.teamId,match.id);const grp=avail[tp.id]||'';
-      let sep='';if(grp!==_lgu){_lgu=grp;sep=`<option disabled style="color:var(--muted);font-size:11px">${_gl2[grp]}</option>`;}
-      opts+=sep+`<option value="${tp.id}" ${selectedPid===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;
-    }
-    return opts;
-  }
   const canEdit=canEditTeam(match.teamId);
   const ro=!canEdit||!!match.counted; // read-only for other teams, and locked once counted
-  const dis=ro?'disabled':'';
   ['auto-btn','sort-btn'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display=ro?'none':'';});
-  let slotsHtml=ro?`<div style="background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:6px 12px;margin-bottom:10px;font-size:12px;color:var(--muted)">🔒 ${tr(canEdit?'countedLocked':'readOnly')}</div>`:'';
-  renderCountWrap(match,lineup,size,filledCount,canEdit);
-  for(let i=0;i<size;i++){
-    const pid=lineup[i]||'';
-    const p=pid?playerById(pid):null;
-    const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
-    const rankOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
-    const isBlocked=pid?isPlayerBlockedForLineup(pid,match.teamId,match.id):false;
-    const cls=p?(isBlocked?'blocked-slot':rankOk?'ok':'warning'):'';
-    slotsHtml+=`<div class="lineup-slot ${cls}" ${ro?'':'draggable="true"'} data-slot-index="${i}"
-      ondragstart="onSlotDragStart(event,${i})"
-      ondragover="onSlotDragOver(event)"
-      ondragleave="onSlotDragLeave(event)"
-      ondrop="onSlotDrop(event,${i})"
-      ondragend="onSlotDragEnd(event)">
-      <span class="drag-handle" title="Ziehen zum Umsortieren">⠿</span>
-      <div class="lineup-pos">${i+1}</div>
-      <select ${dis} onchange="setSlot(${i},this.value)">${buildOpts(pid)}</select>
-    </div>`;
-  }
-
-  // Ersatz slot
-  const ersatzPid=lineup[size]||'';
-  const ersatzP=ersatzPid?playerById(ersatzPid):null;
-  const ersatzBlocked=ersatzPid?isPlayerBlockedForLineup(ersatzPid,match.teamId,match.id):false;
-  let ersatzWarn='';
-  if(ersatzPid){
-    const otherLineup=state.matches.find(om=>om.id!==selectedMatchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(ersatzPid));
-    const otherErsatz=state.matches.find(om=>om.id!==selectedMatchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===ersatzPid);
-    if(otherLineup){const ot=teamById(otherLineup.teamId);ersatzWarn=`${ct('alreadyLineup')} <strong>${ot?.name||'?'}</strong>`;}
-    else if(otherErsatz){const ot=teamById(otherErsatz.teamId);ersatzWarn=`⚠️ Bereits Ersatz: <strong>${ot?.name||'?'}</strong>`;}
-  }
-  slotsHtml+=`<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)">
-    <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Ersatz</div>
-    <div class="lineup-slot ${ersatzP?(ersatzBlocked?'blocked-slot':'ok'):''}" style="opacity:.85;border-style:dashed">
-      <div class="lineup-pos" style="color:var(--muted)">E</div>
-      <select ${dis} onchange="setSlot(${size},this.value)">${buildOpts(ersatzPid)}</select>
-    </div>
-    ${ersatzWarn?`<div class="warn-banner" style="margin-top:6px;font-size:11px">${ersatzWarn}</div>`:''}
-  </div>`;
-
-  document.getElementById('lineup-slots').innerHTML=slotsHtml;
-
-
+  // warnings, slots and "Wer hat gespielt?" come from common.js (MATCH VIEW), the same as in admin
+  document.getElementById('lineup-warnings').innerHTML=mvWarningsHtml(match);
+  document.getElementById('lineup-slots').innerHTML=mvSlotsHtml(match,{ro,lockMsg:tr(canEdit?'countedLocked':'readOnly'),set:'setSlot',drag:'onSlot'});
+  const cw=document.getElementById('count-wrap');
+  if(cw){cw.innerHTML=mvCountHtml(match,{canEdit,confirm:'kapConfirmMatch',undo:'kapUndoMatchCount'});mvUpdatePlayedCount();}
 }
 
 async function sortLineupKap(){
