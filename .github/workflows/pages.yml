@@ -32,6 +32,8 @@ jobs:
         with:
           ref: main
           path: site
+      - name: Test TVBB rules on main (a failing test stops the deploy)
+        run: if [ -f site/tests/rules.test.js ]; then node site/tests/rules.test.js; fi
       - name: Checkout dev
         uses: actions/checkout@v4
         continue-on-error: true
@@ -40,9 +42,9 @@ jobs:
           path: beta
       - name: Assemble site
         run: |
-          rm -rf site/.git site/.github
+          rm -rf site/.git site/.github site/tests
           if [ -d beta ]; then
-            rm -rf beta/.git beta/.github
+            rm -rf beta/.git beta/.github beta/tests
             mkdir -p site/beta
             cp -r beta/. site/beta/
           fi
