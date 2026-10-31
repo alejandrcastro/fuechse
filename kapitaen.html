@@ -202,7 +202,7 @@ input:focus,select:focus{border-color:var(--court)}
     </div>
     <div class="login-field" style="margin-bottom:20px">
       <label data-ct="password">Passwort</label>
-      <input id="login-pass" type="password" autocomplete="current-password" placeholder="••••••••"
+      <input id="login-pass" type="password" autocomplete="current-password"
         onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <button class="login-btn" id="login-btn" onclick="doLogin()" data-ct="loginBtn">Einloggen</button>
@@ -1958,7 +1958,7 @@ function shortPN(p){
       }
       html+=`<td style="padding:6px 8px;vertical-align:top">
         <div onclick="goToMatchKap('${m.id}')" style="cursor:pointer;background:${bg};border-radius:8px;padding:6px 8px;min-width:100px">
-          <div style="font-size:11px;font-weight:600;color:${col};margin-bottom:4px">${icon} ${(m.opponent||'').substring(0,12)}</div>
+          <div style="font-size:11px;font-weight:600;color:${col};margin-bottom:4px;width:0;min-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${(m.opponent||'').replace(/"/g,'&quot;')}">${icon} ${m.opponent||''}</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:5px">${m.time} · ${m.home==='Heim'?'H':'A'} · ${filled}/${sz}</div>
           <div style="border-top:1px solid var(--border2);padding-top:4px">${playersHtml}</div>
         </div>

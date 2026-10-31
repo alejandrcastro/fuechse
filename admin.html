@@ -189,7 +189,7 @@ select option{background:#1b2926}
       <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#a8b8b0;display:block;margin-bottom:5px" data-ct="password">Passwort</label>
       <input id="login-pass" type="password" autocomplete="off"
         style="width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none"
-        placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+        onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <button id="login-btn" onclick="doLogin()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer" data-ct="loginBtn">Einloggen</button>
     <div id="login-error" style="margin-top:12px;font-size:.8rem;color:#ff6b5b;text-align:center;min-height:18px;font-weight:500"></div>
@@ -1178,6 +1178,9 @@ async function addTeam(){
   await loadAll();
 }
 
+// squads in the Mannschaften tab start folded; the ones opened stay open when the list is redrawn
+const _openSquads=new Set();
+function _squadToggle(el){if(el.open)_openSquads.add(el.dataset.tid);else _openSquads.delete(el.dataset.tid);}
 function renderTeams(){
   const el=document.getElementById('team-list');
   if(!state.teams.length){el.innerHTML=`<div class="empty">${tr('noTeam')}</div>`;return;}
@@ -1220,14 +1223,16 @@ function renderTeams(){
               <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--court)">${t.name}</span>
               ${genderBadge(t.gender)}
             </div>
-            <div style="font-size:11px;color:var(--muted)">${t.liga} · ${t.season} · #${teamNumber(t)}</div>
+            <div style="font-size:11px;color:var(--muted)">${t.liga} · ${seasonKindLabel(t.season)} · #${teamNumber(t)}</div>
           </div>
           <div style="display:flex;gap:6px">
               <button class="btn btn-outline btn-sm" onclick="editTeamSize('${t.id}')" style="font-size:11px;padding:3px 8px" title="Toggle group size">${t.season==='Winter'?'Winter (4)':(t.is_4er?'Sommer 4er':'Sommer (6)')}</button>
               <button class="btn btn-danger" onclick="removeTeam('${t.id}')">✕</button>
             </div>
         </div>
-        ${players.length?players.map((p,i)=>`<div class="player-row" style="padding:6px 10px;margin-bottom:4px">
+        ${players.length?`<details class="squad" data-tid="${t.id}" ${filterTeamId||_openSquads.has(t.id)?'open':''} ontoggle="_squadToggle(this)">
+        <summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);padding:2px 0 6px">👥 ${ct('nPlayers')(players.length)}${players.some(p=>isPlayerBlockedForTeam(p.id,t.id))?` · ⛔ ${players.filter(p=>isPlayerBlockedForTeam(p.id,t.id)).length}`:''}</summary>
+        ${players.map((p,i)=>`<div class="player-row" style="padding:6px 10px;margin-bottom:4px">
           <span style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--court);min-width:18px">${playerRankInTeam(p.id,t.id)<999?playerRankInTeam(p.id,t.id):i+1}</span>
           <div class="player-avatar" style="width:24px;height:24px;font-size:11px">${initials(p.name)}</div>
           <span class="player-name" style="font-size:12px">${p.name}</span>
@@ -1239,7 +1244,7 @@ function renderTeams(){
             style="background:${state.mainTeam[p.id]?.[t.id]?'rgba(212,160,23,.12)':'transparent'};border:${state.mainTeam[p.id]?.[t.id]?'1.5px solid #d4a017':'1px solid #333'};color:${state.mainTeam[p.id]?.[t.id]?'#d4a017':'#8a9a94'};border-radius:6px;padding:2px 0;min-width:42px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s">
             ${state.mainTeam[p.id]?.[t.id]?'★ SM':'☆'}
           </button>
-        </div>`).join(''):`<div style="color:var(--muted);font-size:12px">${tr('noTeamPlayers')}</div>`}
+        </div>`).join('')}</details>`:`<div style="color:var(--muted);font-size:12px">${tr('noTeamPlayers')}</div>`}
       </div>`;
     }
     html+='<div style="height:8px"></div>';
@@ -2731,7 +2736,7 @@ function renderOverviewMatches(selectedCats){
       }
       html+=`<td style="padding:6px 8px;vertical-align:top">
         <div onclick="goToLineup('${m.id}')" style="cursor:pointer;background:${bg};border-radius:8px;padding:6px 8px;min-width:100px">
-          <div style="font-size:11px;font-weight:600;color:${col};margin-bottom:4px">${icon} ${(m.opponent||'').substring(0,12)}</div>
+          <div style="font-size:11px;font-weight:600;color:${col};margin-bottom:4px;width:0;min-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${(m.opponent||'').replace(/"/g,'&quot;')}">${icon} ${m.opponent||''}</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:5px">${m.time} · ${m.home==='Heim'?'H':'A'} · ${filled}/${sz}</div>
           <div style="border-top:1px solid var(--border2);padding-top:4px">${playersHtml}</div>
         </div>

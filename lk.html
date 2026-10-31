@@ -72,7 +72,7 @@ input::placeholder{color:var(--muted)}
       <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#74c69d;display:block;margin-bottom:5px" data-ct="password">Passwort</label>
       <input id="sp-pw" type="password" autocomplete="off"
         style="width:100%;background:#111;border:1px solid #2d6a4f;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none"
-        placeholder="••••••••" onkeydown="if(event.key==='Enter')spLogin()">
+        onkeydown="if(event.key==='Enter')spLogin()">
     </div>
     <button onclick="spLogin()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer" data-ct="loginBtn">Einloggen</button>
     <div id="sp-err" style="margin-top:12px;font-size:.8rem;color:#ff6b5b;text-align:center;min-height:18px"></div>
