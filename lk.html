@@ -8,7 +8,7 @@
 <style>
 :root{
   --red:#c0392b;--green:#2d6a4f;--green-light:#40916c;
-  --white:#f0f7f2;--dark:#1e2d24;--muted:#7a9e88;
+  --white:#f0f7f2;--dark:#1e2d24;--muted:#a3c2ae;
   --line:#2e4a38;--warn:#f4a261;--court:#52b788;--card:#243330;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -19,7 +19,7 @@ header{background:linear-gradient(160deg,#1b2d23 0%,#2d4a38 60%,#1e2d24 100%);pa
 .header-text p{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
 .lang-bar{display:flex;gap:5px;margin-left:auto}
 .lang-btn{padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit}
-.lang-btn.active{background:var(--green-light);color:#fff;border-color:var(--green-light)}
+.lang-btn.active{background:var(--green);color:#fff;border-color:var(--green-light)}
 main{padding:20px 16px;max-width:480px;margin:0 auto}
 .step-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;margin-bottom:4px}
 .step-sub{font-size:13px;color:var(--muted);margin-bottom:18px}
@@ -66,16 +66,16 @@ input::placeholder{color:var(--muted)}
     <div style="text-align:center;margin-bottom:24px">
       <img src="logo.svg" alt="Füchse Berlin" style="width:56px;height:56px;object-fit:contain;display:block;margin:0 auto 10px">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:.1em;color:#74c69d">FÜCHSE BERLIN</div>
-      <div style="font-size:.7rem;color:#4a9970;letter-spacing:.08em;text-transform:uppercase;margin-top:3px">Spieler-App</div>
+      <div style="font-size:.7rem;color:#74c69d;letter-spacing:.08em;text-transform:uppercase;margin-top:3px">Spieler-App</div>
     </div>
     <div style="margin-bottom:20px">
-      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#4a9970;display:block;margin-bottom:5px">Passwort</label>
+      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#74c69d;display:block;margin-bottom:5px">Passwort</label>
       <input id="sp-pw" type="password" autocomplete="off"
         style="width:100%;background:#111;border:1px solid #2d6a4f;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none"
         placeholder="••••••••" onkeydown="if(event.key==='Enter')spLogin()">
     </div>
     <button onclick="spLogin()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer">Einloggen</button>
-    <div id="sp-err" style="margin-top:12px;font-size:.8rem;color:#e63946;text-align:center;min-height:18px"></div>
+    <div id="sp-err" style="margin-top:12px;font-size:.8rem;color:#ff6b5b;text-align:center;min-height:18px"></div>
   </div>
 </div>
 <script>clubInitGate();</script>

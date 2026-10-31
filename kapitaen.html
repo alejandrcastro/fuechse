@@ -8,8 +8,8 @@
 <style>
 :root{
   --green:#2d6a4f;--green-light:#40916c;--court:#74c69d;
-  --white:#f0f2f1;--dark:#161616;--card:#1e1e1e;--muted:#7a8a85;
-  --warn:#f4a261;--danger:#c0392b;--info:#4ea8de;--red:#c0392b;
+  --white:#f0f2f1;--dark:#161616;--card:#1e1e1e;--muted:#a8b8b0;
+  --warn:#f4a261;--danger:#ff6b5b;--info:#4ea8de;--red:#c0392b;
   --border:#252525;--border2:#333
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -22,9 +22,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);
 .login-box{background:#1e1e1e;border:1px solid #333;border-radius:14px;padding:36px 32px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
 .login-brand{text-align:center;margin-bottom:28px}
 .login-brand .name{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:.1em;color:var(--court)}
-.login-brand .sub{font-size:.7rem;color:#666;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.login-brand .sub{font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
 .login-field{margin-bottom:12px}
-.login-field label{font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#666;display:block;margin-bottom:5px}
+.login-field label{font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px}
 .login-field input{width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none}
 .login-field input:focus{border-color:var(--court)}
 .login-btn{width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:background .15s}
@@ -36,16 +36,16 @@ header{background:#111;padding:14px 22px;display:flex;align-items:center;justify
 .logo{display:flex;align-items:center;gap:10px}
 .logo h1{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px}
 .logo-img{width:36px;height:36px;object-fit:contain;flex-shrink:0}
-.logo span{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block}
+.logo span{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block}
 .header-right{display:flex;align-items:center;gap:8px}
-.sync-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;transition:all .3s}
+.sync-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;transition:all .3s;white-space:nowrap}
 .sync-ok{background:#1a2a1a;border:1px solid var(--court)55;color:var(--court)}
 .sync-err{background:#3d1a1a;border:1px solid var(--danger)55;color:var(--danger)}
 .sync-ing{background:#2e2a1a;border:1px solid var(--warn)55;color:var(--warn)}
 .lang-bar{display:flex;gap:4px}
 .lang-btn{padding:3px 9px;font-size:11px;font-weight:600;border:1px solid var(--border2);border-radius:6px;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s}
 .lang-btn:hover{color:var(--white)}
-.lang-btn.active{background:var(--green-light);color:#fff;border-color:var(--green-light)}
+.lang-btn.active{background:var(--green);color:#fff;border-color:var(--green-light)}
 .logout-btn{padding:4px 12px;font-size:11px;font-weight:600;border:1px solid var(--border2);border-radius:6px;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif}
 .logout-btn:hover{color:var(--white);border-color:#555}
 
@@ -103,7 +103,7 @@ main{padding:22px;max-width:1080px;margin:0 auto;display:grid;grid-template-colu
 .avail-panel-title{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court)}
 .auto-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--court)55;background:#1a2e26;color:var(--court);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
 .auto-btn:hover{background:var(--green);border-color:var(--green);color:#fff}
-.avail-group-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 0 3px;border-top:1px solid var(--border);margin-top:4px;color:var(--muted)}
+.avail-group-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 0 3px;border-top:1px solid var(--border);margin-top:4px;color:var(--muted)}
 .avail-group-label:first-child{border-top:none;margin-top:0}
 .avail-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)22}
 .avail-row:last-child{border-bottom:none}
@@ -127,7 +127,7 @@ main{padding:22px;max-width:1080px;margin:0 auto;display:grid;grid-template-colu
 .lineup-slot select{flex:1;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none}
 .lineup-slot select:focus{border-color:var(--court)}
 .save-indicator{font-size:11px;color:var(--court);text-align:right;margin-top:4px;min-height:16px}
-.blocked-badge{font-size:10px;background:#2d1a1a;border:1px solid var(--danger)44;color:var(--danger);padding:2px 7px;border-radius:10px}
+.blocked-badge{font-size:11px;background:#2d1a1a;border:1px solid var(--danger)44;color:var(--danger);padding:2px 7px;border-radius:10px}
 .warn-banner{background:#3d1a1a;border:1px solid var(--danger)44;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--danger)}
 .ok-banner{background:#1a2d22;border:1px solid var(--court)33;border-radius:8px;padding:6px 12px;margin-bottom:10px;font-size:12px;color:var(--court)}
 .empty{color:var(--muted);font-size:13px;text-align:center;padding:30px}
@@ -154,11 +154,11 @@ input:focus,select:focus{border-color:var(--court)}
 .match-card.moved:hover{border-color:var(--border)}
 .match-card.moved .match-title,.match-card.moved .match-meta{text-decoration:line-through;text-decoration-color:#7a8a8599}
 .status-moved{background:#2e2414;color:var(--warn);border:1px solid var(--warn)55}
-.status-new{background:#14262e;color:var(--info);border:1px solid var(--info)55;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
+.status-new{background:#14262e;color:var(--info);border:1px solid var(--info)55;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
 .moved-link{font-size:11px;color:var(--warn);margin-top:6px}
 .moved-link b{color:var(--white);font-weight:600}
 .info-banner{background:#14262e;border:1px solid var(--info)44;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#9cc9e6;line-height:1.5}
-.wk-badge{border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:4px;cursor:help;white-space:nowrap}
+.wk-badge{border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:4px;cursor:help;white-space:nowrap}
 .wk-badge.play{background:#2d1f10;color:var(--warn);border:1px solid #f4a26155}
 .wk-badge.ans{background:#2a2a2a;color:#bbb;border:1px solid #444}
 .info-banner b{color:var(--white)}
@@ -169,7 +169,7 @@ input:focus,select:focus{border-color:var(--court)}
 .mv .orig{background:#181818;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--muted);margin:12px 0 16px}
 .mv .orig b{display:block;color:var(--white);font-size:13px;margin-bottom:2px;text-decoration:line-through;text-decoration-color:var(--warn)}
 .mv .field{margin-bottom:12px}
-.mv .field label{display:block;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.mv .field label{display:block;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
 .mv .row2{display:grid;grid-template-columns:1.4fr 1fr;gap:10px}
 .mv .check{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--white);margin:4px 0 10px;cursor:pointer}
 .mv .check input{width:auto;margin-top:2px;accent-color:var(--court)}
@@ -473,7 +473,7 @@ function playedChip(pid,pos,on){
   const p=playerById(pid);
   return`<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 10px;border:1px solid var(--border2);border-radius:20px;cursor:pointer;width:auto">
     <input type="checkbox" class="kap-played" value="${pid}" ${on?'checked':''} onchange="updatePlayedCount()" style="width:auto;accent-color:var(--court);cursor:pointer">
-    <span style="color:var(--muted);font-size:10px">${pos}</span> ${p?.name||'?'}</label>`;
+    <span style="color:var(--muted);font-size:11px">${pos}</span> ${p?.name||'?'}</label>`;
 }
 // Extra player who only played Doppel
 function addPlayedChip(pid){
@@ -921,14 +921,14 @@ function renderTeamSidebar(){
     const cc=catCmp(a[0],b[0]);if(cc)return cc;
     return a[0].localeCompare(b[0]);
   })){
-    html+=`<div style="font-size:10px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;padding-left:4px">${cat}</div>`;
+    html+=`<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;padding-left:4px">${cat}</div>`;
     for(const t of teams.sort((a,b)=>teamNumber(a)-teamNumber(b))){
       const matches=state.matches.filter(m=>m.teamId===t.id);
       const active=selectedTeamId===t.id?'active':'';
       html+=`<button class="team-btn ${active}" onclick="selectTeam('${t.id}')">
         <span class="team-dot"></span>
         <span style="flex:1">${t.name}</span>
-        <span style="font-size:10px;color:#444">${matches.length}</span>
+        <span style="font-size:11px;color:var(--muted)">${matches.length}</span>
       </button>`;
     }
   }
@@ -1096,7 +1096,7 @@ function renderAvailPanel(){
     html+=`<div class="avail-row">
       <div class="avail-avatar" style="${isMainTeam?'background:rgba(212,160,23,.25);border:1.5px solid #d4a017':''}">${initials(p.name)}</div>
       <div style="flex:1">
-        <div class="avail-name">${p.name}${isMainTeam?` <span style="font-size:10px;font-weight:700;color:#d4a017;border:1px solid #d4a01766;background:rgba(212,160,23,.1);padding:1px 6px;border-radius:8px">★ SM</span>`:''}${blocked?` <span class="blocked-badge">⛔</span>`:''}</div>
+        <div class="avail-name">${p.name}${isMainTeam?` <span style="font-size:11px;font-weight:700;color:#d4a017;border:1px solid #d4a01766;background:rgba(212,160,23,.1);padding:1px 6px;border-radius:8px">★ SM</span>`:''}${blocked?` <span class="blocked-badge">⛔</span>`:''}</div>
         <div class="avail-meta">${p.lkStr||''} · Jg. ${p.year||'—'} · Rang ${playerRankInTeam(p.id,match.teamId)<999?playerRankInTeam(p.id,match.teamId):'—'}</div>
       </div>
       ${(()=>{
@@ -1121,12 +1121,12 @@ function renderAvailPanel(){
             (state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===p.id
           );
           const ersatzTeam=ersatzMatch?teamById(ersatzMatch.teamId):null;
-          const ersatzFlag=ersatzTeam?'<span title="'+(lang==='de'?'Ersatz bei '+ersatzTeam.name:lang==='es'?'Ersatz en '+ersatzTeam.name:'Substitute for '+ersatzTeam.name)+'" style="background:#2a2a2a;color:#bbb;border:1px dashed #555;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Ersatz ('+_teamShort(ersatzTeam)+')</span>':'';
+          const ersatzFlag=ersatzTeam?'<span title="'+(lang==='de'?'Ersatz bei '+ersatzTeam.name:lang==='es'?'Ersatz en '+ersatzTeam.name:'Substitute for '+ersatzTeam.name)+'" style="background:#2a2a2a;color:#bbb;border:1px dashed #555;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Ersatz ('+_teamShort(ersatzTeam)+')</span>':'';
           
           if(conflictTeam){
             const teamShort=_teamShort(conflictTeam);
             const bereitTitle=lang==='de'?'Bereits aufgestellt in '+conflictTeam.name:lang==='es'?'Ya alineado en '+conflictTeam.name:'Already in lineup for '+conflictTeam.name;
-            extraBadge='<span title="'+bereitTitle+'" style="background:#2a2a2a;color:#bbb;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Bereits aufgestellt ('+teamShort+')</span>';
+            extraBadge='<span title="'+bereitTitle+'" style="background:#2a2a2a;color:#bbb;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Bereits aufgestellt ('+teamShort+')</span>';
           } else if(ersatzFlag){
             extraBadge=ersatzFlag;
           } else if(yesMatch&&yesTeam){
@@ -1139,7 +1139,7 @@ function renderAvailPanel(){
               const inYLineup=yMain.includes(p.id)||yErsatz===p.id;
               if(yFull&&!inYLineup){
                 const freiTitle=lang==='de'?'Aufstellung von '+yesTeam.name+' ist voll, Spieler nicht aufgestellt — frei für dieses Spiel':lang==='es'?'La alineación de '+yesTeam.name+' está completa, jugador no alineado — libre para este partido':yesTeam.name+' lineup is full, player not in lineup — free for this match';
-                extraBadge='<span title="'+freiTitle+'" style="background:#2a2a2a;color:#bbb;border:1px solid #52b78844;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help;box-shadow:0 0 0 1px #52b78822">FREI</span>';
+                extraBadge='<span title="'+freiTitle+'" style="background:#2a2a2a;color:#bbb;border:1px solid #52b78844;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help;box-shadow:0 0 0 1px #52b78822">FREI</span>';
               }
             }catch(e){
               console.error('FREI badge error:',e);
@@ -1160,11 +1160,11 @@ function renderAvailPanel(){
             (state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===p.id
           );
           const ersatzTeam=ersatzMatch?teamById(ersatzMatch.teamId):null;
-          const ersatzFlag=ersatzTeam?'<span title="'+(lang==='de'?'Ersatz bei '+ersatzTeam.name:lang==='es'?'Ersatz en '+ersatzTeam.name:'Substitute for '+ersatzTeam.name)+'" style="background:#2a2a2a;color:#bbb;border:1px dashed #555;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Ersatz ('+_teamShort(ersatzTeam)+')</span>':'';
+          const ersatzFlag=ersatzTeam?'<span title="'+(lang==='de'?'Ersatz bei '+ersatzTeam.name:lang==='es'?'Ersatz en '+ersatzTeam.name:'Substitute for '+ersatzTeam.name)+'" style="background:#2a2a2a;color:#bbb;border:1px dashed #555;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Ersatz ('+_teamShort(ersatzTeam)+')</span>':'';
           if(conflictTeam){
             const teamShort=_teamShort(conflictTeam);
             const bereitTitle=lang==='de'?'Bereits aufgestellt in '+conflictTeam.name:lang==='es'?'Ya alineado en '+conflictTeam.name:'Already in lineup for '+conflictTeam.name;
-            extraBadge='<span title="'+bereitTitle+'" style="background:#2a2a2a;color:#bbb;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Bereits aufgestellt ('+teamShort+')</span>';
+            extraBadge='<span title="'+bereitTitle+'" style="background:#2a2a2a;color:#bbb;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Bereits aufgestellt ('+teamShort+')</span>';
           }else if(ersatzFlag){
             extraBadge=ersatzFlag;
           }
@@ -1292,7 +1292,7 @@ function renderLineupSlots(){
     let opts='<option value="">—</option>';let _lgu=undefined;
     for(const tp of sorted){
       const bl=isPlayerBlockedForLineup(tp.id,match.teamId,match.id);const grp=avail[tp.id]||'';
-      let sep='';if(grp!==_lgu){_lgu=grp;sep=`<option disabled style="color:var(--muted);font-size:10px">${_gl2[grp]}</option>`;}
+      let sep='';if(grp!==_lgu){_lgu=grp;sep=`<option disabled style="color:var(--muted);font-size:11px">${_gl2[grp]}</option>`;}
       opts+=sep+`<option value="${tp.id}" ${selectedPid===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;
     }
     return opts;
@@ -1334,7 +1334,7 @@ function renderLineupSlots(){
     else if(otherErsatz){const ot=teamById(otherErsatz.teamId);ersatzWarn=`⚠️ Bereits Ersatz: <strong>${ot?.name||'?'}</strong>`;}
   }
   slotsHtml+=`<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)">
-    <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Ersatz</div>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Ersatz</div>
     <div class="lineup-slot ${ersatzP?(ersatzBlocked?'blocked-slot':'ok'):''}" style="opacity:.85;border-style:dashed">
       <div class="lineup-pos" style="color:var(--muted)">E</div>
       <select ${dis} onchange="setSlot(${size},this.value)">${buildOpts(ersatzPid)}</select>
@@ -1433,9 +1433,9 @@ function renderBlocking(){
     html+=`<table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr style="border-bottom:1px solid #2e4a42">
         <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);min-width:160px">${tr('colPlayer')}</th>
-        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:10px">${tr('colLK')}</th>
-        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:10px">${tr('colYear')}</th>
-        ${catTeams.map(t=>`<th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--court);font-size:11px;white-space:nowrap">${t.name}${t.is_4er?' <span style="font-size:9px;color:var(--warn)">(4er)</span>':''}</th>`).join('')}
+        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">${tr('colLK')}</th>
+        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">${tr('colYear')}</th>
+        ${catTeams.map(t=>`<th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--court);font-size:11px;white-space:nowrap">${t.name}${t.is_4er?' <span style="font-size:11px;color:var(--warn)">(4er)</span>':''}</th>`).join('')}
       </tr></thead><tbody>`;
     for(let i=0;i<catPlayers.length;i++){
       const p=catPlayers[i];
@@ -1446,7 +1446,7 @@ function renderBlocking(){
       const rowBg=status.blocked.length>0?'background:#1e1e1e':'';
       html+=`<tr style="border-bottom:1px solid #2e4a4222;${rowBg}">
         <td style="padding:7px 12px;white-space:nowrap"><div style="font-weight:600;font-size:12px">${p.name}</div></td>
-        <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:10px">${p.lkStr||'?'}</span></td>
+        <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:11px">${p.lkStr||'?'}</span></td>
         <td style="padding:7px 8px;text-align:center;font-size:11px;color:var(--muted)">${p.year||'—'}</td>
         ${cells}
       </tr>`;
@@ -1587,7 +1587,7 @@ function _buildTeamsPanelContent(panel){
     scopeTeams().filter(t=>_kapOvSelectedCats.includes(t.category));
   
   if(!availableTeams.length){
-    panel.innerHTML='<div style="padding:10px;color:#666;font-size:12px">Keine Teams verfügbar</div>';
+    panel.innerHTML='<div style="padding:10px;color:var(--muted);font-size:12px">Keine Teams verfügbar</div>';
     return;
   }
   
@@ -1819,7 +1819,7 @@ function renderKapOverview(){
     let html=`<table style="border-collapse:collapse;font-size:12px;min-width:100%;margin-bottom:24px">
       <thead><tr style="border-bottom:1px solid var(--border2)">
         <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:160px">${tr('colPlayer')}</th>
-        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:10px">${tr('colLK')}</th>
+        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">${tr('colLK')}</th>
         ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
       </tr></thead><tbody>`;
     for(const p of players){
@@ -1828,9 +1828,9 @@ function renderKapOverview(){
       html+=`<tr style="border-bottom:1px solid var(--border)22">
         <td style="padding:7px 12px;white-space:nowrap">
           <span style="font-weight:600">${p.name}</span>
-          ${smLabel?`<span style="font-size:9px;color:#d4a017;margin-left:4px">★ ${smLabel}</span>`:''}
+          ${smLabel?`<span style="font-size:11px;color:#d4a017;margin-left:4px">★ ${smLabel}</span>`:''}
         </td>
-        <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:10px">${p.lkStr||'?'}</span></td>`;
+        <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:11px">${p.lkStr||'?'}</span></td>`;
       for(const d of dates){
         const dayMatches=matches.filter(m=>m.date===d&&p.teamIds.includes(m.teamId)).sort((a,b)=>teamNumber(teamById(a.teamId)||{})-teamNumber(teamById(b.teamId)||{}));
         if(!dayMatches.length){html+=`<td style="padding:7px 10px;text-align:center;color:var(--border2)">—</td>`;continue;}
@@ -1851,8 +1851,8 @@ function renderKapOverview(){
           else if(avail==='notfall'){bg='#2e2a1a';col='var(--warn)';icon=tr('overviewIconNotfall');sublabel=sn;}
           else if(avail==='no'){bg='#2d1a1a';col='var(--danger)';icon='✗';sublabel=sn;}
           else{bg='transparent';col='#444';icon='?';sublabel=sn;}
-          cellHtml+=`<div style="background:${bg};border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600;color:${col};white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:6px">
-            <span style="opacity:.7;font-size:9px;font-weight:500">${sublabel}</span>
+          cellHtml+=`<div style="background:${bg};border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;color:${col};white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:6px">
+            <span style="opacity:.7;font-size:11px;font-weight:500">${sublabel}</span>
             <span>${icon}</span>
           </div>`;
         }
@@ -1950,22 +1950,22 @@ function shortPN(p){
       for(let i=0;i<sz;i++){
         const pid=mainSlots[i];
         const p=pid?playerById(pid):null;
-        playersHtml+=`<div style="font-size:10px;padding:1px 0;color:${p?'var(--white)':'#2e4a42'};display:flex;gap:4px;align-items:center">
-          <span style="color:var(--muted);min-width:12px;font-size:9px">${i+1}.</span>
+        playersHtml+=`<div style="font-size:11px;padding:1px 0;color:${p?'var(--white)':'#2e4a42'};display:flex;gap:4px;align-items:center">
+          <span style="color:var(--muted);min-width:12px;font-size:11px">${i+1}.</span>
           <span title="${p?p.name:''}">${shortPN(p)}</span>
         </div>`;
       }
       if(ersatzPid){
         const ep=playerById(ersatzPid);
-        if(ep)playersHtml+=`<div style="font-size:10px;padding:2px 0;border-top:1px dashed var(--border2);margin-top:2px;color:var(--muted);display:flex;gap:4px;align-items:center">
-          <span style="color:#444;min-width:12px;font-size:9px">E.</span>
+        if(ep)playersHtml+=`<div style="font-size:11px;padding:2px 0;border-top:1px dashed var(--border2);margin-top:2px;color:var(--muted);display:flex;gap:4px;align-items:center">
+          <span style="color:var(--muted);min-width:12px;font-size:11px">E.</span>
           <span title="${ep.name}">${shortPN(ep)}</span>
         </div>`;
       }
       html+=`<td style="padding:6px 8px;vertical-align:top">
         <div onclick="goToMatchKap('${m.id}')" style="cursor:pointer;background:${bg};border-radius:8px;padding:6px 8px;min-width:100px">
           <div style="font-size:11px;font-weight:600;color:${col};margin-bottom:4px">${icon} ${(m.opponent||'').substring(0,12)}</div>
-          <div style="font-size:10px;color:var(--muted);margin-bottom:5px">${m.time} · ${m.home==='Heim'?'H':'A'} · ${filled}/${sz}</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:5px">${m.time} · ${m.home==='Heim'?'H':'A'} · ${filled}/${sz}</div>
           <div style="border-top:1px solid var(--border2);padding-top:4px">${playersHtml}</div>
         </div>
       </td>`;
@@ -2011,8 +2011,8 @@ function shortPN(p){
     for(const x of sorted){
       const c=x.a==='yes'?'#52c97a':x.a==='conditional'?'rgba(82,201,122,.7)':'var(--warn)';
       const mark=x.a==='yes'?'✓':x.a==='conditional'?'(✓)':'!';
-      cellHtml+=`<div style="font-size:10px;padding:1px 0;color:${c};display:flex;gap:4px;align-items:center;white-space:nowrap">
-        <span style="min-width:14px;font-size:9px;opacity:.8">${mark}</span>
+      cellHtml+=`<div style="font-size:11px;padding:1px 0;color:${c};display:flex;gap:4px;align-items:center;white-space:nowrap">
+        <span style="min-width:14px;font-size:11px;opacity:.8">${mark}</span>
         <span title="${x.p.name}">${shortPN(x.p)}</span>
       </div>`;
     }
@@ -2057,7 +2057,7 @@ function shortPN(p){
   el.innerHTML=html;
 }
 </script>
-<footer style="text-align:center;padding:18px;font-size:11px;color:#333;border-top:1px solid var(--border);margin-top:40px">
+<footer style="text-align:center;padding:18px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:40px">
   Füchse Berlin Reinickendorf e.V. · Kapitän-App · TVBB Berlin
 </footer>
 <!-- MODAL: Spiel verlegen -->
