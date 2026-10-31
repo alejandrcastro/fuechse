@@ -1771,15 +1771,17 @@ function blockCell(p,t,catTeams,status,skTeam){
   const isSkBlocked=status.stammkaderBlocked.some(x=>x.id===t.id);
   const isSmBlocked=status.stammmannschaftBlocked.some(x=>x.id===t.id);
   const isSmWarned=status.stammmannschaftWarned.some(x=>x.id===t.id);
+  // "Stammkader" only means something where there is a lower team to be blocked from → never on the last team
+  const isSk=t.id===skTeam.id&&t.id!==catTeams[catTeams.length-1].id;
   let kind='',label='',title='';
   if(isSkBlocked&&isSmBlocked){kind='block';label=`${bT('kader')(blkShort(skTeam))} · ${supSum}×`;title=bT('tKader')(skTeam.name)+' · '+bT('tSm')(supSum,supTeams);}
   else if(isSmBlocked){kind='block';label=bT('sm')(supSum,supTeams);title=bT('tSm')(supSum,supTeams);}
   else if(isSkBlocked){kind='block';label=bT('kader')(blkShort(skTeam));title=bT('tKader')(skTeam.name);}
   else if(isSmWarned){kind='warn';label=bT('warn')(supSum,supTeams);title=bT('tWarn')(supSum,supTeams);}
-  else if(t.id===skTeam.id){kind='stamm';label=bT('stamm')+(c>0?` · ${c}×`:'');}
+  else if(isSk){kind='stamm';label=bT('stamm')+(c>0?` · ${c}×`:'');}
   else if(c>0){kind='played';label=bT('played')(c);}
   // own Stammkader team that is also on warning → show both
-  const skPill=(kind==='warn'&&t.id===skTeam.id)?`<span style="${BLK_PILL};${BLK_STYLE.stamm};margin-bottom:3px">${bT('stamm')}</span><br>`:'';
+  const skPill=(kind==='warn'&&isSk)?`<span style="${BLK_PILL};${BLK_STYLE.stamm};margin-bottom:3px">${bT('stamm')}</span><br>`:'';
   const inner=kind?`${skPill}<span style="${BLK_PILL};${BLK_STYLE[kind]}">${label}</span>`
     :`<span style="font-size:11px;color:${p.teamIds.includes(t.id)?'var(--muted)':'#3a4a42'}">${p.teamIds.includes(t.id)?'—':'·'}</span>`;
   return`<td style="padding:6px 8px;text-align:center;border-left:1px solid #2e4a4222" title="${title.replace(/"/g,'&quot;')}">${inner}</td>`;
