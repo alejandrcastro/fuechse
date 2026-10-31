@@ -64,6 +64,13 @@ input::placeholder{color:var(--muted)}
 .wk-head{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:18px 2px 7px}
 .wk-head:first-child{margin-top:4px}
 .wk-head span:last-child{font-weight:500;letter-spacing:.5px}
+.match-item.st-yes{border-left:4px solid var(--court)}.match-item.st-conditional{border-left:4px dashed var(--court)}
+.match-item.st-notfall{border-left:4px solid var(--warn)}.match-item.st-no{border-left:4px solid #ff6b5b}.match-item.st-none{border-left:4px solid #6f8a7b}
+.match-item.is-blocked{background:#222a26;border-style:dashed;border-color:#4a5a52}
+.match-item.is-past{opacity:.6}
+.block-why{font-size:12px;color:#d6dfda;line-height:1.45;align-self:stretch}
+.todo-line{font-size:12px;font-weight:600;margin:2px 2px 10px}
+.past-toggle{display:block;width:100%;background:none;border:1px dashed var(--line);border-radius:10px;color:var(--court);font:inherit;font-size:13px;padding:10px;margin-bottom:9px;cursor:pointer}
 .match-item{background:#1b2d24;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:9px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:12px}
 .match-item:hover{border-color:var(--court)99;background:#243330;transform:translateY(-1px)}
 .match-date{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--court);line-height:1;min-width:40px;text-align:center}
@@ -85,7 +92,6 @@ input::placeholder{color:var(--muted)}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 .empty{text-align:center;padding:3rem 20px;color:var(--muted);font-size:14px}
-.blocked-warn{background:#3d1a1a;border:1px solid #e74c3c44;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:#ff6b5b}
 
 .back-row{display:flex;align-items:center;gap:8px;margin-bottom:18px}
 .back-btn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
@@ -176,13 +182,16 @@ const T={
     step2Label:'Schritt 2 von 2',step2Sub:'Wähle bei jedem Spiel Ja, Im Notfall oder Nein.',
     yesBtn:'✓ Ja',conditionalBtn:'(Ja)',notfallBtn:'Im Notfall',noBtn:'✗ Nein',
     saved:'✓ Gespeichert',saving:'Speichern...',
-    blockedWarn:'⛔ Du bist für dieses Spiel gesperrt (Stammkader / Stammmannschaft).',
     noMatches:'Keine Spiele für deine Mannschaft gefunden.',
     weekend:'Wochenende',week:'Woche',nMatches:n=>n===1?'1 Spiel':n+' Spiele',
     noPlayers:'Keine Spieler gefunden.',
     priorityTitle:'Welches Spiel ist dein Hauptspiel?',priorityHint:'Du hast an diesem Tag bereits zugesagt. Wähle dein Hauptspiel — das andere wird als (Ja) eingetragen.',
     filterHint:'Tippe auf ein Team, um nur dessen Spiele zu sehen. Du siehst alle Teams, für die du spielberechtigt bist.',
     mainTeamHint:'★ = Stammmannschaft — dein empfohlenes Team.',
+    pastShow:n=>`▸ ${n} ${n===1?'vergangenes Spiel':'vergangene Spiele'} anzeigen`,pastHide:'▾ Vergangene Spiele ausblenden',
+    unanswered:n=>`● ${n} ${n===1?'Spiel':'Spiele'} ohne Antwort`,allAnswered:'✓ Alle Spiele beantwortet',
+    blockedTitle:'⛔ Für dich gesperrt',reasonSK:t=>`laut Meldeliste gehörst du zu ${t} (Stammkader)`,reasonSM:(n,ts)=>`${n} Einsätze in ${ts} (Stammmannschaft)`,
+    addCal:'In den Kalender',yourAnswer:'Deine Antwort',noAnswerPast:'keine Antwort',
   },
   es:{
     headerSub:'Disponibilidad de jugadores',movedBadge:'Postergado',movedFrom:'movido del',
@@ -191,13 +200,16 @@ const T={
     step2Label:'Paso 2 de 2',step2Sub:'Elegí Sí, Si es necesario o No en cada partido.',
     yesBtn:'✓ Sí',conditionalBtn:'(Sí)',notfallBtn:'Si es necesario',noBtn:'✗ No',
     saved:'✓ Guardado',saving:'Guardando...',
-    blockedWarn:'⛔ Estás bloqueado para este partido (Stammkader / Stammmannschaft).',
     noMatches:'No hay partidos para tu equipo.',
     weekend:'Fin de semana',week:'Semana',nMatches:n=>n===1?'1 partido':n+' partidos',
     noPlayers:'No se encontraron jugadores.',
     priorityTitle:'¿Cuál es tu partido principal?',priorityHint:'Ya confirmaste para otro partido ese día. Elegí cuál es tu principal — el otro quedará como (Sí).',
     filterHint:'Tocá un equipo para ver solo sus partidos. Ves todos los equipos en los que tenés Spielberechtigung.',
     mainTeamHint:'★ = Stammmannschaft — tu equipo recomendado.',
+    pastShow:n=>`▸ Ver ${n} ${n===1?'partido pasado':'partidos pasados'}`,pastHide:'▾ Ocultar partidos pasados',
+    unanswered:n=>`● ${n} ${n===1?'partido':'partidos'} sin responder`,allAnswered:'✓ Respondiste todos los partidos',
+    blockedTitle:'⛔ Bloqueado para vos',reasonSK:t=>`según la Meldeliste sos de ${t} (Stammkader)`,reasonSM:(n,ts)=>`${n} partidos en ${ts} (Stammmannschaft)`,
+    addCal:'Agregar al calendario',yourAnswer:'Tu respuesta',noAnswerPast:'sin respuesta',
   },
   en:{
     headerSub:'Player availability',movedBadge:'Rescheduled',movedFrom:'moved from',
@@ -206,13 +218,16 @@ const T={
     step2Label:'Step 2 of 2',step2Sub:'Choose Yes, If needed or No for each match.',
     yesBtn:'✓ Yes',conditionalBtn:'(Yes)',notfallBtn:'If needed',noBtn:'✗ No',
     saved:'✓ Saved',saving:'Saving...',
-    blockedWarn:'⛔ You are blocked for this match (Stammkader / Stammmannschaft).',
     noMatches:'No matches found for your team.',
     weekend:'Weekend',week:'Week',nMatches:n=>n===1?'1 match':n+' matches',
     noPlayers:'No players found.',
     priorityTitle:'Which is your main match?',priorityHint:'You already confirmed for another match that day. Choose your main one — the other will become (Yes).',
     filterHint:'Tap a team to filter matches. You see all teams you are eligible to play for (Spielberechtigt).',
     mainTeamHint:'★ = Stammmannschaft — your recommended team.',
+    pastShow:n=>`▸ Show ${n} past ${n===1?'match':'matches'}`,pastHide:'▾ Hide past matches',
+    unanswered:n=>`● ${n} ${n===1?'match':'matches'} without an answer`,allAnswered:'✓ All matches answered',
+    blockedTitle:'⛔ You are blocked',reasonSK:t=>`per the Meldeliste you belong to ${t} (Stammkader)`,reasonSM:(n,ts)=>`${n} matches in ${ts} (Stammmannschaft)`,
+    addCal:'Add to calendar',yourAnswer:'Your answer',noAnswerPast:'no answer',
   }
 };
 
@@ -434,6 +449,7 @@ function toggleTeamFilter(teamId){
   renderMatchList();
 }
 
+let showPast=false; // past matches folded away (E8)
 function renderMatchList(){
   const p=selectedPlayer;
   const teamIds=getPlayerTeamIds(p.id);
@@ -465,7 +481,10 @@ function renderMatchList(){
   const myMatches=[...state.matches,...(state.movedMatches||[])].filter(m=>filterIds.includes(m.team_id)).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
   const el=document.getElementById('match-list');
   if(!myMatches.length){el.innerHTML=`<div class="empty">${tr('noMatches')}</div>`;return;}
-  const cards=myMatches.map(m=>{
+  const today=new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD, local
+  const past=myMatches.filter(m=>m.date<today),coming=myMatches.filter(m=>m.date>=today);
+  const esc=t=>(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const card=m=>{
     const team=teamById(m.team_id);
     if(m.status==='verlegt'){
       const d0=fmtDate(m.date);const nm=state.matches.find(x=>x.id===m.moved_to);const nd=nm?fmtDate(nm.date):null;
@@ -475,7 +494,7 @@ function renderMatchList(){
             <div class="match-date">${d0.day}</div><div class="match-month">${d0.month}</div>
           </div>
           <div class="match-info" style="flex:1">
-            <div class="match-teams" style="text-decoration:line-through">${team?.name||'?'} vs ${(m.opponent||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+            <div class="match-teams" style="text-decoration:line-through">${team?.name||'?'} vs ${esc(m.opponent)}</div>
             <div class="match-meta" style="color:var(--warn)">⇄ ${tr('movedBadge')}${nd?` → ${nd.day}. ${nd.month} · ${nm.time}`:''}</div>
           </div>
         </div>
@@ -483,46 +502,65 @@ function renderMatchList(){
     }
     const avail=state.availability[m.id]?.[p.id]||'';
     const d=fmtDate(m.date);
-    const blocked=isPlayerBlockedForTeam(p.id,m.team_id);
-    const yes=avail==='yes',conditional=avail==='conditional',notfall=avail==='notfall',no=avail==='no';
-    return`<div class="match-item" style="flex-direction:column;gap:10px;cursor:default">
-      <div style="display:flex;align-items:center;gap:12px;align-self:stretch">
+    const isPast=m.date<today;
+    const blocked=!isPast&&isPlayerBlockedForTeam(p.id,m.team_id);
+    const moved=m.moved_from?(()=>{const o=(state.movedMatches||[]).find(x=>x.id===m.moved_from);return o?` · <span style="color:var(--warn)">⇄ ${tr('movedFrom')} ${fmtDate(o.date).full}</span>`:'';})():'';
+    const head=`<div style="display:flex;align-items:center;gap:12px;align-self:stretch">
         <div style="text-align:center;width:44px;flex-shrink:0">
           <div class="match-date">${d.day}</div>
-          <div class="match-month">${d.month}</div>
+          <div class="match-month">${ct('wd')[new Date(m.date+'T12:00:00').getDay()]}</div>
         </div>
         <div class="match-info" style="flex:1">
-          <div class="match-teams">${team?.name||'?'} vs ${(m.opponent||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
-          <div class="match-meta">${m.time} · ${homeAwayLabel(m.home)}${blocked?' · ⛔':''}${m.moved_from?(()=>{const o=(state.movedMatches||[]).find(x=>x.id===m.moved_from);return o?` · <span style="color:var(--warn)">⇄ ${tr('movedFrom')} ${fmtDate(o.date).full}</span>`:'';})():''}</div>
+          <div class="match-teams">${team?.name||'?'} vs ${esc(m.opponent)}</div>
+          <div class="match-meta">${m.time} · ${homeAwayLabel(m.home)}${moved}</div>
         </div>
-        <button onclick="makeICS(state.matches.find(x=>x.id==='${m.id}'),teamById('${m.team_id}'))"
-          style="background:none;border:1px solid #333;border-radius:8px;color:var(--muted);padding:4px 8px;font-size:11px;cursor:pointer;white-space:nowrap">
-          📅 .ics
-        </button>
-      </div>
+        ${isPast||blocked?'':`<button onclick="makeICS(state.matches.find(x=>x.id==='${m.id}'),teamById('${m.team_id}'))" title="${tr('addCal')}" aria-label="${tr('addCal')}"
+          style="background:none;border:1px solid #333;border-radius:8px;color:var(--muted);padding:4px 8px;font-size:15px;line-height:1;cursor:pointer">📅</button>`}
+      </div>`;
+    if(isPast){
+      const lbl={yes:tr('yesBtn'),conditional:tr('conditionalBtn'),notfall:tr('notfallBtn'),no:tr('noBtn'),'':tr('noAnswerPast')}[avail]||avail;
+      return`<div class="match-item is-past st-${avail||'none'}" style="flex-direction:column;gap:8px;cursor:default">${head}
+        <div style="font-size:12px;color:var(--muted);align-self:stretch">${tr('yourAnswer')}: ${lbl}</div></div>`;
+    }
+    if(blocked){
+      // why: the same TVBB rules as admin/kapitaen (common.js), in words for the player
+      const st=getPlayerBlockStatus(p.id,team.category),counts=state.matchCounts[p.id]||{};
+      const catTeams=state.teams.filter(t=>t.category===team.category);
+      const nm=t=>t.name+(teamNumber(t)===1&&catTeams.length>1&&!/\b[IV]+$/.test(t.name)?' I':''); // "Herren" → "Herren I" when there is a Herren II
+      const why=[];
+      if(st.stammkaderBlocked.some(t=>t.id===team.id)&&st.stammkaderTeam)why.push(tr('reasonSK')(nm(st.stammkaderTeam)));
+      if(st.stammmannschaftBlocked.some(t=>t.id===team.id)){
+        const higher=catTeams.filter(t=>teamNumber(t)<teamNumber(team)&&(counts[t.id]||0)>0);
+        why.push(tr('reasonSM')(higher.reduce((a,t)=>a+(counts[t.id]||0),0),higher.map(nm).join(' + ')));
+      }
+      return`<div class="match-item is-blocked" style="flex-direction:column;gap:8px;cursor:default">${head}
+        <div class="block-why"><strong>${tr('blockedTitle')}:</strong> ${why.join(' · ')}</div></div>`;
+    }
+    // chosen answer = filled button with a strong border; the others stay outlined
+    const btn=(st,label,on,color,fill)=>`<button onclick="quickAvail('${m.id}','${st}',event)"
+          style="flex:1;padding:8px 6px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;
+            border:1.5px solid ${on?color:'#34463d'};background:${on?fill:'transparent'};color:${on?'#fff':color}">${label}</button>`;
+    const cond=avail==='conditional';
+    return`<div class="match-item st-${avail||'none'}" style="flex-direction:column;gap:10px;cursor:default">${head}
       <div style="display:flex;gap:6px;flex-wrap:nowrap;align-self:stretch">
-        <button onclick="quickAvail('${m.id}','yes',event)"
+        ${cond?`<button onclick="quickAvail('${m.id}','yes',event)"
           style="flex:1;padding:8px 6px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;
-            border:${avail==='conditional'?'1px dashed var(--court)':'1px solid '+( avail==='yes'?'var(--court)':'#2e4a42')};
-            background:${avail==='yes'?'var(--court)':avail==='conditional'?'rgba(116,198,157,.12)':'transparent'};
-            color:${avail==='yes'?'#0d1a10':'var(--court)'}">
-          ${avail==='conditional'?tr('conditionalBtn'):'✓ '+tr('yesBtn').replace('✓ ','')}</button>
-        <button onclick="quickAvail('${m.id}','notfall',event)"
-          style="flex:1;padding:8px 6px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;
-            border:1px solid ${avail==='notfall'?'var(--warn)':'#333'};
-            background:${avail==='notfall'?'rgba(244,162,97,.15)':'transparent'};
-            color:var(--warn)">
-          ${tr('notfallBtn')}</button>
-        <button onclick="quickAvail('${m.id}','no',event)"
-          style="flex:1;padding:8px 6px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;
-            border:1px solid ${avail==='no'?'var(--red)':'#3a2020'};
-            background:${avail==='no'?'rgba(230,57,70,.15)':'transparent'};
-            color:#ff6b5b">
-          ✗ ${tr('noBtn').replace('✗ ','')}</button>
+            border:1.5px dashed var(--court);background:rgba(116,198,157,.12);color:var(--court)">${tr('conditionalBtn')}</button>`
+          :btn('yes',tr('yesBtn'),avail==='yes','var(--court)','#2d6a4f')}
+        ${btn('notfall',tr('notfallBtn'),avail==='notfall','var(--warn)','#5a3f1f')}
+        ${btn('no',tr('noBtn'),avail==='no','#ff6b5b','#5c2a24')}
       </div>
     </div>`;
-  });
-  el.innerHTML=groupByWeekend(myMatches,cards);
+  };
+  // answers still missing: coming matches the player may play and has not answered
+  const open=coming.filter(m=>m.status!=='verlegt'&&!(state.availability[m.id]?.[p.id])&&!isPlayerBlockedForTeam(p.id,m.team_id)).length;
+  let html=coming.some(m=>m.status!=='verlegt')?`<div class="todo-line" style="color:${open?'var(--warn)':'var(--court)'}">${open?tr('unanswered')(open):tr('allAnswered')}</div>`:'';
+  if(past.length){
+    html+=`<button class="past-toggle" onclick="showPast=!showPast;renderMatchList()">${showPast?tr('pastHide'):tr('pastShow')(past.length)}</button>`;
+    if(showPast)html+=groupByWeekend(past,past.map(card));
+  }
+  html+=groupByWeekend(coming,coming.map(card));
+  el.innerHTML=html;
 }
 
 // ── WEEKEND GROUPS ── one header per calendar week (Mon–Sun), labelled by its weekend
