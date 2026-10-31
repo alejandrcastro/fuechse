@@ -797,7 +797,7 @@ const T={
     noPlayers:'Keine Spieler. PDF importieren.',noMatches:'Noch keine Spiele.',noTeamPlayers:'Keine Spieler für diese Mannschaft.',noMatchSel:'Bitte Spiel auswählen.',noBlocked:'Keine aktiven Sperren.',
     available:'verfügbar',withLineup:'Mit Aufstellung',
     parsedMsg:(n,f)=>`${n} Spieler in ${f} PDF${f>1?'s':''}.`,importedMsg:(n,t)=>`✓ ${n} importiert. ${t} insgesamt.`,addedPlayers:n=>`+${n} weitere...`,
-    matchAlert:'Bitte Mannschaft, Gegner und Datum angeben.',lkViolation:(i,a,j,b)=>`⚠️ Pos. ${i} (${a}) schlechter als Pos. ${j} (${b})`,
+    matchAlert:'Bitte Mannschaft, Gegner und Datum angeben.',lkViolation:(i,a,j,b)=>`⚠︎ Pos. ${i} (${a}) schlechter als Pos. ${j} (${b})`,
     lineupValid:'✓ Aufstellung regelkonform',lineupNote:'TVBB: Einzel vor Spielbeginn. Doppel max. 10 Min.',
     blockedInLineup:(name,team)=>`⛔ ${name} ist gesperrt für ${team}`,
     assignTeam:'Mannschaften',saveAssign:'Speichern',noTeam:'Keine',
@@ -836,7 +836,7 @@ const T={
     noPlayers:'Sin jugadores. Importá un PDF primero.',noMatches:'Sin partidos aún.',noTeamPlayers:'Sin jugadores para este equipo.',noMatchSel:'Seleccioná un partido.',noBlocked:'Sin bloqueos activos.',
     available:'disponibles',withLineup:'Con alineación',
     parsedMsg:(n,f)=>`${n} jugadores en ${f} PDF${f>1?'s':''}.`,importedMsg:(n,t)=>`✓ ${n} importados. ${t} en total.`,addedPlayers:n=>`+${n} más...`,
-    matchAlert:'Completá equipo, rival y fecha.',lkViolation:(i,a,j,b)=>`⚠️ Pos. ${i} (${a}) peor que pos. ${j} (${b})`,
+    matchAlert:'Completá equipo, rival y fecha.',lkViolation:(i,a,j,b)=>`⚠︎ Pos. ${i} (${a}) peor que pos. ${j} (${b})`,
     lineupValid:'✓ Alineación válida',lineupNote:'TVBB: Singles antes del inicio. Dobles máximo 10 min después.',
     blockedInLineup:(name,team)=>`⛔ ${name} está bloqueado para ${team}`,
     assignTeam:'Equipos',saveAssign:'Guardar',noTeam:'Sin equipo',
@@ -874,7 +874,7 @@ const T={
     noPlayers:'No players. Import a PDF first.',noMatches:'No matches yet.',noTeamPlayers:'No players for this team.',noMatchSel:'Please select a match.',noBlocked:'No active blocks.',
     available:'available',withLineup:'With lineup',
     parsedMsg:(n,f)=>`${n} players in ${f} PDF${f>1?'s':''}.`,importedMsg:(n,t)=>`✓ ${n} imported. ${t} total.`,addedPlayers:n=>`+${n} more...`,
-    matchAlert:'Please fill in team, opponent and date.',lkViolation:(i,a,j,b)=>`⚠️ Pos. ${i} (${a}) worse than pos. ${j} (${b})`,
+    matchAlert:'Please fill in team, opponent and date.',lkViolation:(i,a,j,b)=>`⚠︎ Pos. ${i} (${a}) worse than pos. ${j} (${b})`,
     lineupValid:'✓ Valid lineup',lineupNote:'TVBB: Singles before match start. Doubles max 10 min.',
     blockedInLineup:(name,team)=>`⛔ ${name} is blocked for ${team}`,
     assignTeam:'Teams',saveAssign:'Save',noTeam:'No team',
@@ -1276,7 +1276,7 @@ function renderPlayers(){
     const teams=p.teamIds.map(tid=>teamById(tid)).filter(Boolean);
     const cats=[...new Set(teams.map(t=>t.category))];
     let blockedChips='',warnChips='';
-    for(const cat of cats){const{blocked,warned}=getPlayerBlockStatus(p.id,cat);for(const b of blocked)blockedChips+=`<span class="blocked-badge">⛔ ${b.name}</span>`;for(const w of warned)warnChips+=`<span class="warn-badge">⚠ ${w.name}</span>`;}
+    for(const cat of cats){const{blocked,warned}=getPlayerBlockStatus(p.id,cat);for(const b of blocked)blockedChips+=`<span class="blocked-badge">⛔ ${b.name}</span>`;for(const w of warned)warnChips+=`<span class="warn-badge">⚠︎ ${w.name}</span>`;}
     const teamChips=teams.map(t=>{const isMT=!!(state.mainTeam[p.id]?.[t.id]);return isMT?`<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:12px;background:rgba(212,160,23,.12);border:1px solid #d4a01766;color:#d4a017;white-space:nowrap">★ ${t.name}</span>`:`<span class="team-chip ${t.gender==='F'?'f':'m'}">${t.name}</span>`;}).join('');
     return`<div class="player-row">
       <div class="player-avatar">${initials(p.name)}</div>
@@ -1743,13 +1743,13 @@ async function recalcAllRanks(){
 // ── BLOCKING VIEW ──
 // ── SPERREN TABLE CELL ── says in words why a player is blocked (same code in admin.html and kapitaen.html)
 const BLK_T={
-  de:{stamm:'Stammkader',played:n=>`${n}× gespielt`,kader:t=>`⛔ Kader ${t}`,sm:(n,ts)=>`⛔ ${n}× in ${ts}`,warn:(n,ts)=>`⚠ ${n}× in ${ts}`,
+  de:{stamm:'Stammkader',played:n=>`${n}× gespielt`,kader:t=>`⛔ Kader ${t}`,sm:(n,ts)=>`⛔ ${n}× in ${ts}`,warn:(n,ts)=>`⚠︎ ${n}× in ${ts}`,
       tKader:t=>`Stammkader-Regel: laut Meldeliste gehört der Spieler zu ${t} und darf nicht tiefer spielen`,tSm:(n,ts)=>`Stammmannschaft-Regel: ${n} Einsätze in ${ts} – hier gesperrt`,tWarn:(n,ts)=>`${n} Einsatz in ${ts} – beim nächsten Einsatz oben ist er hier gesperrt`,
       legStamm:'Mannschaft laut Meldeliste',legBlock:'gesperrt, mit Grund',legWarn:'beim nächsten Einsatz oben gesperrt',legPlayed:'Einsätze in dieser Mannschaft'},
-  es:{stamm:'Stammkader',played:n=>`${n}× jugados`,kader:t=>`⛔ Kader ${t}`,sm:(n,ts)=>`⛔ ${n}× en ${ts}`,warn:(n,ts)=>`⚠ ${n}× en ${ts}`,
+  es:{stamm:'Stammkader',played:n=>`${n}× jugados`,kader:t=>`⛔ Kader ${t}`,sm:(n,ts)=>`⛔ ${n}× en ${ts}`,warn:(n,ts)=>`⚠︎ ${n}× en ${ts}`,
       tKader:t=>`Regla Stammkader: según la Meldeliste pertenece a ${t} y no puede jugar más abajo`,tSm:(n,ts)=>`Regla Stammmannschaft: ${n} partidos en ${ts} – bloqueado acá`,tWarn:(n,ts)=>`${n} partido en ${ts} – con el próximo arriba queda bloqueado acá`,
       legStamm:'equipo según la Meldeliste',legBlock:'bloqueado, con el motivo',legWarn:'bloqueado con el próximo partido arriba',legPlayed:'partidos en este equipo'},
-  en:{stamm:'Stammkader',played:n=>`${n}× played`,kader:t=>`⛔ Kader ${t}`,sm:(n,ts)=>`⛔ ${n}× in ${ts}`,warn:(n,ts)=>`⚠ ${n}× in ${ts}`,
+  en:{stamm:'Stammkader',played:n=>`${n}× played`,kader:t=>`⛔ Kader ${t}`,sm:(n,ts)=>`⛔ ${n}× in ${ts}`,warn:(n,ts)=>`⚠︎ ${n}× in ${ts}`,
       tKader:t=>`Stammkader rule: per the Meldeliste the player belongs to ${t} and may not play lower`,tSm:(n,ts)=>`Stammmannschaft rule: ${n} matches in ${ts} – blocked here`,tWarn:(n,ts)=>`${n} match in ${ts} – one more up there blocks him here`,
       legStamm:'team per the Meldeliste',legBlock:'blocked, with the reason',legWarn:'blocked after the next match higher up',legPlayed:'matches in this team'}
 };
@@ -1780,9 +1780,9 @@ function blockCell(p,t,catTeams,status,skTeam){
   else if(isSmWarned){kind='warn';label=bT('warn')(supSum,supTeams);title=bT('tWarn')(supSum,supTeams);}
   else if(isSk){kind='stamm';label=bT('stamm')+(c>0?` · ${c}×`:'');}
   else if(c>0){kind='played';label=bT('played')(c);}
-  // own Stammkader team that is also on warning → one line: the Stammkader pill + just the ⚠ symbol (reason in the tooltip)
+  // own Stammkader team that is also on warning → one line: the Stammkader pill + just the ⚠︎ symbol (reason in the tooltip)
   const skWarn=kind==='warn'&&isSk;
-  const inner=skWarn?`<span style="white-space:nowrap"><span style="${BLK_PILL};${BLK_STYLE.stamm}">${bT('stamm')}</span> <span style="color:#f4a261;font-size:13px;cursor:help">⚠</span></span>`
+  const inner=skWarn?`<span style="white-space:nowrap"><span style="${BLK_PILL};${BLK_STYLE.stamm}">${bT('stamm')}</span> <span style="color:#f7c48f;font-size:12px;font-weight:600;cursor:help">⚠︎</span></span>`
     :kind?`<span style="${BLK_PILL};${BLK_STYLE[kind]}">${label}</span>`
     :`<span style="font-size:11px;color:${p.teamIds.includes(t.id)?'var(--muted)':'#3a4a42'}">${p.teamIds.includes(t.id)?'—':'·'}</span>`;
   return`<td style="padding:6px 8px;text-align:center;border-left:1px solid #2e4a4222" title="${title.replace(/"/g,'&quot;')}">${inner}</td>`;
@@ -1791,7 +1791,7 @@ function blockLegend(){
   return`<div style="padding:9px 12px;display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center;border-top:1px solid #2e4a42;font-size:11px;color:#c8d2ce">
     <span style="${BLK_PILL};${BLK_STYLE.stamm}">${bT('stamm')}</span>${bT('legStamm')}
     <span style="${BLK_PILL};${BLK_STYLE.block}">⛔ …</span>${bT('legBlock')}
-    <span style="${BLK_PILL};${BLK_STYLE.warn}">⚠ …</span>${bT('legWarn')}
+    <span style="${BLK_PILL};${BLK_STYLE.warn}">⚠︎ …</span>${bT('legWarn')}
     <span style="${BLK_PILL};${BLK_STYLE.played}">${bT('played')('N')}</span>${bT('legPlayed')}
   </div>`;
 }
@@ -2072,8 +2072,8 @@ function renderLineup(){
       if(ersatzPid){
         const otherLineup=state.matches.find(om=>om.id!==matchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(ersatzPid));
         const otherErsatz=state.matches.find(om=>om.id!==matchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===ersatzPid);
-        if(otherLineup){const ot=teamById(otherLineup.teamId);ersatzWarn=`⚠ Bereits Aufstellung: <strong>${ot?.name||'?'}</strong>`;}
-        else if(otherErsatz){const ot=teamById(otherErsatz.teamId);ersatzWarn=`⚠ Bereits Ersatz: <strong>${ot?.name||'?'}</strong>`;}
+        if(otherLineup){const ot=teamById(otherLineup.teamId);ersatzWarn=`⚠︎ Bereits Aufstellung: <strong>${ot?.name||'?'}</strong>`;}
+        else if(otherErsatz){const ot=teamById(otherErsatz.teamId);ersatzWarn=`⚠︎ Bereits Ersatz: <strong>${ot?.name||'?'}</strong>`;}
       }
       const _ao2={yes:0,conditional:1,notfall:2,'':3,no:4};
       const sorted=[...allTp].sort((a,b)=>{const ao=_ao2[avail[a.id]||'']??3,bo=_ao2[avail[b.id]||'']??3;if(ao!==bo)return ao-bo;return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);});
@@ -2102,7 +2102,7 @@ function renderLineup(){
         );
         if(!otherMatch)return null;
         const otherTeam=teamById(otherMatch.teamId);
-        return`⚠ ${p.name} spielt auch für <strong>${otherTeam?.name||'?'}</strong> am selben Tag`;
+        return`⚠︎ ${p.name} spielt auch für <strong>${otherTeam?.name||'?'}</strong> am selben Tag`;
       }).filter(Boolean);
       return doubleWarnings.length?`<div class="rule-box warn" style="margin-top:10px">${doubleWarnings.map(w=>`<div>${w}</div>`).join('')}</div>`:'';
     })()}
@@ -2343,7 +2343,7 @@ function renderSALineup(){
     if(playedOnSpieltag(pid,match))return null; // already reported as Spieltag block
     const om=state.matches.find(om=>om.id!==_saMatchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(pid));
     if(!om)return null;
-    return`⚠ ${p.name} spielt auch für <strong>${teamById(om.teamId)?.name||'?'}</strong>`;
+    return`⚠︎ ${p.name} spielt auch für <strong>${teamById(om.teamId)?.name||'?'}</strong>`;
   }).filter(Boolean);
 
   let warnHtml='';
@@ -2393,8 +2393,8 @@ function renderSALineup(){
   if(ersatzPid){
     const otherL=state.matches.find(om=>om.id!==_saMatchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(ersatzPid));
     const otherE=state.matches.find(om=>om.id!==_saMatchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===ersatzPid);
-    if(otherL){const ot=teamById(otherL.teamId);ersatzWarn=`⚠ Bereits Aufstellung: <strong>${ot?.name||'?'}</strong>`;}
-    else if(otherE){const ot=teamById(otherE.teamId);ersatzWarn=`⚠ Bereits Ersatz: <strong>${ot?.name||'?'}</strong>`;}
+    if(otherL){const ot=teamById(otherL.teamId);ersatzWarn=`⚠︎ Bereits Aufstellung: <strong>${ot?.name||'?'}</strong>`;}
+    else if(otherE){const ot=teamById(otherE.teamId);ersatzWarn=`⚠︎ Bereits Ersatz: <strong>${ot?.name||'?'}</strong>`;}
   }
   html+=`<div style="grid-column:1/-1;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border2)">
     <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Ersatz</div>
@@ -3441,7 +3441,7 @@ function showMatchesPreview(matches){
   for(const m of matches){const k=m.teamCategory||'?';if(!byCat[k])byCat[k]=[];byCat[k].push(m);}
   const unmatched=matches.filter(m=>!m._teamFound).length;
   let html='';
-  if(unmatched>0)html+=`<div class="rule-box warn" style="margin-bottom:10px">⚠ ${unmatched} ${tr('noTeamMatch')}</div>`;
+  if(unmatched>0)html+=`<div class="rule-box warn" style="margin-bottom:10px">⚠︎ ${unmatched} ${tr('noTeamMatch')}</div>`;
   for(const[cat,ms]of Object.entries(byCat)){
     html+=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:8px">
       <div class="team-section-header">${cat} · ${ms.length} Spiele</div>
@@ -3450,7 +3450,7 @@ function showMatchesPreview(matches){
         <span style="font-size:11px;color:var(--muted);min-width:42px">${m.time}</span>
         <span class="player-name" style="font-size:12px">${m.opponent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
         <span class="team-chip ${m.home==='Heim'?'m':'f'}">${m.home}</span>
-        ${!m._teamFound?`<span class="warn-badge">⚠ kein Team</span>`:''}
+        ${!m._teamFound?`<span class="warn-badge">⚠︎ kein Team</span>`:''}
       </div>`).join('')}
       ${ms.length>5?`<div style="padding:5px 12px;font-size:11px;color:var(--muted)">${T[lang].addedPlayers(ms.length-5)}</div>`:''}
     </div>`;

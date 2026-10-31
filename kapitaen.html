@@ -896,7 +896,7 @@ const T={
     ruleBoxSM:'Stammmannschaft: 2 Spiele in einer Mannschaft → gesperrt für alle niedrigeren in dieser Kategorie.',
     ruleBoxSMBody:'2 Einsätze in höheren Mannschaften (zusammengezählt) → in dieser Mannschaft gesperrt.',
     colPlayer:'Spieler',colLK:'LK',colYear:'Jg.',
-    legendSK:'■ SK = Stammkader',legendSKBlock:'■ SK⛔ = Stammkader gesperrt',legendSMBlock:'■ SM = Stammmannschaft gesperrt',legendWarn:'■ ⚠ = 1 Spiel',legendCount:'■ Zahl = Spiele',
+    legendSK:'■ SK = Stammkader',legendSKBlock:'■ SK⛔ = Stammkader gesperrt',legendSMBlock:'■ SM = Stammmannschaft gesperrt',legendWarn:'■ ⚠︎ = 1 Spiel',legendCount:'■ Zahl = Spiele',
     legendLabels:['Aufstellung','Ersatz','Verfügbar','Im Notfall','Nein','★ Stammmannschaft'],
     overviewIconYes:'Ja',overviewIconNotfall:'Notfall',
   },
@@ -930,7 +930,7 @@ const T={
     ruleBoxSM:'Stammmannschaft: 2 partidos en un equipo → bloqueado para todos los inferiores de esa categoría.',
     ruleBoxSMBody:'2 partidos en equipos superiores (sumados) → bloqueado en este equipo.',
     colPlayer:'Jugador',colLK:'LK',colYear:'Año',
-    legendSK:'■ SK = Stammkader',legendSKBlock:'■ SK⛔ = Stammkader bloqueado',legendSMBlock:'■ SM = Stammmannschaft bloqueado',legendWarn:'■ ⚠ = 1 partido',legendCount:'■ Número = partidos',
+    legendSK:'■ SK = Stammkader',legendSKBlock:'■ SK⛔ = Stammkader bloqueado',legendSMBlock:'■ SM = Stammmannschaft bloqueado',legendWarn:'■ ⚠︎ = 1 partido',legendCount:'■ Número = partidos',
     legendLabels:['Aufstellung','Ersatz','Disponible','Si es necesario','No','★ Stammmannschaft'],
     overviewIconYes:'Sí',overviewIconNotfall:'Si nec.',
   },
@@ -964,7 +964,7 @@ const T={
     ruleBoxSM:'Stammmannschaft: 2 matches in a team → blocked for all lower-ranked teams in that category.',
     ruleBoxSMBody:'2 matches in higher teams (added up) → blocked in this team.',
     colPlayer:'Player',colLK:'LK',colYear:'Year',
-    legendSK:'■ SK = Stammkader',legendSKBlock:'■ SK⛔ = Stammkader blocked',legendSMBlock:'■ SM = Stammmannschaft blocked',legendWarn:'■ ⚠ = 1 match',legendCount:'■ Number = matches',
+    legendSK:'■ SK = Stammkader',legendSKBlock:'■ SK⛔ = Stammkader blocked',legendSMBlock:'■ SM = Stammmannschaft blocked',legendWarn:'■ ⚠︎ = 1 match',legendCount:'■ Number = matches',
     legendLabels:['Lineup','Ersatz','Available','If needed','No','★ Stammmannschaft'],
     overviewIconYes:'Yes',overviewIconNotfall:'If nec.',
   }
@@ -1395,7 +1395,7 @@ function renderLineupSlots(){
     const p1=lineup[i]?playerById(lineup[i]):null;
     const p2=lineup[i+1]?playerById(lineup[i+1]):null;
     if(p1&&p2&&playerRankInTeam(p1.id,match.teamId)>playerRankInTeam(p2.id,match.teamId))
-      warnings.push(`⚠️ Pos. ${i+1} (Rang ${playerRankInTeam(p1.id,match.teamId)}) vor Pos. ${i+2} (Rang ${playerRankInTeam(p2.id,match.teamId)})`);
+      warnings.push(`⚠︎ Pos. ${i+1} (Rang ${playerRankInTeam(p1.id,match.teamId)}) vor Pos. ${i+2} (Rang ${playerRankInTeam(p2.id,match.teamId)})`);
 
   }
   const blockedWarnings=lineup.filter(Boolean).map(pid=>{
@@ -1416,7 +1416,7 @@ function renderLineupSlots(){
     );
     if(!otherMatch)return null;
     const otherTeam=teamById(otherMatch.teamId);
-    return`⚠ ${p.name} spielt auch für <strong>${otherTeam?.name||'?'}</strong> am selben Tag`;
+    return`⚠︎ ${p.name} spielt auch für <strong>${otherTeam?.name||'?'}</strong> am selben Tag`;
   }).filter(Boolean);
   const hints=[...warnings,...doubleWarnings];
 
@@ -1424,7 +1424,7 @@ function renderLineupSlots(){
   let warnHtml='';
   const li=(arr,re)=>arr.map(w=>`<li>${w.replace(re,'')}</li>`).join('');
   if(blockedWarnings.length)warnHtml+=`<details class="warn-group red" open><summary>⛔ ${tr('nBlocks')(blockedWarnings.length)}</summary><ul>${li(blockedWarnings,/^⛔\s*/)}</ul></details>`;
-  if(hints.length)warnHtml+=`<details class="warn-group amber"${window.innerWidth>700?' open':''}><summary>⚠ ${tr('nHints')(hints.length)}</summary><ul>${li(hints,/^⚠️?\s*/)}</ul></details>`;
+  if(hints.length)warnHtml+=`<details class="warn-group amber"${window.innerWidth>700?' open':''}><summary>⚠︎ ${tr('nHints')(hints.length)}</summary><ul>${li(hints,/^\u26A0[\uFE0E\uFE0F]?\s*/)}</ul></details>`;
   if(!blockedWarnings.length&&!hints.length){
     if(filledCount>=size)
       warnHtml=`<div class="ok-banner">✓ Aufstellung vollständig</div>`;
@@ -1484,8 +1484,8 @@ function renderLineupSlots(){
   if(ersatzPid){
     const otherLineup=state.matches.find(om=>om.id!==selectedMatchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(ersatzPid));
     const otherErsatz=state.matches.find(om=>om.id!==selectedMatchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===ersatzPid);
-    if(otherLineup){const ot=teamById(otherLineup.teamId);ersatzWarn=`⚠ Bereits Aufstellung: <strong>${ot?.name||'?'}</strong>`;}
-    else if(otherErsatz){const ot=teamById(otherErsatz.teamId);ersatzWarn=`⚠ Bereits Ersatz: <strong>${ot?.name||'?'}</strong>`;}
+    if(otherLineup){const ot=teamById(otherLineup.teamId);ersatzWarn=`⚠︎ Bereits Aufstellung: <strong>${ot?.name||'?'}</strong>`;}
+    else if(otherErsatz){const ot=teamById(otherErsatz.teamId);ersatzWarn=`⚠︎ Bereits Ersatz: <strong>${ot?.name||'?'}</strong>`;}
   }
   slotsHtml+=`<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)">
     <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Ersatz</div>
@@ -1561,13 +1561,13 @@ function showKapTab(tab){
 // ── BLOCKING VIEW (read-only) ──
 // ── SPERREN TABLE CELL ── says in words why a player is blocked (same code in admin.html and kapitaen.html)
 const BLK_T={
-  de:{stamm:'Stammkader',played:n=>`${n}× gespielt`,kader:t=>`⛔ Kader ${t}`,sm:(n,ts)=>`⛔ ${n}× in ${ts}`,warn:(n,ts)=>`⚠ ${n}× in ${ts}`,
+  de:{stamm:'Stammkader',played:n=>`${n}× gespielt`,kader:t=>`⛔ Kader ${t}`,sm:(n,ts)=>`⛔ ${n}× in ${ts}`,warn:(n,ts)=>`⚠︎ ${n}× in ${ts}`,
       tKader:t=>`Stammkader-Regel: laut Meldeliste gehört der Spieler zu ${t} und darf nicht tiefer spielen`,tSm:(n,ts)=>`Stammmannschaft-Regel: ${n} Einsätze in ${ts} – hier gesperrt`,tWarn:(n,ts)=>`${n} Einsatz in ${ts} – beim nächsten Einsatz oben ist er hier gesperrt`,
       legStamm:'Mannschaft laut Meldeliste',legBlock:'gesperrt, mit Grund',legWarn:'beim nächsten Einsatz oben gesperrt',legPlayed:'Einsätze in dieser Mannschaft'},
-  es:{stamm:'Stammkader',played:n=>`${n}× jugados`,kader:t=>`⛔ Kader ${t}`,sm:(n,ts)=>`⛔ ${n}× en ${ts}`,warn:(n,ts)=>`⚠ ${n}× en ${ts}`,
+  es:{stamm:'Stammkader',played:n=>`${n}× jugados`,kader:t=>`⛔ Kader ${t}`,sm:(n,ts)=>`⛔ ${n}× en ${ts}`,warn:(n,ts)=>`⚠︎ ${n}× en ${ts}`,
       tKader:t=>`Regla Stammkader: según la Meldeliste pertenece a ${t} y no puede jugar más abajo`,tSm:(n,ts)=>`Regla Stammmannschaft: ${n} partidos en ${ts} – bloqueado acá`,tWarn:(n,ts)=>`${n} partido en ${ts} – con el próximo arriba queda bloqueado acá`,
       legStamm:'equipo según la Meldeliste',legBlock:'bloqueado, con el motivo',legWarn:'bloqueado con el próximo partido arriba',legPlayed:'partidos en este equipo'},
-  en:{stamm:'Stammkader',played:n=>`${n}× played`,kader:t=>`⛔ Kader ${t}`,sm:(n,ts)=>`⛔ ${n}× in ${ts}`,warn:(n,ts)=>`⚠ ${n}× in ${ts}`,
+  en:{stamm:'Stammkader',played:n=>`${n}× played`,kader:t=>`⛔ Kader ${t}`,sm:(n,ts)=>`⛔ ${n}× in ${ts}`,warn:(n,ts)=>`⚠︎ ${n}× in ${ts}`,
       tKader:t=>`Stammkader rule: per the Meldeliste the player belongs to ${t} and may not play lower`,tSm:(n,ts)=>`Stammmannschaft rule: ${n} matches in ${ts} – blocked here`,tWarn:(n,ts)=>`${n} match in ${ts} – one more up there blocks him here`,
       legStamm:'team per the Meldeliste',legBlock:'blocked, with the reason',legWarn:'blocked after the next match higher up',legPlayed:'matches in this team'}
 };
@@ -1598,9 +1598,9 @@ function blockCell(p,t,catTeams,status,skTeam){
   else if(isSmWarned){kind='warn';label=bT('warn')(supSum,supTeams);title=bT('tWarn')(supSum,supTeams);}
   else if(isSk){kind='stamm';label=bT('stamm')+(c>0?` · ${c}×`:'');}
   else if(c>0){kind='played';label=bT('played')(c);}
-  // own Stammkader team that is also on warning → one line: the Stammkader pill + just the ⚠ symbol (reason in the tooltip)
+  // own Stammkader team that is also on warning → one line: the Stammkader pill + just the ⚠︎ symbol (reason in the tooltip)
   const skWarn=kind==='warn'&&isSk;
-  const inner=skWarn?`<span style="white-space:nowrap"><span style="${BLK_PILL};${BLK_STYLE.stamm}">${bT('stamm')}</span> <span style="color:#f4a261;font-size:13px;cursor:help">⚠</span></span>`
+  const inner=skWarn?`<span style="white-space:nowrap"><span style="${BLK_PILL};${BLK_STYLE.stamm}">${bT('stamm')}</span> <span style="color:#f7c48f;font-size:12px;font-weight:600;cursor:help">⚠︎</span></span>`
     :kind?`<span style="${BLK_PILL};${BLK_STYLE[kind]}">${label}</span>`
     :`<span style="font-size:11px;color:${p.teamIds.includes(t.id)?'var(--muted)':'#3a4a42'}">${p.teamIds.includes(t.id)?'—':'·'}</span>`;
   return`<td style="padding:6px 8px;text-align:center;border-left:1px solid #2e4a4222" title="${title.replace(/"/g,'&quot;')}">${inner}</td>`;
@@ -1609,7 +1609,7 @@ function blockLegend(){
   return`<div style="padding:9px 12px;display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center;border-top:1px solid #2e4a42;font-size:11px;color:#c8d2ce">
     <span style="${BLK_PILL};${BLK_STYLE.stamm}">${bT('stamm')}</span>${bT('legStamm')}
     <span style="${BLK_PILL};${BLK_STYLE.block}">⛔ …</span>${bT('legBlock')}
-    <span style="${BLK_PILL};${BLK_STYLE.warn}">⚠ …</span>${bT('legWarn')}
+    <span style="${BLK_PILL};${BLK_STYLE.warn}">⚠︎ …</span>${bT('legWarn')}
     <span style="${BLK_PILL};${BLK_STYLE.played}">${bT('played')('N')}</span>${bT('legPlayed')}
   </div>`;
 }
