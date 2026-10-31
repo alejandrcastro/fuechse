@@ -77,8 +77,6 @@ input::placeholder{color:var(--muted)}
 .av-maybe{background:#2d2215;color:var(--warn);border:1px solid var(--warn)44}
 .av-open{background:#2e4a3844;color:var(--muted);border:1px solid var(--line)}
 
-
-
 .player-card{display:flex;align-items:center;gap:12px;background:#1b2d24;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:14px}
 .player-card .avatar{width:44px;height:44px;font-size:15px}
 .lk-badge{background:#1b2d24;border:1px solid var(--court)55;color:var(--court);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
@@ -94,6 +92,7 @@ input::placeholder{color:var(--muted)}
 .back-btn:hover{border-color:var(--court);color:var(--court)}
 
 </style>
+<script src="common.js?v=1"></script>
 </head>
 <body>
 <div id="sp-login" style="position:fixed;inset:0;background:#0d2015;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Sans',sans-serif;">
@@ -113,51 +112,7 @@ input::placeholder{color:var(--muted)}
     <div id="sp-err" style="margin-top:12px;font-size:.8rem;color:#e63946;text-align:center;min-height:18px"></div>
   </div>
 </div>
-<script>
-// ── CLUB LOGIN ── one shared Supabase account for all players; same password field as before.
-// The password is checked by Supabase (no hash in the code). Session lives in this tab (sessionStorage).
-const CLUB_EMAIL='spieler@login.fuechse-berlin-reinickendorf.de';
-const CLUB_SESSION_KEY='fcb_club_session';
-function _clubRead(){try{return JSON.parse(sessionStorage.getItem(CLUB_SESSION_KEY)||'null');}catch(e){return null;}}
-function _clubWrite(s){try{s?sessionStorage.setItem(CLUB_SESSION_KEY,JSON.stringify(s)):sessionStorage.removeItem(CLUB_SESSION_KEY);}catch(e){}}
-function _clubStore(j){_clubWrite({access_token:j.access_token,refresh_token:j.refresh_token,expires_at:j.expires_at||Math.floor(Date.now()/1000)+(j.expires_in||3600)});}
-function clubShowLogin(){const o=document.getElementById('sp-login');o.style.opacity='1';o.style.display='flex';}
-// Valid access token for REST calls; refreshes it when it is about to expire (tokens live ~1 h)
-let _clubRefreshing=null; // one refresh at a time (refresh tokens are single-use)
-function clubToken(){
-  const s=_clubRead();if(!s)return Promise.resolve(null);
-  if(Date.now()/1000<s.expires_at-60)return Promise.resolve(s.access_token);
-  if(!_clubRefreshing)_clubRefreshing=_clubRefresh(s).finally(()=>{_clubRefreshing=null;});
-  return _clubRefreshing;
-}
-async function _clubRefresh(s){
-  try{
-    const r=await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});
-    if(r.ok){const j=await r.json();_clubStore(j);return j.access_token;}
-  }catch(e){console.warn('refresh',e);}
-  _clubWrite(null);clubShowLogin();return null;
-}
-async function clubHDR(extra){const t=await clubToken();return{'apikey':SB_KEY,'Authorization':'Bearer '+(t||SB_KEY),'Content-Type':'application/json',...(extra||{})};}
-if(_clubRead()){document.getElementById('sp-login').style.display='none';}
-window.spLogin=async function(){
-  const inp=document.getElementById('sp-pw'),err=document.getElementById('sp-err');
-  let ok=false;
-  try{
-    const r=await fetch(`${SB_URL}/auth/v1/token?grant_type=password`,{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({email:CLUB_EMAIL,password:inp.value})});
-    if(r.ok){_clubStore(await r.json());ok=true;}
-  }catch(e){console.error(e);}
-  if(ok){
-    const o=document.getElementById('sp-login');
-    o.style.opacity='0';o.style.transition='opacity .3s';
-    setTimeout(()=>o.style.display='none',300);
-    if(typeof onClubLogin==='function')onClubLogin();
-  }else{
-    err.textContent='Falsches Passwort';
-    inp.value='';
-    setTimeout(()=>err.textContent='',2000);
-  }
-};
-</script>
+<script>clubInitGate();</script>
 <header>
   <img class="logo-img" src="logo.svg" alt="Füchse Berlin">
   <div class="header-text">
@@ -205,31 +160,12 @@ window.spLogin=async function(){
 </main>
 
 <script>
-const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
-const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
 // ── ACTIVE SEASON ── switched in admin.html (header). Stored in Supabase → app_settings.
 // Format: 'S2026' = Sommer 2026, 'W2026' = Winter 2026/27. The value below is only a fallback.
 let ACTIVE_SEASON='W2026';
-async function _readSetting(key){
-  try{
-    const r=await fetch(`${SB_URL}/rest/v1/app_settings?key=eq.${key}&select=value`,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
-    if(!r.ok)return null;const j=await r.json();return j[0]?.value??null;
-  }catch(e){console.warn('app_settings',e);return null;}
-}
 const _seasonReady=(async()=>{const v=await _readSetting('active_season');if(typeof v==='string'&&/^[SW]\d{4}$/.test(v))ACTIVE_SEASON=v;})();
 
 async function sbGet(t,p=''){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{headers:await clubHDR({'Prefer':''})});if(!r.ok)throw new Error(await r.text());return r.json();}
-// Supabase returns max. 1000 rows per request → always page through big tables (stable order required)
-async function sbGetAll(t,p=''){let out=[],off=0;while(true){const b=await sbGet(t,`${p}${p?'&':''}limit=1000&offset=${off}`);out=out.concat(b);if(b.length<1000)break;off+=1000;}return out;}
-// Rows whose <col> is one of <ids>, fetched in chunks so the URL stays short (R1: load only the active season)
-async function sbGetIn(t,col,ids,p=''){
-  const list=[...new Set(ids)].filter(Boolean),out=[];
-  for(let i=0;i<list.length;i+=150){
-    const chunk=list.slice(i,i+150).map(encodeURIComponent).join(',');
-    out.push(...await sbGetAll(t,`${col}=in.(${chunk})${p?'&'+p:''}`));
-  }
-  return out;
-}
 async function sbUpsert(t,d){const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:await clubHDR({'Prefer':'resolution=merge-duplicates'}),body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());}
 
 const T={
@@ -311,72 +247,9 @@ function fmtDate(d){
   const months=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
   return{day,month:months[parseInt(m)-1],full:`${day}.${m}.${y}`};
 }
-function spieltagOf(m){return (m&&(m.spieltag||m.date))||'';} // WSpO § 11 (4): verlegt keeps the original Spieltag
-function teamById(id){return state.teams.find(t=>t.id===id)}
-function playerById(id){return state.players.find(p=>p.id===id)}
 function getPlayerTeamIds(playerId){return state.playerTeams.filter(r=>r.player_id===playerId).map(r=>r.team_id);}
-function teamSize(t){return t&&(t.is_4er||t.season==='Winter')?4:6}
-function teamNumber(team){
-  const n=parseInt(team.teamNumber||team.team_number||0);
-  if(n>0&&n<10)return n;
-  const roman={I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
-  const r=team.name.match(/\b(VIII|VII|VI|IV|V|III|II)\b/);
-  if(r)return roman[r[1]]||1;
-  return 1;
-}
-// ── CATEGORY ORDER: Herren (0) → Damen (1) → Jugend U.. (2); Jugend: U18 → U10, m → w → gemischt ──
-function catGroup(cat){cat=cat||'';if(/^U\d+/.test(cat))return 2;return /^Damen/i.test(cat)?1:0;}
-function catAge(cat){cat=cat||'';const j=cat.match(/^U(\d+)\s*(m|w)?/);if(j)return(100-parseInt(j[1]))+(j[2]==='m'?0:j[2]==='w'?0.1:0.2);return parseInt(cat.replace(/^(Herren|Damen)\s*/,''))||0;}
-function catCmp(a,b){return catGroup(a)-catGroup(b)||catAge(a)-catAge(b);}
-function teamSortKey(t){
-  const g=catGroup(t.category);
-  const age=catAge(t.category);
-  return[g,age,teamNumber(t)];
-}
-function teamSortCmp(a,b){
-  const ka=teamSortKey(a),kb=teamSortKey(b);
-  for(let i=0;i<ka.length;i++)if(ka[i]!==kb[i])return ka[i]-kb[i];
-  return 0;
-}
 
-// ── BLOCKING LOGIC ── identical to admin.html (getStammkaderTeam / getPlayerBlockStatus / isPlayerBlockedForTeam).
-// Keep these three in sync with admin.html and kapitaen.html.
-// Rule 1 – Stammkader: position in the Meldung of the category → that team; blocked in all lower teams (higher number)
-// Rule 2 – Stammmannschaft: matches played in all higher teams are ADDED UP; 2+ → blocked here, exactly 1 → warning
-function getStammkaderTeam(playerId, catGroup){
-  const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
-  if(!catTeams.length)return null;
-  // category-specific rank: the first team of the category in which the player has a rank entry
-  const playerRanks=state.rankByTeam[playerId]||{};
-  let rankInCat=null;
-  for(const t of catTeams){const r=playerRanks[t.id];if(r!=null){rankInCat=r;break;}}
-  if(rankInCat==null)return null;
-  let remaining=rankInCat;
-  for(const t of catTeams){const gs=teamSize(t);if(remaining<=gs)return t;remaining-=gs;}
-  return catTeams[catTeams.length-1];
-}
-
-function getPlayerBlockStatus(playerId, catGroup){
-  const counts=state.matchCounts[playerId]||{};
-  const catTeams=state.teams.filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
-  const stammkaderTeam=getStammkaderTeam(playerId,catGroup);
-  const stammkaderTeamNum=stammkaderTeam?teamNumber(stammkaderTeam):null;
-  const stammkaderBlocked=stammkaderTeamNum!==null?catTeams.filter(t=>teamNumber(t)>stammkaderTeamNum):[];
-  const stammmannschaftBlocked=[],stammmannschaftWarned=[];
-  for(const t of catTeams){
-    const tNum=teamNumber(t);
-    const superiorMatches=catTeams.filter(x=>teamNumber(x)<tNum).reduce((sum,x)=>sum+(counts[x.id]||0),0);
-    if(superiorMatches>=2)stammmannschaftBlocked.push(t);
-    else if(superiorMatches===1)stammmannschaftWarned.push(t);
-  }
-  const allBlockedIds=new Set([...stammkaderBlocked.map(t=>t.id),...stammmannschaftBlocked.map(t=>t.id)]);
-  return{stammkaderTeam,stammkaderBlocked,stammmannschaftBlocked,stammmannschaftWarned,blocked:catTeams.filter(t=>allBlockedIds.has(t.id)),warned:stammmannschaftWarned};
-}
-
-function isBlocked(playerId,teamId){
-  const team=teamById(teamId);if(!team)return false;
-  return getPlayerBlockStatus(playerId,team.category).blocked.some(b=>b.id===teamId);
-}
+// TVBB rules, Supabase helpers and the Sperren table cell are in common.js (shared by all pages).
 
 async function loadAll(){
   document.getElementById('find-status').textContent=tr('findStatus');
@@ -610,7 +483,7 @@ function renderMatchList(){
     }
     const avail=state.availability[m.id]?.[p.id]||'';
     const d=fmtDate(m.date);
-    const blocked=isBlocked(p.id,m.team_id);
+    const blocked=isPlayerBlockedForTeam(p.id,m.team_id);
     const yes=avail==='yes',conditional=avail==='conditional',notfall=avail==='notfall',no=avail==='no';
     return`<div class="match-item" style="flex-direction:column;gap:10px;cursor:default">
       <div style="display:flex;align-items:center;gap:12px;align-self:stretch">

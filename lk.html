@@ -58,6 +58,7 @@ input::placeholder{color:var(--muted)}
 .fine a{color:var(--court)}
 .hidden{display:none!important}
 </style>
+<script src="common.js?v=1"></script>
 </head>
 <body>
 <div id="sp-login" style="position:fixed;inset:0;background:#0d2015;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Sans',sans-serif;">
@@ -77,51 +78,7 @@ input::placeholder{color:var(--muted)}
     <div id="sp-err" style="margin-top:12px;font-size:.8rem;color:#e63946;text-align:center;min-height:18px"></div>
   </div>
 </div>
-<script>
-// ── CLUB LOGIN ── one shared Supabase account for all players; same password field as before.
-// The password is checked by Supabase (no hash in the code). Session lives in this tab (sessionStorage).
-const CLUB_EMAIL='spieler@login.fuechse-berlin-reinickendorf.de';
-const CLUB_SESSION_KEY='fcb_club_session';
-function _clubRead(){try{return JSON.parse(sessionStorage.getItem(CLUB_SESSION_KEY)||'null');}catch(e){return null;}}
-function _clubWrite(s){try{s?sessionStorage.setItem(CLUB_SESSION_KEY,JSON.stringify(s)):sessionStorage.removeItem(CLUB_SESSION_KEY);}catch(e){}}
-function _clubStore(j){_clubWrite({access_token:j.access_token,refresh_token:j.refresh_token,expires_at:j.expires_at||Math.floor(Date.now()/1000)+(j.expires_in||3600)});}
-function clubShowLogin(){const o=document.getElementById('sp-login');o.style.opacity='1';o.style.display='flex';}
-// Valid access token for REST calls; refreshes it when it is about to expire (tokens live ~1 h)
-let _clubRefreshing=null; // one refresh at a time (refresh tokens are single-use)
-function clubToken(){
-  const s=_clubRead();if(!s)return Promise.resolve(null);
-  if(Date.now()/1000<s.expires_at-60)return Promise.resolve(s.access_token);
-  if(!_clubRefreshing)_clubRefreshing=_clubRefresh(s).finally(()=>{_clubRefreshing=null;});
-  return _clubRefreshing;
-}
-async function _clubRefresh(s){
-  try{
-    const r=await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});
-    if(r.ok){const j=await r.json();_clubStore(j);return j.access_token;}
-  }catch(e){console.warn('refresh',e);}
-  _clubWrite(null);clubShowLogin();return null;
-}
-async function clubHDR(extra){const t=await clubToken();return{'apikey':SB_KEY,'Authorization':'Bearer '+(t||SB_KEY),'Content-Type':'application/json',...(extra||{})};}
-if(_clubRead()){document.getElementById('sp-login').style.display='none';}
-window.spLogin=async function(){
-  const inp=document.getElementById('sp-pw'),err=document.getElementById('sp-err');
-  let ok=false;
-  try{
-    const r=await fetch(`${SB_URL}/auth/v1/token?grant_type=password`,{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({email:CLUB_EMAIL,password:inp.value})});
-    if(r.ok){_clubStore(await r.json());ok=true;}
-  }catch(e){console.error(e);}
-  if(ok){
-    const o=document.getElementById('sp-login');
-    o.style.opacity='0';o.style.transition='opacity .3s';
-    setTimeout(()=>o.style.display='none',300);
-    if(typeof onClubLogin==='function')onClubLogin();
-  }else{
-    err.textContent='Falsches Passwort';
-    inp.value='';
-    setTimeout(()=>err.textContent='',2000);
-  }
-};
-</script>
+<script>clubInitGate();</script>
 <header>
   <img class="logo-img" src="logo.svg" alt="Füchse Berlin">
   <div class="header-text">
@@ -205,18 +162,9 @@ window.spLogin=async function(){
 </main>
 
 <script>
-const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
-const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
 let ACTIVE_SEASON='W2026';
-async function _readSetting(key){
-  try{
-    const r=await fetch(`${SB_URL}/rest/v1/app_settings?key=eq.${key}&select=value`,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
-    if(!r.ok)return null;const j=await r.json();return j[0]?.value??null;
-  }catch(e){return null;}
-}
 const _seasonReady=(async()=>{const v=await _readSetting('active_season');if(typeof v==='string'&&/^[SW]\d{4}$/.test(v))ACTIVE_SEASON=v;})();
 async function sbGet(t,p=''){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{headers:await clubHDR()});if(!r.ok)throw new Error(await r.text());return r.json();}
-async function sbGetAll(t,p=''){let out=[],off=0;while(true){const b=await sbGet(t,`${p}${p?'&':''}limit=1000&offset=${off}`);out=out.concat(b);if(b.length<1000)break;off+=1000;}return out;}
 
 // ════════════════════════════════════════════════════════════════
 // LK formulas — DTB Durchführungsbestimmungen zur LKO, Anhang A

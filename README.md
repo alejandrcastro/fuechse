@@ -20,6 +20,8 @@ Club Manager is a standalone web application made up of three independent HTML f
 | `umfrage.html` | Player (participation survey per season) |
 | `lk.html` | Player (LK calculator: how much a win improves the LK) |
 
+`common.js` holds the code all pages share: the TVBB blocking rules (Stammkader, Stammmannschaft, Spieltag), the Supabase helpers, the club login and the Sperren table cell. A rule changed there applies everywhere at once. After editing it, raise the `?v=` number in the `<script src="common.js?v=…">` line of every page so browsers fetch the new file.
+
 ---
 
 ## Tech Stack
