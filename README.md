@@ -29,7 +29,8 @@ Club Manager is a standalone web application made up of three independent HTML f
 - **Frontend:** Plain HTML, CSS and JavaScript — no frameworks, no build step
 - **Backend:** [Supabase](https://supabase.com) — PostgreSQL with direct REST API
 - **PDF parsing:** PDF.js — import of official TVBB Berlin documents
-- **Fonts:** Bebas Neue + DM Sans (Google Fonts)
+- **Libraries:** supabase-js 2.118.0 and PDF.js 3.11.174 are stored in `vendor/` (fixed versions, each loaded with an `integrity` hash). To update one, replace the file, put the new version in its name and in the page, and recompute the hash: `openssl dgst -sha384 -binary FILE | base64`.
+- **Fonts:** Bebas Neue + DM Sans, stored in `fonts/` — no request goes to Google Fonts (GDPR)
 - **Hosting:** GitHub Pages at `alejandrcastro.github.io/fuechse/`
 
 ---

@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sportwart – Füchse Berlin</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link href="fonts/fonts.css?v=1" rel="stylesheet">
+<script src="vendor/pdf-3.11.174.min.js" integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"></script>
 <style>
 :root{
   --green:#2d6a4f;--green-light:#40916c;--court:#74c69d;
@@ -196,11 +196,12 @@ select option{background:#1b2926}
   </div>
 </div>
 <script>
-// Supabase Auth — loaded via CDN
+// Supabase Auth
 (function(){
   // Load Supabase JS SDK
   const s=document.createElement('script');
-  s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  // supabase-js 2.118.0 is in the repo (vendor/), so no new version can slip in by itself; integrity = SHA-384 of that file
+  s.src='vendor/supabase-2.118.0.js';s.integrity='sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
   s.onload=function(){
     const _sb=window.supabase.createClient(
       'https://kepbpcttbvkbcckqoecv.supabase.co',
@@ -682,7 +683,7 @@ window.doLogin=async function(){
 </div>
 
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker-3.11.174.min.js';
 
 // ── ACTIVE SEASON ── switched in admin.html (header). Stored in Supabase → app_settings.
 // Format: 'S2026' = Sommer 2026, 'W2026' = Winter 2026/27. The value below is only a fallback.
