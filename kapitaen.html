@@ -52,6 +52,22 @@ header{background:#111;padding:14px 22px;display:flex;align-items:center;justify
 /* LAYOUT */
 main{padding:22px;max-width:1080px;margin:0 auto;display:grid;grid-template-columns:240px 1fr;gap:18px;min-height:calc(100vh - 60px)}
 @media(max-width:700px){main{grid-template-columns:1fr}}
+/* mobile: team dropdown instead of the full list (desktop keeps the list) */
+.team-select{display:none;width:100%;background:#111;border:1px solid var(--border2);border-radius:10px;color:var(--white);padding:11px 12px;font:600 14px 'DM Sans',sans-serif}
+@media(max-width:700px){.team-select{display:block}#team-list-sidebar,#sidebar-teams-title,#no-team-selected{display:none!important}.sidebar-card{padding:10px}}
+/* grouped lineup warnings: red = Sperren (blocking), amber = Hinweise */
+.warn-group{border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;line-height:1.5}
+.warn-group summary{font-weight:700;cursor:pointer;list-style:none}
+.warn-group summary::-webkit-details-marker{display:none}
+.warn-group summary::after{content:' ▾';opacity:.7}
+.warn-group[open] summary::after{content:' ▴'}
+.warn-group ul{margin:6px 0 2px 18px}
+.warn-group.red{background:#3a1b18;border:1px solid #ff6b5b55;color:#ffb3aa}
+.warn-group.amber{background:#33260f;border:1px solid #f4a26155;color:#f7c48f}
+.warn-group strong{color:inherit}
+/* availability rows: extra badges before the status; on mobile they move under the name */
+.avail-tags{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+@media(max-width:700px){.avail-row{flex-wrap:wrap}.avail-tags:not(:empty){order:3;flex-basis:100%;justify-content:flex-start;padding-left:40px;margin-top:-4px}.avail-row>.avail-badge{order:2}.avail-tags span{margin-left:0!important}}
 
 /* SIDEBAR */
 .sidebar{display:flex;flex-direction:column;gap:10px}
@@ -227,6 +243,7 @@ input:focus,select:focus{border-color:var(--court)}
   <div class="sidebar" id="main-sidebar">
     <div class="sidebar-card">
       <div class="sidebar-title" id="sidebar-teams-title">Mannschaften</div>
+      <select id="team-select" class="team-select" onchange="if(this.value)selectTeam(this.value)"></select>
       <div id="team-list-sidebar"><div class="empty" style="padding:10px" id="sidebar-loading">Laden...</div></div>
     </div>
   </div>
@@ -871,6 +888,7 @@ const T={
     badgeYes:'✓ Ja',badgeNotfall:'Im Notfall',badgeNo:'Nein',
     dropYes:'── ✓ Ja',dropConditional:'── (Ja)',dropNotfall:'── Im Notfall',dropNo:'── ✗ Nein',dropNone:'── ?',
     isBlocked:(name,team)=>`⛔ ${name} ist gesperrt für ${team}`,
+    pickTeam:'Mannschaft auswählen …',nBlocks:n=>n===1?'1 Sperre in der Aufstellung':`${n} Sperren in der Aufstellung`,nHints:n=>n===1?'1 Hinweis':`${n} Hinweise`,
     noBlocked:'Keine Sperren',
     sperrenTitle:'Sperren',sperrenSub:'Übersicht der gesperrten Spieler nach Stammkader- und Stammmannschaftsregel',
     ruleBoxSK:'Stammkader: Pos. 1–6 (Sommer) / 1–4 (Winter) → Mannschaft 1, usw. Spieler dürfen nicht in niedrigere Mannschaft der Kategorie.',
@@ -904,6 +922,7 @@ const T={
     badgeYes:'✓ Sí',badgeNotfall:'Si es necesario',badgeNo:'No',
     dropYes:'── ✓ Sí',dropConditional:'── (Sí)',dropNotfall:'── Si es necesario',dropNo:'── ✗ No',dropNone:'── ?',
     isBlocked:(name,team)=>`⛔ ${name} está bloqueado para ${team}`,
+    pickTeam:'Elegí un equipo …',nBlocks:n=>n===1?'1 bloqueo en la alineación':`${n} bloqueos en la alineación`,nHints:n=>n===1?'1 aviso':`${n} avisos`,
     noBlocked:'Sin bloqueos',
     sperrenTitle:'Bloqueos',sperrenSub:'Resumen de jugadores bloqueados por regla Stammkader y Stammmannschaft',
     ruleBoxSK:'Stammkader: Pos. 1–6 (verano) / 1–4 (invierno) → Equipo 1, etc. Los jugadores no pueden jugar en equipos de número mayor.',
@@ -937,6 +956,7 @@ const T={
     badgeYes:'✓ Yes',badgeNotfall:'If needed',badgeNo:'No',
     dropYes:'── ✓ Yes',dropConditional:'── (Yes)',dropNotfall:'── If needed',dropNo:'── ✗ No',dropNone:'── ?',
     isBlocked:(name,team)=>`⛔ ${name} is blocked for ${team}`,
+    pickTeam:'Choose a team …',nBlocks:n=>n===1?'1 block in the lineup':`${n} blocks in the lineup`,nHints:n=>n===1?'1 note':`${n} notes`,
     noBlocked:'No blocks',
     sperrenTitle:'Blocks',sperrenSub:'Overview of blocked players by Stammkader and Stammmannschaft rule',
     ruleBoxSK:'Stammkader: Pos. 1–6 (summer) / 1–4 (winter) → Team 1, etc. Players may not play in a lower-numbered team.',
@@ -1067,6 +1087,13 @@ function renderTeamSidebar(){
     }
   }
   document.getElementById('team-list-sidebar').innerHTML=html||'<div class="empty" style="padding:10px">Keine Teams</div>';
+  // mobile dropdown with the same teams, grouped by category
+  const sel=document.getElementById('team-select');
+  if(sel){
+    const cats=Object.entries(byCat).sort((a,b)=>catCmp(a[0],b[0])||a[0].localeCompare(b[0]));
+    sel.innerHTML=`<option value="">${tr('pickTeam')}</option>`+cats.map(([cat,teams])=>`<optgroup label="${cat}">${
+      teams.slice().sort((a,b)=>teamNumber(a)-teamNumber(b)).map(t=>`<option value="${t.id}"${selectedTeamId===t.id?' selected':''}>${t.name}${t.liga?' · '+t.liga:''}</option>`).join('')}</optgroup>`).join('');
+  }
 }
 
 // ── TEAM SELECTION ──
@@ -1152,7 +1179,13 @@ function weekendMatches(match){
   return state.matches.filter(m=>m.id!==match.id&&m.date===other)
     .sort((a,b)=>(a.time||'').localeCompare(b.time||'')||teamNumber(teamById(a.teamId)||{name:''})-teamNumber(teamById(b.teamId)||{name:''}));
 }
-function _teamShort(t){return(t?.name||'?').replace('Herren','H').replace('Damen','D').replace('Senioren','Sen').replace('Seniorinnen','SenF').trim();}
+function _teamShort(t){
+  let n=(t?.name||'?').replace('Seniorinnen','SenF').replace('Senioren','Sen').replace('Herren','H').replace('Damen','D').trim();
+  // first team of a category with more than one team → "H I" (plain "H" is ambiguous)
+  const siblings=(state.allTeams||state.teams).filter(x=>x.category===t?.category);
+  if(t&&siblings.length>1&&teamNumber(t)===1&&!/\b(I|II|III|IV|V|VI|VII|VIII)$/.test(n))n+=' I';
+  return n;
+}
 function weekendBadges(pid,match){
   const play=[],ans=[];
   for(const om of weekendMatches(match)){
@@ -1245,7 +1278,7 @@ function renderAvailPanel(){
           const ersatzFlag=ersatzTeam?'<span title="'+(lang==='de'?'Ersatz bei '+ersatzTeam.name:lang==='es'?'Ersatz en '+ersatzTeam.name:'Substitute for '+ersatzTeam.name)+'" style="background:#2a2a2a;color:#bbb;border:1px dashed #555;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Ersatz ('+_teamShort(ersatzTeam)+')</span>':'';
           
           if(conflictTeam){
-            const teamShort=conflictTeam.name.replace('Herren','H').replace('Damen','D').replace('Senioren','Sen').replace('Seniorinnen','SenF').trim();
+            const teamShort=_teamShort(conflictTeam);
             const bereitTitle=lang==='de'?'Bereits aufgestellt in '+conflictTeam.name:lang==='es'?'Ya alineado en '+conflictTeam.name:'Already in lineup for '+conflictTeam.name;
             extraBadge='<span title="'+bereitTitle+'" style="background:#2a2a2a;color:#bbb;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Bereits aufgestellt ('+teamShort+')</span>';
           } else if(ersatzFlag){
@@ -1283,7 +1316,7 @@ function renderAvailPanel(){
           const ersatzTeam=ersatzMatch?teamById(ersatzMatch.teamId):null;
           const ersatzFlag=ersatzTeam?'<span title="'+(lang==='de'?'Ersatz bei '+ersatzTeam.name:lang==='es'?'Ersatz en '+ersatzTeam.name:'Substitute for '+ersatzTeam.name)+'" style="background:#2a2a2a;color:#bbb;border:1px dashed #555;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Ersatz ('+_teamShort(ersatzTeam)+')</span>':'';
           if(conflictTeam){
-            const teamShort=conflictTeam.name.replace('Herren','H').replace('Damen','D').replace('Senioren','Sen').replace('Seniorinnen','SenF').trim();
+            const teamShort=_teamShort(conflictTeam);
             const bereitTitle=lang==='de'?'Bereits aufgestellt in '+conflictTeam.name:lang==='es'?'Ya alineado en '+conflictTeam.name:'Already in lineup for '+conflictTeam.name;
             extraBadge='<span title="'+bereitTitle+'" style="background:#2a2a2a;color:#bbb;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;margin-left:4px;cursor:help">Bereits aufgestellt ('+teamShort+')</span>';
           }else if(ersatzFlag){
@@ -1296,7 +1329,7 @@ function renderAvailPanel(){
         // max. one extra badge: same-day (Bereits aufgestellt / FREI) wins over the weekend hint
         if(!extraBadge)extraBadge=weekendBadges(p.id,match);
         // extra badges first, status badge last → status badges line up on the right
-        return extraBadge+'<span class="avail-badge" style="background:'+bg+';color:'+col+';border-radius:10px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:4px">'+badgeLabel+'</span>';
+        return '<span class="avail-tags">'+extraBadge+'</span><span class="avail-badge" style="background:'+bg+';color:'+col+';border-radius:10px;padding:2px 8px;font-size:11px;font-weight:600;margin-left:4px">'+badgeLabel+'</span>';
       })()}
     </div>`;
   }
@@ -1373,12 +1406,26 @@ function renderLineupSlots(){
     return null;
   }).filter(Boolean);
 
+  // Double-booking warnings for the main lineup (same Spieltag, other team)
+  const doubleWarnings=lineup.slice(0,size).filter(Boolean).map(pid=>{
+    const p=playerById(pid);if(!p)return null;
+    if(playedOnSpieltag(pid,match))return null; // already reported as Spieltag block
+    const otherMatch=state.matches.find(om=>
+      om.id!==selectedMatchId&&spieltagOf(om)===spieltagOf(match)&&
+      (state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(pid)
+    );
+    if(!otherMatch)return null;
+    const otherTeam=teamById(otherMatch.teamId);
+    return`⚠ ${p.name} spielt auch für <strong>${otherTeam?.name||'?'}</strong> am selben Tag`;
+  }).filter(Boolean);
+  const hints=[...warnings,...doubleWarnings];
+
   const filledCount=lineup.slice(0,size).filter(Boolean).length;
   let warnHtml='';
-  if(blockedWarnings.length)warnHtml+=`<div class="warn-banner">${blockedWarnings.join('<br>')}</div>`;
-  if(warnings.length)
-    warnHtml+=`<div class="warn-banner">${warnings.join('<br>')}</div>`;
-  if(!blockedWarnings.length&&!warnings.length){
+  const li=(arr,re)=>arr.map(w=>`<li>${w.replace(re,'')}</li>`).join('');
+  if(blockedWarnings.length)warnHtml+=`<details class="warn-group red" open><summary>⛔ ${tr('nBlocks')(blockedWarnings.length)}</summary><ul>${li(blockedWarnings,/^⛔\s*/)}</ul></details>`;
+  if(hints.length)warnHtml+=`<details class="warn-group amber"${window.innerWidth>700?' open':''}><summary>⚠ ${tr('nHints')(hints.length)}</summary><ul>${li(hints,/^⚠️?\s*/)}</ul></details>`;
+  if(!blockedWarnings.length&&!hints.length){
     if(filledCount>=size)
       warnHtml=`<div class="ok-banner">✓ Aufstellung vollständig</div>`;
     else if(filledCount>0)
@@ -1451,22 +1498,6 @@ function renderLineupSlots(){
 
   document.getElementById('lineup-slots').innerHTML=slotsHtml;
 
-  // Double-booking warnings for main lineup
-  const doubleWarnings=lineup.slice(0,size).filter(Boolean).map(pid=>{
-    const p=playerById(pid);if(!p)return null;
-    if(playedOnSpieltag(pid,match))return null; // already reported as Spieltag block
-    const otherMatch=state.matches.find(om=>
-      om.id!==selectedMatchId&&spieltagOf(om)===spieltagOf(match)&&
-      (state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(pid)
-    );
-    if(!otherMatch)return null;
-    const otherTeam=teamById(otherMatch.teamId);
-    return`⚠ ${p.name} spielt auch für <strong>${otherTeam?.name||'?'}</strong> am selben Tag`;
-  }).filter(Boolean);
-  if(doubleWarnings.length){
-    document.getElementById('lineup-warnings').innerHTML+=
-      `<div class="warn-banner" style="margin-top:6px">${doubleWarnings.map(w=>`<div>${w}</div>`).join('')}</div>`;
-  }
 
 }
 
