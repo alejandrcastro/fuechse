@@ -24,6 +24,8 @@ Club Manager is a standalone web application made up of three independent HTML f
 
 `match.css` + the MATCH VIEW part of `common.js` draw one match (warnings, lineup, "Wer hat gespielt?", availability) — the same in `kapitaen.html` and in admin → Spiele & Aufstellung. Admin adds the Ja / Notfall / Nein buttons per player.
 
+The Overview tables, the Sperren table and the filter menus above Overview and Statistiken (age groups, teams, order) also come from `common.js`, so admin and kapitaen show them the same way.
+
 The rules have tests: `node tests/rules.test.js` (no install needed). They also run on GitHub on every push; if one fails, the site is not updated.
 
 ---

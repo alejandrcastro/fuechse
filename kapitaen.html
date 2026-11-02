@@ -89,7 +89,7 @@ input:focus,select:focus{border-color:var(--court)}
 /* Drag & drop lineup slots */
 /* ── VERLEGT ── */
 </style>
-<script src="common.js?v=5"></script>
+<script src="common.js?v=6"></script>
 </head>
 <body>
 
@@ -210,19 +210,19 @@ input:focus,select:focus{border-color:var(--court)}
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;position:relative;z-index:200">
         <!-- Multi-select dropdown: shown in both Spiele and Spieler modes -->
         <div id="kap-ov-multicat" style="position:relative">
-          <button id="kap-ov-multicat-btn" onclick="toggleMultiCat(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
+          <button id="kap-ov-multicat-btn" onclick="kapCatsMenu.toggle(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
             <span id="kap-ov-multicat-label" style="font-size:12px;white-space:nowrap">Alle Altersklassen</span>
             <span style="font-size:9px;color:var(--muted)">▼</span>
           </button>
         </div>
         <div id="kap-ov-teams-wrap" style="position:relative">
-          <button id="kap-ov-teams-btn" onclick="toggleTeamsMenu(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
+          <button id="kap-ov-teams-btn" onclick="kapTeamsMenu.toggle(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
             <span id="kap-ov-teams-label" style="font-size:12px;white-space:nowrap">Alle Teams</span>
             <span style="font-size:9px;color:var(--muted)">▼</span>
           </button>
         </div>
         <div id="kap-ov-sort-wrap" style="position:relative">
-          <button id="kap-ov-sort-btn" onclick="toggleSortMenu(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
+          <button id="kap-ov-sort-btn" onclick="kapSortMenu.toggle(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
             <span id="kap-ov-sort-label" style="font-size:12px;white-space:nowrap">Nach Mannschaftsnummer</span>
             <span style="font-size:9px;color:var(--muted)">▼</span>
           </button>
@@ -278,7 +278,6 @@ let _session=null;
   };
   document.head.appendChild(s);
 })();
-
 
 // ── LOGIN RATE LIMITING ──
 const _rl={attempts:0,lockedUntil:0};
@@ -542,9 +541,10 @@ function setLang(l){
   const ss=document.getElementById('sperren-sub');if(ss)ss.textContent=t.sperrenSub;
   // Update sort button label
   const sortLbl=document.getElementById('kap-ov-sort-label');
-  if(sortLbl)sortLbl.textContent=_sortLabel(_kapOvSort,l);
-  // Update team filter label
-  if(typeof _updateTeamsLabel==='function')_updateTeamsLabel();
+  if(sortLbl)sortLbl.textContent=sortLabel(_kapOvSort);
+  // Update the filter labels
+  _updateTeamsLabel();
+  _updateMultiCatLabel();
   // Re-render current views if loaded
   if(state.matches.length){
     renderTeamSidebar();
@@ -850,235 +850,40 @@ async function runAutoLineup(){
 let _kapOvMode='matches';
 let _kapOvSelectedCats=null;
 let _kapOvSort='number'; // 'number' or 'altersklasse'
-let _kapOvSortPanelEl=null;
 let _kapOvSelectedTeams=null; // null = all teams
-let _kapOvTeamsPanelEl=null;
-
-function _sortLabel(key,l){
-  l=l||lang;
-  if(key==='number')return l==='de'?'Nach Mannschaftsnummer':l==='es'?'Por número de equipo':'By team number';
-  return l==='de'?'Nach Altersklasse':l==='es'?'Por categoría (AK)':'By age group (AK)';
-}
-
-function _getSortPanel(){
-  if(!_kapOvSortPanelEl){
-    _kapOvSortPanelEl=document.createElement('div');
-    _kapOvSortPanelEl.style.cssText='display:none;position:fixed;background:#161616;border:1px solid #444;border-radius:10px;padding:6px 4px;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,.9);white-space:nowrap';
-    document.body.appendChild(_kapOvSortPanelEl);
-  }
-  return _kapOvSortPanelEl;
-}
-
-function toggleSortMenu(e){
-  if(e)e.stopPropagation();
-  const panel=_getSortPanel();
-  if(panel.style.display==='none'){
-    _buildSortPanelContent(panel);
-    const r=document.getElementById('kap-ov-sort-btn').getBoundingClientRect();
-    panel.style.top=(r.bottom+4)+'px';
-    panel.style.left=r.left+'px';
-    panel.style.display='block';
-  } else {
-    panel.style.display='none';
-  }
-}
-
-document.addEventListener('click',function(e){
-  if(!_kapOvSortPanelEl||_kapOvSortPanelEl.style.display==='none')return;
-  const wrap=document.getElementById('kap-ov-sort-wrap');
-  if(!_kapOvSortPanelEl.contains(e.target)&&(!wrap||!wrap.contains(e.target))){
-    _kapOvSortPanelEl.style.display='none';
-  }
-});
 
 function _buildSortPanelContent(panel){
-  panel.innerHTML='';
-  ['number','altersklasse'].forEach(function(key){
-    const lbl=document.createElement('label');
-    lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:#aaa';
-    lbl.addEventListener('mouseover',function(){lbl.style.background='#222';});
-    lbl.addEventListener('mouseout',function(){lbl.style.background='transparent';});
-    const cb=document.createElement('input');
-    cb.type='radio';cb.name='_kapovsort';
-    cb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
-    cb.checked=_kapOvSort===key;
-    cb.addEventListener('change',function(){
-      if(cb.checked){
-        _kapOvSort=key;
-        document.getElementById('kap-ov-sort-label').textContent=_sortLabel(key);
-        panel.style.display='none';
-        renderKapOverview();
-      }
-    });
-    const span=document.createElement('span');
-    span.textContent=_sortLabel(key);
-    lbl.appendChild(cb);
-    lbl.appendChild(span);
-    panel.appendChild(lbl);
-  });
+  sortList(panel,{keys:['number','altersklasse'],name:'_kapovsort',current:_kapOvSort,labelId:'kap-ov-sort-label',pick:k=>{_kapOvSort=k;renderKapOverview();}});
 }
-
-function _getTeamsPanel(){
-  if(!_kapOvTeamsPanelEl){
-    _kapOvTeamsPanelEl=document.createElement('div');
-    _kapOvTeamsPanelEl.style.cssText='display:none;position:fixed;background:#161616;border:1px solid #444;border-radius:10px;padding:6px 4px;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,.9)';
-    document.body.appendChild(_kapOvTeamsPanelEl);
-  }
-  return _kapOvTeamsPanelEl;
-}
-
-function toggleTeamsMenu(e){
-  if(e)e.stopPropagation();
-  const panel=_getTeamsPanel();
-  if(panel.style.display==='none'){
-    _buildTeamsPanelContent(panel);
-    const r=document.getElementById('kap-ov-teams-btn').getBoundingClientRect();
-    panel.style.top=(r.bottom+4)+'px';
-    panel.style.left=r.left+'px';
-    panel.style.width='180px';
-    panel.style.display='block';
-  } else {
-    panel.style.display='none';
-  }
-}
+// the Overview menus (common.js FILTER MENUS)
+const kapSortMenu=dropMenu({btn:'kap-ov-sort-btn',wrap:'kap-ov-sort-wrap',nowrap:true,build:_buildSortPanelContent});
+const kapTeamsMenu=dropMenu({btn:'kap-ov-teams-btn',wrap:'kap-ov-teams-wrap',width:'180px',build:p=>_buildTeamsPanelContent(p)});
+const kapCatsMenu=dropMenu({btn:'kap-ov-multicat-btn',wrap:'kap-ov-multicat',width:'160px',build:p=>_buildPanelContent(p)});
 
 function _buildTeamsPanelContent(panel){
   const teams=(!_kapOvSelectedCats||_kapOvSelectedCats.length===0)?scopeTeams():scopeTeams().filter(t=>_kapOvSelectedCats.includes(t.category));
-  ovTeamsPanel(panel,{teams:_kapOvSortTeams(teams),selected:()=>_kapOvSelectedTeams,set:v=>{_kapOvSelectedTeams=v;},allId:'_kap_teams_all',
+  ovTeamsPanel(panel,{teams:ovSortTeams(teams,_kapOvSort),selected:()=>_kapOvSelectedTeams,set:v=>{_kapOvSelectedTeams=v;},allId:'_kap_teams_all',
     changed:()=>{_updateTeamsLabel();_buildTeamsPanelContent(panel);renderKapOverview();}});
 }
 
 function _updateTeamsLabel(){
   const lbl=document.getElementById('kap-ov-teams-label');
-  if(!lbl)return;
-  if(!_kapOvSelectedTeams){
-    lbl.textContent=lang==='de'?'Alle Teams':lang==='es'?'Todos los equipos':'All teams';
-  } else if(!_kapOvSelectedTeams.length){
-    lbl.textContent=lang==='de'?'Keine':lang==='es'?'Ninguno':'None';
-  } else if(_kapOvSelectedTeams.length===1){
-    const team=teamById(_kapOvSelectedTeams[0]);
-    lbl.textContent=team?team.name:'?';
-  } else {
-    lbl.textContent=`${_kapOvSelectedTeams.length} Teams`;
-  }
+  if(lbl)lbl.textContent=teamFilterLabel(_kapOvSelectedTeams);
 }
-
-document.addEventListener('click',function(e){
-  if(!_kapOvTeamsPanelEl||_kapOvTeamsPanelEl.style.display==='none')return;
-  const wrap=document.getElementById('kap-ov-teams-wrap');
-  if(!_kapOvTeamsPanelEl.contains(e.target)&&(!wrap||!wrap.contains(e.target))){
-    _kapOvTeamsPanelEl.style.display='none';
-  }
-});
-
-function _kapOvSortTeams(teams){
-  const ts=[...teams];
-  // Herren → Damen → Jugend
-  const genderRank=c=>catGroup(c);
-  if(_kapOvSort==='altersklasse'){
-    return ts.sort((a,b)=>{
-      const ga=genderRank(a.category),gb=genderRank(b.category);
-      if(ga!==gb)return ga-gb;
-      if(a.category!==b.category)return catCmp(a.category,b.category)||a.category.localeCompare(b.category);
-      return teamNumber(a)-teamNumber(b);
-    });
-  }
-  // 'number': sort by team number first, then by category
-  return ts.sort((a,b)=>{
-    const ga=genderRank(a.category),gb=genderRank(b.category);
-    if(ga!==gb)return ga-gb;
-    const na=teamNumber(a),nb=teamNumber(b);
-    if(na!==nb)return na-nb;
-    return a.category.localeCompare(b.category);
-  });
-}
-let _kapOvPanelEl=null;
-
-function _getPanel(){
-  if(!_kapOvPanelEl){
-    _kapOvPanelEl=document.createElement('div');
-    _kapOvPanelEl.style.cssText='display:none;position:fixed;background:#161616;border:1px solid #444;border-radius:10px;padding:6px 4px;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,.9)';
-    document.body.appendChild(_kapOvPanelEl);
-  }
-  return _kapOvPanelEl;
-}
-
-function toggleMultiCat(e){
-  if(e)e.stopPropagation();
-  const panel=_getPanel();
-  if(panel.style.display==='none'){
-    _buildPanelContent(panel);
-    const r=document.getElementById('kap-ov-multicat-btn').getBoundingClientRect();
-    panel.style.top=(r.bottom+4)+'px';
-    panel.style.left=r.left+'px';
-    panel.style.width='160px';
-    panel.style.display='block';
-  } else {
-    panel.style.display='none';
-  }
-}
-
-document.addEventListener('click',function(e){
-  if(!_kapOvPanelEl||_kapOvPanelEl.style.display==='none')return;
-  const wrap=document.getElementById('kap-ov-multicat');
-  if(!_kapOvPanelEl.contains(e.target)&&(!wrap||!wrap.contains(e.target))){
-    _kapOvPanelEl.style.display='none';
-  }
-});
 
 function _buildPanelContent(panel){
-  const cats=[...new Set(scopeTeams().map(t=>t.category))].sort();
-  panel.innerHTML='';
-  const allSelected=!_kapOvSelectedCats;
-  ['__all__',...cats].forEach(function(c){
-    const isAll=c==='__all__';
-    const lbl=document.createElement('label');
-    lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:'+(isAll?'#fff':'#aaa')+';font-weight:'+(isAll?'600':'400');
-    lbl.addEventListener('mouseover',function(){lbl.style.background='#222';});
-    lbl.addEventListener('mouseout',function(){lbl.style.background='transparent';});
-    const cb=document.createElement('input');
-    cb.type='checkbox';
-    cb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
-    cb.checked=isAll?allSelected:(allSelected||!!(_kapOvSelectedCats&&_kapOvSelectedCats.includes(c)));
-    if(isAll)cb.id='_mc_all';
-    else cb.dataset.cat=c;
-    cb.addEventListener('change',function(){
-      if(isAll){
-        _kapOvSelectedCats=cb.checked?null:[];
-      } else {
-        const checked=[..._kapOvPanelEl.querySelectorAll('input[data-cat]:checked')].map(function(i){return i.dataset.cat;});
-        _kapOvSelectedCats=checked.length===cats.length?null:checked;
-        const allCb=_kapOvPanelEl.querySelector('#_mc_all');
-        if(allCb)allCb.checked=!_kapOvSelectedCats;
-      }
-      _updateMultiCatLabel();
-      _buildPanelContent(panel);
-      renderKapOverview();
-    });
-    const span=document.createElement('span');
-    span.textContent=isAll?(lang==='de'?'Alle':lang==='es'?'Todas':'All'):c;
-    lbl.appendChild(cb);
-    lbl.appendChild(span);
-    panel.appendChild(lbl);
-    if(isAll){
-      const div=document.createElement('div');
-      div.style.cssText='border-top:1px solid #333;margin:3px 6px';
-      panel.appendChild(div);
-    }
-  });
+  catMenuList(panel,{cats:[...new Set(scopeTeams().map(t=>t.category))].sort(),allId:'_mc_all',selected:()=>_kapOvSelectedCats,set:v=>{_kapOvSelectedCats=v;},
+    changed:()=>{_updateMultiCatLabel();_buildPanelContent(panel);renderKapOverview();}});
 }
 
 function _updateMultiCatLabel(){
   const lbl=document.getElementById('kap-ov-multicat-label');
-  if(!lbl)return;
-  if(!_kapOvSelectedCats)lbl.textContent=lang==='de'?'Alle Altersklassen':lang==='es'?'Todas las categorías':'All age groups';
-  else if(!_kapOvSelectedCats.length)lbl.textContent=lang==='de'?'Keine':lang==='es'?'Ninguna':'None';
-  else lbl.textContent=_kapOvSelectedCats.join(', ');
+  if(lbl)lbl.textContent=catFilterLabel(_kapOvSelectedCats);
 }
 
 function buildMultiCatList(){
   _kapOvSelectedCats=null;
-  if(_kapOvPanelEl){_kapOvPanelEl.remove();_kapOvPanelEl=null;}
+  kapCatsMenu.drop();
   _updateMultiCatLabel();
 }
 
@@ -1106,7 +911,7 @@ function goToMatchKap(matchId){
 
 // teams shown in the Overview: own scope, categories, team filter and order
 function _kapOvTeams(selectedCats){
-  let teams=_kapOvSortTeams((!selectedCats||selectedCats.length===0)?scopeTeams():scopeTeams().filter(t=>selectedCats.includes(t.category)));
+  let teams=ovSortTeams((!selectedCats||selectedCats.length===0)?scopeTeams():scopeTeams().filter(t=>selectedCats.includes(t.category)),_kapOvSort);
   if(_kapOvSelectedTeams&&_kapOvSelectedTeams.length>0)teams=teams.filter(t=>_kapOvSelectedTeams.includes(t.id));
   return teams;
 }
