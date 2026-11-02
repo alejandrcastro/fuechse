@@ -1169,6 +1169,20 @@ async function confirmImport(){
 }
 
 // ── PLAYERS ──
+// Sperren in the player list: only the blocks / warnings that change something — the teams below his
+// Stammkader team are never his anyway (Stammkader rule), so they are not listed
+function _playerBlockInfo(p){
+  const cats=[...new Set(p.teamIds.map(tid=>teamById(tid)).filter(Boolean).sort(_teamsByCatNum).map(t=>t.category))];
+  const blocked=[],warned=[];
+  for(const cat of cats){
+    const s=getPlayerBlockStatus(p.id,cat);
+    const below=new Set(s.stammkaderBlocked.map(t=>t.id));
+    const bl=s.blocked.filter(t=>!below.has(t.id));
+    blocked.push(...bl);
+    warned.push(...s.warned.filter(t=>!below.has(t.id)&&!bl.some(b=>b.id===t.id))); // no ⚠️ where it is already ⛔
+  }
+  return{blocked,warned};
+}
 function renderPlayers(){
   const ftSel=document.getElementById('filter-team');if(!ftSel)return;
   const cur=ftSel.value;
@@ -1182,8 +1196,8 @@ function renderPlayers(){
   if(filterTeam)players=players.filter(p=>p.teamIds.includes(filterTeam));
   if(filterGender)players=players.filter(p=>p.gender===filterGender);
   if(search)players=players.filter(p=>p.name.toLowerCase().includes(search)||(p.rawName||'').toLowerCase().includes(search));
-  const blockedCount=state.players.filter(p=>{const cats=[...new Set(p.teamIds.map(tid=>teamById(tid)?.category).filter(Boolean))];return cats.some(cat=>getPlayerBlockStatus(p.id,cat).blocked.length>0);}).length;
-  if(onlyBlocked){players=players.filter(p=>{const cats=[...new Set(p.teamIds.map(tid=>teamById(tid)?.category).filter(Boolean))];return cats.some(cat=>getPlayerBlockStatus(p.id,cat).blocked.length>0);});}
+  const blockedCount=state.players.filter(p=>_playerBlockInfo(p).blocked.length>0).length;
+  if(onlyBlocked)players=players.filter(p=>_playerBlockInfo(p).blocked.length>0);
   document.getElementById('stats-row').innerHTML=`
     <div class="stat-card"><div class="stat-num">${state.players.length}</div><div class="stat-label">${tr('players')}</div></div>
     <div class="stat-card"><div class="stat-num">${state.teams.length}</div><div class="stat-label">${tr('teams')}</div></div>
@@ -1193,9 +1207,9 @@ function renderPlayers(){
   if(!players.length){el.innerHTML=`<div class="empty">${tr('noPlayers')}</div>`;return;}
   el.innerHTML=players.map(p=>{
     const teams=p.teamIds.map(tid=>teamById(tid)).filter(Boolean).sort(_teamsByCatNum); // Herren, Herren II, Herren 30, …
-    const cats=[...new Set(teams.map(t=>t.category))];
-    let blockedChips='',warnChips='';
-    for(const cat of cats){const{blocked,warned}=getPlayerBlockStatus(p.id,cat);for(const b of blocked)blockedChips+=`<span class="blocked-badge">⛔ ${b.name}</span>`;for(const w of warned)warnChips+=`<span class="warn-badge">⚠️ ${w.name}</span>`;}
+    const{blocked,warned}=_playerBlockInfo(p);
+    const blockedChips=blocked.map(b=>`<span class="blocked-badge">⛔ ${b.name}</span>`).join('');
+    const warnChips=warned.map(w=>`<span class="warn-badge">⚠️ ${w.name}</span>`).join('');
     const teamChips=teams.map(t=>{const isMT=!!(state.mainTeam[p.id]?.[t.id]);return isMT?`<span class="sm-chip">★ ${t.name}</span>`:`<span class="team-chip ${t.gender==='F'?'f':'m'}">${t.name}</span>`;}).join('');
     return`<div class="player-row">
       <div class="player-avatar">${initials(p.name)}</div>
