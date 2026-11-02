@@ -119,12 +119,6 @@ select option{background:#1b2926}
 .g-f{background:#2d1a2d;color:#c77dff;border:1px solid #c77dff44;font-size:11px;font-weight:700;padding:1px 6px;border-radius:10px}
 .g-x{font-size:11px;font-weight:700;padding:1px 6px;border-radius:10px;border:1px solid transparent;background:linear-gradient(90deg,#1a1a2e 50%,#2d1a2d 50%) padding-box,linear-gradient(90deg,#4ea8de44 50%,#c77dff44 50%) border-box}
 .g-x>span{background:linear-gradient(90deg,#7eb8e0 50%,#c77dff 50%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.player-view{display:none;position:fixed;inset:0;background:var(--dark);z-index:300;overflow-y:auto;padding:18px}
-.player-view.open{display:block}
-.pv-header{display:flex;align-items:center;gap:10px;margin-bottom:18px}
-.pv-back{background:none;border:1px solid #2e4a42;color:var(--muted);border-radius:8px;padding:6px 12px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer}
-.pv-title{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--court);letter-spacing:1px}
-.pv-sub{font-size:11px;color:var(--muted);margin-top:1px}
 .block-panel{background:#1e1212;border:1px solid var(--danger)44;border-radius:10px;padding:12px 15px;margin-bottom:10px}
 .block-panel-title{font-size:12px;font-weight:600;color:var(--danger);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
 .warn-panel{background:#1e1a0e;border:1px solid var(--warn)44;border-radius:10px;padding:12px 15px;margin-bottom:10px}
@@ -150,7 +144,7 @@ select option{background:#1b2926}
 }
 #sec-spieleadmin{padding:0!important}
 </style>
-<script src="common.js?v=4"></script>
+<script src="common.js?v=5"></script>
 </head>
 <body>
 <div id="login-overlay" style="position:fixed;inset:0;background:#0d1a10;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Sans',sans-serif;">
@@ -629,32 +623,6 @@ window.doLogin=async function(){
 
 </main>
 
-<!-- PLAYER VIEW -->
-<div class="player-view" id="player-view">
-  <div class="pv-header">
-    <button class="pv-back" onclick="closePlayerView()">←</button>
-    <div><div class="pv-title">🎾 Sportwart</div><div class="pv-sub" id="pv-sub"></div></div>
-  </div>
-  <div id="pv-step-match">
-    <div class="card"><div class="card-title" data-i18n="pvPickMatch"></div><div id="pv-match-list"></div></div>
-  </div>
-  <div id="pv-step-player" style="display:none">
-    <div class="card">
-      <div class="card-title" data-i18n="pvWhoAreYou"></div>
-      <div class="autocomplete-wrap" style="margin-top:7px">
-        <input id="pv-ac-input" oninput="onPvAcInput()" autocomplete="off" data-i18n-placeholder="playerSearchPh">
-        <div class="ac-list" id="pv-ac-list" style="display:none"></div>
-      </div>
-      <div id="pv-selected-info" style="margin-top:7px;font-size:12px;color:var(--muted)"></div>
-    </div>
-    <button class="btn btn-outline btn-sm" onclick="pvGoBack()" data-i18n="pvChangeMatch"></button>
-  </div>
-  <div id="pv-step-confirm" style="display:none">
-    <div class="card" id="pv-confirm-card"></div>
-    <button class="btn btn-outline btn-sm" onclick="pvGoPickPlayer()" style="margin-top:9px" data-i18n="pvChangePlayer"></button>
-  </div>
-</div>
-
 <!-- ASSIGN MODAL -->
 <div class="modal-overlay" id="assign-modal">
   <div class="modal">
@@ -830,7 +798,6 @@ function tr(k){return T[lang][k]??T.de[k]??k}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
 function initials(n){return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
 function fmtDate(d){if(!d)return '';const[y,m,day]=d.split('-');return`${day}.${m}.${y}`}
-function lkVal(lk){return parseFloat(lk)||99}
 
 // TVBB rules, Supabase helpers and the Sperren table cell are in common.js (shared by all pages).
 
@@ -1366,50 +1333,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 // ── MATCHES ──
 function populateTeamSel(selId){const sel=document.getElementById(selId);if(!sel)return;const cur=sel.value;sel.innerHTML=state.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');if(cur)sel.value=cur;}
 
-async function addMatch(){
-  const teamId=document.getElementById('m-team')?.value;
-  const opp=document.getElementById('m-opp')?.value.trim();
-  const date=document.getElementById('m-date')?.value;
-  const time=document.getElementById('m-time')?.value||'10:00';
-  const home=document.getElementById('m-home')?.value;
-  const venue=document.getElementById('m-venue')?.value.trim();
-  if(!teamId||!opp||!date){alert(tr('matchAlert'));return;}
-  const nm={id:uid(),teamId,opponent:opp,date,time,home,venue};
-  try{await sbUpsert('matches',[{id:nm.id,team_id:teamId,opponent:opp,date,time,home,venue}]);state.matches.push(nm);}catch(e){console.error(e);}
-  document.getElementById('m-opp').value='';document.getElementById('m-venue').value='';
-  renderMatches();
-}
 
-function renderMatches(){
-  populateTeamSel('m-team');
-  const el=document.getElementById('match-list');
-  if(!state.matches.length){el.innerHTML=`<div class="empty">${tr('noMatches')}</div>`;return;}
-  const sorted=[...state.matches].sort((a,b)=>a.date.localeCompare(b.date));
-  el.innerHTML=sorted.map(m=>{
-    const team=teamById(m.teamId);
-    const avail=state.availability[m.id]||{};
-    const tp=state.players.filter(p=>p.teamIds.includes(m.teamId));
-    const yes=tp.filter(p=>avail[p.id]==='yes').length;
-    const pct=tp.length>0?Math.round(yes/tp.length*100):0;
-    const hasLineup=(()=>{const _t=teamById(m.teamId);const _sz=_t?teamSize(_t):6;return(state.lineups[m.id]||[]).slice(0,_sz).filter(Boolean).length>=_sz;})();
-    return`<div class="match-card" onclick="openMatchAvail('${m.id}')">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px">
-        <div>
-          <div class="match-teams">${team?.name||'?'}<span class="match-vs">vs</span>${(m.opponent||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
-          <div class="match-info">📅 ${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)} · 📍 ${m.venue||'—'}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
-          <span class="match-status ${hasLineup?'status-ready':'status-open'}">${hasLineup?'✓ OK':'⏳'}</span>
-          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openPlayerView('${m.id}')" style="font-size:11px;padding:2px 7px">${tr('pvOpenView')}</button>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:9px">
-        <div class="prog-bar" style="flex:1"><div class="prog-fill" style="width:${pct}%"></div></div>
-        <span style="font-size:11px;color:var(--muted)">${yes}/${tp.length} ${tr('available')}</span>
-      </div>
-    </div>`;
-  }).join('');
-}
 
 // ── AVAILABILITY ──
 function populateAvailMatchSel(){
@@ -1433,274 +1357,20 @@ function populateAvailMatchSel(){
   else if(matches.length)sel.value=matches[0].id;
 }
 
-function populateMatchSel(selId){
-  const sel=document.getElementById(selId);if(!sel)return;
-  const cur=sel.value;
-  // If this is the lineup match selector, filter by category
-  let matches=[...state.matches].sort((a,b)=>a.date.localeCompare(b.date));
-  if(selId==='lineup-match'){
-    const catFilter=document.getElementById('lineup-cat-filter')?.value||'';
-    // Populate category filter options
-    const catSel=document.getElementById('lineup-cat-filter');
-    if(catSel){
-      const cats=[...new Set(state.teams.map(t=>t.category))].sort();
-      const curCat=catSel.value;
-      catSel.innerHTML=`<option value="">Alle Kategorien</option>`+cats.map(c=>`<option value="${c}" ${curCat===c?'selected':''}>${c}</option>`).join('');
-      catSel.value=curCat;
-    }
-    if(catFilter){
-      const catTeamIds=state.teams.filter(t=>t.category===catFilter).map(t=>t.id);
-      matches=matches.filter(m=>catTeamIds.includes(m.teamId));
-    }
-  }
-  sel.innerHTML=matches.map(m=>{const t=teamById(m.teamId);return`<option value="${m.id}">${fmtDate(m.date)} · ${t?.name||'?'} vs ${m.opponent}</option>`;}).join('');
-  if(cur&&matches.find(m=>m.id===cur))sel.value=cur;
-  else if(matches.length)sel.value=matches[0].id;
-}
 
-function openMatchAvail(matchId){
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===3));
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.getElementById('sec-avail').classList.add('active');
-  populateAvailMatchSel();
-  document.getElementById('av-match').value=matchId;
-  renderAvail();
-}
 
-async function setAvail(matchId,playerId,status){
-  if(!state.availability[matchId])state.availability[matchId]={};
-  state.availability[matchId][playerId]=status;
-  try{await sbUpsert('availability',[{match_id:matchId,player_id:playerId,status}]);}catch(e){console.error(e);}
-  renderAvail();renderMatches();
-}
 
-function renderAvail(){
-  const matchId=document.getElementById('av-match')?.value;
-  const el=document.getElementById('avail-content');
-  if(!matchId||!state.matches.find(m=>m.id===matchId)){el.innerHTML=`<div class="empty">${tr('noMatchSel')}</div>`;return;}
-  const match=state.matches.find(m=>m.id===matchId);
-  const avail=state.availability[matchId]||{};
-  const _availOrder={yes:0,conditional:1,notfall:2,'':3,no:4};
-  const _avail0=state.availability[matchId]||{};
-  const _cat=teamById(match.teamId)?.category;
-  const _catTeams=_cat?state.teams.filter(t=>t.category===_cat).sort((x,y)=>teamNumber(x)-teamNumber(y)):[];
-  const tp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>{
-    const ao=_availOrder[_avail0[a.id]||'']??3;
-    const bo=_availOrder[_avail0[b.id]||'']??3;
-    if(ao!==bo)return ao-bo;
-    const ra=playerRankInTeam(a.id,match.teamId);
-    const rb=playerRankInTeam(b.id,match.teamId);
-    return ra-rb;
-  });
-  if(!tp.length){el.innerHTML=`<div class="empty">${tr('noTeamPlayers')}</div>`;return;}
-  const yesCount=tp.filter(p=>avail[p.id]==='yes').length;
-  el.innerHTML=`<div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">
-      <div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--court)">${teamById(match.teamId)?.name||'?'} vs ${match.opponent}</div>
-        <div style="font-size:11px;color:var(--muted)">${fmtDate(match.date)} · ${match.time}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--court);line-height:1">${yesCount}<span style="font-size:12px;color:var(--muted)">/${tp.length}</span></div>
-        <div style="font-size:11px;color:var(--muted)">${tr('available')}</div>
-      </div>
-    </div>
-    <table class="avail-table">
-      <thead><tr><th>#</th><th>${tr('players')}</th><th>LK</th><th>Jg.</th><th></th></tr></thead>
-      <tbody>
-        ${(()=>{
-          let _lg=undefined;
-          const _gl={yes:ct('groupYes'),conditional:ct('groupConditional'),notfall:ct('groupNotfall'),no:ct('groupNo'),'':ct('noAnswer')};
-          const _gc={yes:'var(--court)',conditional:'#52c97a',notfall:'var(--warn)',no:'var(--danger)','':'var(--muted)'};
-          return tp.map((p,i)=>{
-          const s=avail[p.id]||'';
-          let hdr='';
-          if(s!==_lg){_lg=s;hdr=`<tr><td colspan="5" style="padding:5px 12px 2px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${_gc[s]};border-top:1px solid #2e4a4233">${_gl[s]}</td></tr>`;}
-          const blocked=isPlayerBlockedForTeam(p.id,match.teamId);
-          const _yesMatch=s==='conditional'?state.matches.find(om=>om.id!==matchId&&spieltagOf(om)===spieltagOf(match)&&state.availability[om.id]?.[p.id]==='yes'):null;
-          const _yesTeam=_yesMatch?teamById(_yesMatch.teamId):null;
-          const _condLabel=_yesTeam?`(Ja → ${_yesTeam.name})`:'(Ja)';
-          const row=`<tr style="${blocked?'background:#2d151544':''}">
-            <td style="color:var(--muted)">${playerRankInTeam(p.id,match.teamId)<999?playerRankInTeam(p.id,match.teamId):i+1}</td>
-            <td><strong>${p.name}</strong>${blocked?` <span class="blocked-badge">⛔</span>`:''}</td>
-            <td><span class="lk-badge">${p.lkStr}</span></td>
-            <td style="color:var(--muted)">${p.year||'—'}</td>
-            <td><div style="display:flex;gap:4px">
-              <button class="avail-btn yes ${s==='yes'||s==='conditional'?'active':''}" style="${s==='conditional'?'border-style:dashed':''};" onclick="setAvail('${matchId}','${p.id}','yes')">${s==='conditional'?_condLabel:tr('yesBtn')}</button>
-              <button class="avail-btn maybe ${s==='notfall'?'active':''}" onclick="setAvail('${matchId}','${p.id}','notfall')">${tr('notfallBtn')}</button>
-              <button class="avail-btn no ${s==='no'?'active':''}" onclick="setAvail('${matchId}','${p.id}','no')">${tr('noBtn')}</button>
-            </div></td>
-          </tr>`;
-          return hdr+row;}).join('');})()}
-      </tbody>
-    </table>
-    ${yesCount>0?`<div style="display:flex;gap:9px;margin-top:11px">
-      <button class="btn btn-primary" onclick="autoLineup('${matchId}')">${tr('autoLineup')}</button>
-      <button class="btn btn-outline" onclick="goToLineup('${matchId}')">${tr('goAvail')}</button>
-    </div>`:''}
-  </div>`;
-}
 
 // ── RECALCULATE GLOBAL RANKS ──
 // Fixes player_teams ranks that were stored as local (within-team) rank instead of global (category-wide) rank.
 // Run once after upgrade if Sperren were calculated incorrectly.
-async function recalcAllRanks(){
-  const statusEl=document.getElementById('recalc-status');
-  statusEl.textContent='Berechne...';
-  setSync('ing',tr('syncIng'));
-  try{
-    const allCats=[...new Set(state.teams.map(t=>t.category))];
-    const updates=[];
-    for(const cat of allCats){
-      const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
-      if(catTeams.length<2)continue;
-      // For each player, find which team they appear in as Stammkader by scanning player_teams
-      // We use the raw rankByTeam data: find the team where the rank was originally set
-      // (i.e., the lowest rank value, which corresponds to local rank in Stammkader team)
-      for(const p of state.players){
-        const catRanks=catTeams.map(t=>({team:t,rank:state.rankByTeam[p.id]?.[t.id]})).filter(x=>x.rank!=null);
-        if(!catRanks.length)continue;
-        // The minimum rank stored is the local rank in the Stammkader team
-        // BUT: if ranks were already global, the min rank across all teams of the category
-        // should equal the rank in the first team. We detect by checking consistency:
-        // For a correctly stored global rank, all team entries for this player in this cat should have the SAME value.
-        const rankValues=[...new Set(catRanks.map(x=>x.rank))];
-        if(rankValues.length===1){
-          // All same — already consistent (global rank). Nothing to do.
-          continue;
-        }
-        // Different values stored — legacy local ranks. Recalculate.
-        // Find the team with the minimum rank (that's the Stammkader team, local rank = min)
-        const minEntry=catRanks.reduce((a,b)=>a.rank<=b.rank?a:b);
-        const skTeamIdx=catTeams.findIndex(t=>t.id===minEntry.team.id);
-        // Global rank = sum of sizes of all teams before Stammkader team + local rank
-        let offset=0;
-        for(let i=0;i<skTeamIdx;i++)offset+=teamSize(catTeams[i]);
-        const globalRank=minEntry.rank+offset;
-        // Update all entries for this player in this category
-        for(const ct of catRanks){
-          if(ct.rank!==globalRank){
-            updates.push({player_id:p.id,team_id:ct.team.id,rank:globalRank});
-            if(!state.rankByTeam[p.id])state.rankByTeam[p.id]={};
-            state.rankByTeam[p.id][ct.team.id]=globalRank;
-          }
-        }
-      }
-    }
-    if(updates.length){
-      for(let i=0;i<updates.length;i+=100)await sbUpsert('player_teams',updates.slice(i,i+100));
-      statusEl.textContent=`✓ ${updates.length} Einträge korrigiert`;
-    } else {
-      statusEl.textContent='✓ Alles korrekt — keine Änderungen nötig';
-    }
-    setSync('ok',tr('syncOk'));
-    renderBlocking();
-  }catch(e){setSync('err',tr('syncErr'));statusEl.textContent='Fehler: '+e.message;console.error(e);}
-  setTimeout(()=>{if(statusEl)statusEl.textContent='';},5000);
-}
 
 // ── BLOCKING VIEW ──
 
-function renderBlocking(){
-  const cats=[...new Set(state.teams.map(t=>t.category))].sort();
-  const catSel=document.getElementById('block-cat-filter');
-  const defaultCat=cats.includes('Herren')?'Herren':'';
-  const curCat=catSel?.value||defaultCat;
-  if(catSel){catSel.innerHTML=`<option value="">${tr('allCategories')}</option>`+cats.map(c=>`<option value="${c}" ${curCat===c?'selected':''}>${c}</option>`).join('');catSel.value=curCat;}
-  const el=document.getElementById('blocking-content');
-  const filterCat=catSel?.value||'';
-  const catsToShow=filterCat?[filterCat]:cats;
-  let html=`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <div class="rule-box" style="flex:1;margin:0"><strong>Stammkader:</strong> ${ct('ruleSK')}</div>
-    <div class="rule-box warn" style="flex:1;margin:0"><strong>Stammmannschaft:</strong> ${ct('ruleSM')}</div>
-  </div>`;
-  let anyEntry=false;
-  for(const cat of catsToShow){
-    const catTeams=state.teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
-    if(!catTeams.length)continue;
-    const groupSize=teamSize(catTeams[0]);
-    // Sort by the rank in THIS category's Meldung (p.rank is only the rank of the first list the player was imported from)
-    const catPlayers=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>playerRankInTeam(a.id,catTeams[0].id)-playerRankInTeam(b.id,catTeams[0].id));
-    if(!catPlayers.length)continue;
-    anyEntry=true;
-    html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court);letter-spacing:1px;margin:14px 0 8px">${cat}</div>`;
-    html+=`<div class="card" style="padding:0;overflow:hidden;overflow-x:auto;margin-bottom:10px">`;
-    html+=`<table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead><tr style="border-bottom:1px solid #2e4a42">
-        <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);min-width:160px">${ct('playerCol')}</th>
-        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">LK</th>
-        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">Jg.</th>
-        ${catTeams.map(t=>`<th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--court);font-size:11px;white-space:nowrap">${t.name}${t.is_4er?' <span style="font-size:11px;color:var(--warn)">(4er)</span>':''}</th>`).join('')}
-      </tr></thead><tbody>`;
-    for(let i=0;i<catPlayers.length;i++){
-      const p=catPlayers[i];
-      const status=getPlayerBlockStatus(p.id,cat);
-      const counts=state.matchCounts[p.id]||{};
-      const skTeam=getStammkaderTeam(p.id,cat)||catTeams[catTeams.length-1];
-      const cells=catTeams.map(t=>blockCell(p,t,catTeams,status,skTeam)).join('');
-      const rowBg=status.blocked.length>0?'background:#1e1e1e':'';
-      html+=`<tr style="border-bottom:1px solid #2e4a4222;${rowBg}">
-        <td style="padding:7px 12px;white-space:nowrap"><div style="font-weight:600;font-size:12px">${p.name}</div></td>
-        <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:11px">${p.lkStr||'?'}</span></td>
-        <td style="padding:7px 8px;text-align:center;font-size:11px;color:var(--muted)">${p.year||'—'}</td>
-        ${cells}
-      </tr>`;
-    }
-    html+=`</tbody></table>
-      ${blockLegend()}</div>`;
-  }
-  if(!anyEntry)html+=`<div class="empty">${tr('noBlocked')}</div>`;
-  el.innerHTML=html;
-}
+function renderBlocking(){renderBlockingView(state.teams);} // common.js, the same as in kapitaen
 
 // ── LINEUP ──
-async function confirmMatchPlayed(matchId){
-  const match=state.matches.find(m=>m.id===matchId);if(!match)return;
-  const team=teamById(match.teamId);
-  const size=teamSize(team);
-  const slots=state.lineups[matchId]||[];
-  const lineup=slots.slice(0,size).filter(Boolean);
-  const ersatzCheckbox=document.getElementById(`ersatz-played-${matchId}`);
-  const includeErsatz=!!(ersatzCheckbox&&ersatzCheckbox.checked);
-  const ersatzPid=slots[size];
-  const allPlayers=includeErsatz&&ersatzPid?[...lineup,ersatzPid]:lineup;
-  if(!allPlayers.length)return;
-  const btn=document.getElementById(`confirm-btn-${matchId}`);
-  const statusEl=document.getElementById(`confirm-status-${matchId}`);
-  if(btn){btn.disabled=true;btn.textContent='...';}
-  setSync('ing',tr('syncIng'));
-  try{
-    const res=await countMatchDB(match,allPlayers,includeErsatz&&!!ersatzPid);
-    if(res==='already'){alert(lang==='de'?'Dieses Spiel wurde bereits gezählt (Seite wird aktualisiert)':lang==='es'?'Este partido ya fue contado (se actualiza la página)':'This match was already counted (page is refreshed)');await loadAll();return;}
-    setSync('ok',tr('syncOk'));
-    if(statusEl)statusEl.textContent=`✓ ${allPlayers.length} Spieler +1`;
-    setTimeout(()=>{if(statusEl)statusEl.textContent='';},3000);
-    renderBlocking();
-    renderLineup();
-  }catch(e){
-    setSync('err',tr('syncErr'));
-    if(statusEl)statusEl.textContent='Fehler: '+e.message;
-    console.error(e);
-  }finally{
-    if(btn){btn.disabled=false;btn.textContent=match.counted?ct('alreadyCounted'):ct('countBtn');}
-  }
-}
 
-async function undoMatchCount(matchId){
-  const match=state.matches.find(m=>m.id===matchId);if(!match)return;
-  if(!confirm(lang==='de'?'Zähler für dieses Spiel zurücksetzen?':lang==='es'?'¿Deshacer el contador de este partido?':'Undo count for this match?'))return;
-  setSync('ing',tr('syncIng'));
-  try{
-    const res=await undoCountDB(match);
-    if(res==='already'){alert(lang==='de'?'Dieses Spiel ist nicht (mehr) gezählt (Seite wird aktualisiert)':lang==='es'?'Este partido ya no está contado (se actualiza la página)':'This match is no longer counted (page is refreshed)');await loadAll();return;}
-    setSync('ok',tr('syncOk'));
-    renderBlocking();
-    renderLineup();
-  }catch(e){
-    setSync('err',tr('syncErr'));
-    console.error(e);
-  }
-}
 
 async function autoLineup(matchId){
   const match=state.matches.find(m=>m.id===matchId);if(!match)return;
@@ -1714,19 +1384,6 @@ async function autoLineup(matchId){
   goToLineup(matchId);
 }
 
-async function sortLineup(matchId){
-  const lineup=state.lineups[matchId]||[];
-  const sorted=lineup.filter(Boolean).sort((a,b)=>{
-    const match=state.matches.find(m=>m.id===matchId);
-    if(!match)return 0;
-    return playerRankInTeam(a,match.teamId)-playerRankInTeam(b,match.teamId);
-  });
-  // Pad to original length
-  while(sorted.length<lineup.length)sorted.push(null);
-  state.lineups[matchId]=sorted;
-  try{await sbUpsert('lineups',[{match_id:matchId,slots:sorted}]);}catch(e){console.error(e);}
-  renderLineup();
-}
 
 function goToLineup(matchId){
   const match=state.matches.find(m=>m.id===matchId);if(!match)return;
@@ -1736,225 +1393,14 @@ function goToLineup(matchId){
   saSelectMatch(matchId);
 }
 
-async function setLineupPlayer(matchId,pos,playerId){
-  if(!state.lineups[matchId])state.lineups[matchId]=[];
-  state.lineups[matchId][pos]=playerId||null;
-  try{await sbUpsert('lineups',[{match_id:matchId,slots:state.lineups[matchId]}]);}catch(e){console.error(e);}
-  renderLineup();
-}
 
-function renderLineup(){
-  const matchId=document.getElementById('lineup-match')?.value;
-  const el=document.getElementById('lineup-content');
-  if(!matchId){el.innerHTML=`<div class="empty">${tr('noMatchSel')}</div>`;return;}
-  const match=state.matches.find(m=>m.id===matchId);if(!match){el.innerHTML='';return;}
-  const team=teamById(match.teamId);
-  const size=teamSize(team);
-  const avail=state.availability[matchId]||{};
-  const allTp=[...state.players.filter(p=>p.teamIds.includes(match.teamId))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
-  const _catTeams=(()=>{const cat=team?.category;return cat?state.teams.filter(t=>t.category===cat).sort((x,y)=>teamNumber(x)-teamNumber(y)):[];})();
-  const lineup=state.lineups[matchId]||[];
-  const warnings=[];
-  for(let i=0;i<size-1;i++){
-    const p1=lineup[i]?playerById(lineup[i]):null;
-    const p2=lineup[i+1]?playerById(lineup[i+1]):null;
-    if(p1&&p2&&playerRankInTeam(p1.id,match.teamId)>playerRankInTeam(p2.id,match.teamId))
-      warnings.push(T[lang].lkViolation(i+1,p1.lkStr,i+2,p2.lkStr));
-  }
-  const blockedWarnings=lineup.filter(Boolean).map(pid=>{
-    const p=playerById(pid);if(!p)return null;
-    const _sp=playedOnSpieltag(pid,match);
-    if(_sp)return `⛔ ${p.name}: Spieltag ${fmtDate(spieltagOf(match))} – bereits für ${teamById(_sp.teamId)?.name||'?'} gespielt (WSpO § 10 Abs. 3)`;
-    if(isPlayerBlockedForLineup(pid,match.teamId,match.id))return T[lang].blockedInLineup(p.name,team?.name||'?');
-    return null;
-  }).filter(Boolean);
-  el.innerHTML=`<div class="card">
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--court);margin-bottom:2px">${team?.name||'?'} vs ${match.opponent}</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${fmtDate(match.date)} · ${match.time}</div>
-    ${blockedWarnings.length?`<div class="rule-box danger">${blockedWarnings.map(w=>`<div>${w}</div>`).join('')}</div>`:''}
-    ${warnings.length
-      ?`<div style="background:#3d1a1a;border:1px solid var(--danger)44;border-radius:8px;padding:8px 12px;margin-bottom:9px">${warnings.map(w=>`<div style="font-size:12px;color:var(--danger)">${w}</div>`).join('')}</div>`
-      :lineup.slice(0,size).filter(Boolean).length>=size&&!blockedWarnings.length&&lineup.slice(0,size).filter(Boolean).every(pid=>avail[pid]==='yes')
-        ?`<div style="background:#1a2d22;border:1px solid var(--court)33;border-radius:8px;padding:6px 12px;margin-bottom:9px;font-size:12px;color:var(--court)">${tr('lineupValid')}</div>`
-        :''}
-    <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${tr('singles')} (${size})</div>
-    <div class="lineup-grid">
-      ${Array.from({length:size},(_,i)=>{
-        const pid=lineup[i]||'';const p=pid?playerById(pid):null;
-        const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
-        const rankOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
-        const isBlocked=pid?isPlayerBlockedForLineup(pid,match.teamId,match.id):false;
-        return`<div class="lineup-slot ${p?(isBlocked?'blocked-slot':rankOk?'ok':'warning'):''}">
-          <div class="lineup-pos">${i+1}</div>
-          <select style="flex:1;background:#181818;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:4px 8px;font-size:11px;font-family:'DM Sans',sans-serif" onchange="setLineupPlayer('${matchId}',${i},this.value)">
-            <option value="">—</option>
-            ${(()=>{
-              const _ao2={yes:0,conditional:1,notfall:2,'':3,no:4};
-              const sorted=[...allTp].sort((a,b)=>{
-                const ao=_ao2[avail[a.id]||'']??2;
-                const bo=_ao2[avail[b.id]||'']??2;
-                if(ao!==bo)return ao-bo;
-                return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);
-              });
-              let _lg2=undefined;
-              const _gl2={yes:'── ✓ Ja',conditional:'── (Ja)',notfall:'── Im Notfall',no:'── ✗ Nein','':'── ?'};
-              return sorted.map(tp=>{
-                const bl=isPlayerBlockedForTeam(tp.id,match.teamId);
-                const grp=avail[tp.id]||'';
-                let sep='';if(grp!==_lg2){_lg2=grp;sep=`<option disabled style="color:var(--muted);font-size:11px">${_gl2[grp]}</option>`;}
-                return sep+`<option value="${tp.id}" ${pid===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;
-              }).join('');
-            })()}
-          </select>
-        </div>`;
-      }).join('')}
-    </div>
-    ${(()=>{
-      // ── ERSATZ SLOT ──
-      const ersatzPid=lineup[size]||'';
-      const ersatzP=ersatzPid?playerById(ersatzPid):null;
-      const isBlocked=ersatzPid?isPlayerBlockedForLineup(ersatzPid,match.teamId,match.id):false;
-      // Check if ersatz is in another team's lineup or as ersatz same day
-      let ersatzWarn='';
-      if(ersatzPid){
-        const otherLineup=state.matches.find(om=>om.id!==matchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(ersatzPid));
-        const otherErsatz=state.matches.find(om=>om.id!==matchId&&spieltagOf(om)===spieltagOf(match)&&(state.lineups[om.id]||[])[teamSize(teamById(om.teamId))]===ersatzPid);
-        if(otherLineup){const ot=teamById(otherLineup.teamId);ersatzWarn=`${ct('alreadyLineup')} <strong>${ot?.name||'?'}</strong>`;}
-        else if(otherErsatz){const ot=teamById(otherErsatz.teamId);ersatzWarn=`⚠️ Bereits Ersatz: <strong>${ot?.name||'?'}</strong>`;}
-      }
-      const _ao2={yes:0,conditional:1,notfall:2,'':3,no:4};
-      const sorted=[...allTp].sort((a,b)=>{const ao=_ao2[avail[a.id]||'']??3,bo=_ao2[avail[b.id]||'']??3;if(ao!==bo)return ao-bo;return playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId);});
-      const _gl2={yes:'── ✓ Ja',conditional:'── (Ja)',notfall:'── Im Notfall',no:'── ✗ Nein','':'── ?'};
-      let _lg2=undefined;
-      const opts=sorted.map(tp=>{const bl=isPlayerBlockedForTeam(tp.id,match.teamId);const grp=avail[tp.id]||'';let sep='';if(grp!==_lg2){_lg2=grp;sep=`<option disabled style="color:var(--muted);font-size:11px">${_gl2[grp]}</option>`;}return sep+`<option value="${tp.id}" ${ersatzPid===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;}).join('');
-      return`<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border2)">
-        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Ersatz</div>
-        <div class="lineup-slot ${ersatzP?(isBlocked?'blocked-slot':'ok'):''}" style="opacity:.85;border-style:dashed">
-          <div class="lineup-pos" style="color:var(--muted)">E</div>
-          <select style="flex:1;background:#181818;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:4px 8px;font-size:11px;font-family:'DM Sans',sans-serif" onchange="setLineupPlayer('${matchId}',${size},this.value)">
-            <option value="">—</option>${opts}
-          </select>
-        </div>
-        ${ersatzWarn?`<div class="rule-box warn" style="margin-top:6px;font-size:11px">${ersatzWarn}</div>`:''}
-      </div>`;
-    })()}
-    ${(()=>{
-      // Double-booking warnings for main lineup
-      const doubleWarnings=lineup.slice(0,size).filter(Boolean).map(pid=>{
-        const p=playerById(pid);if(!p)return null;
-    if(playedOnSpieltag(pid,match))return null; // already reported as Spieltag block
-        const otherMatch=state.matches.find(om=>
-          om.id!==matchId&&spieltagOf(om)===spieltagOf(match)&&
-          (state.lineups[om.id]||[]).slice(0,teamSize(teamById(om.teamId))).includes(pid)
-        );
-        if(!otherMatch)return null;
-        const otherTeam=teamById(otherMatch.teamId);
-        return`⚠️ ${p.name} spielt auch für <strong>${otherTeam?.name||'?'}</strong> am selben Tag`;
-      }).filter(Boolean);
-      return doubleWarnings.length?`<div class="rule-box warn" style="margin-top:10px">${doubleWarnings.map(w=>`<div>${w}</div>`).join('')}</div>`:'';
-    })()}
-    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-outline btn-sm" onclick="sortLineup('${matchId}')" style="font-size:12px">↕ Sort</button>
-      ${lineup.slice(0,size).filter(Boolean).length>=size
-        ?match.counted
-          ?`<button class="btn btn-outline" id="confirm-btn-${matchId}" disabled style="opacity:.7">${ct('alreadyCounted')}${match.ersatzCounted?ct('inclErsatz'):''}</button>
-            <button class="btn btn-outline btn-sm" onclick="undoMatchCount('${matchId}')" style="font-size:12px;color:var(--danger);border-color:var(--danger)44">${ct('undo')}</button>
-            <span id="confirm-status-${matchId}" style="font-size:11px;color:var(--muted)"></span>`
-          :`${lineup[size]?`<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer">
-              <input type="checkbox" id="ersatz-played-${matchId}" style="accent-color:var(--court);cursor:pointer">
-              Ersatz hat gespielt
-            </label>`:''}
-            <button class="btn btn-primary" onclick="confirmMatchPlayed('${matchId}')" id="confirm-btn-${matchId}">✔ Spiel bestätigen &amp; Zähler +1</button>
-            <span id="confirm-status-${matchId}" style="font-size:11px;color:var(--muted)"></span>`
-        :''}
-    </div>
-  </div>`;
-}
 
 
 // ── PLAYER VIEW ──
-let pvMatchId=null,pvPlayerId=null;
-function openPlayerView(matchId){
-  pvMatchId=matchId||null;pvPlayerId=null;
-  document.getElementById('player-view').classList.add('open');
-  if(pvMatchId){pvGoPickPlayer();}
-  else{renderPvMatchList();document.getElementById('pv-step-match').style.display='block';document.getElementById('pv-step-player').style.display='none';document.getElementById('pv-step-confirm').style.display='none';}
-}
-function closePlayerView(){document.getElementById('player-view').classList.remove('open');pvMatchId=null;pvPlayerId=null;}
-function renderPvMatchList(){
-  document.getElementById('pv-match-list').innerHTML=[...state.matches].sort((a,b)=>a.date.localeCompare(b.date)).map(m=>{
-    const t=teamById(m.teamId);
-    return`<div class="player-row" style="cursor:pointer;margin-bottom:7px" onclick="pvSelectMatch('${m.id}')">
-      <div style="flex:1"><div class="player-name">${t?.name||'?'} vs ${m.opponent}</div><div class="player-meta">${fmtDate(m.date)} · ${m.time}</div></div>
-      <span style="font-size:18px;color:var(--court)">→</span>
-    </div>`;
-  }).join('');
-}
-function pvSelectMatch(id){pvMatchId=id;pvGoPickPlayer();}
-function pvGoPickPlayer(){
-  document.getElementById('pv-step-match').style.display='none';document.getElementById('pv-step-confirm').style.display='none';document.getElementById('pv-step-player').style.display='block';
-  document.getElementById('pv-ac-input').value='';document.getElementById('pv-selected-info').innerHTML='';pvPlayerId=null;
-  const m=state.matches.find(x=>x.id===pvMatchId);
-  if(m){const t=teamById(m.teamId);document.getElementById('pv-sub').textContent=`${t?.name||'?'} vs ${m.opponent} · ${fmtDate(m.date)}`;}
-}
-function pvGoBack(){pvMatchId=null;pvPlayerId=null;document.getElementById('pv-step-player').style.display='none';document.getElementById('pv-step-confirm').style.display='none';renderPvMatchList();document.getElementById('pv-step-match').style.display='block';}
 
-function onPvAcInput(){
-  const val=document.getElementById('pv-ac-input').value.toLowerCase();
-  const list=document.getElementById('pv-ac-list');
-  const match=pvMatchId?state.matches.find(m=>m.id===pvMatchId):null;
-  const teamId=match?.teamId;
-  let pool=teamId?state.players.filter(p=>p.teamIds.includes(teamId)):state.players;
-  if(!val||val.length<2){list.style.display='none';return;}
-  const filtered=pool.filter(p=>p.name.toLowerCase().includes(val)).slice(0,10);
-  if(!filtered.length){list.style.display='none';return;}
-  list.innerHTML=filtered.map(p=>{
-    const blocked=teamId?isPlayerBlockedForTeam(p.id,teamId):false;
-    return`<div class="ac-item ${blocked?'blocked':''}" onclick="pvSelectPlayer('${p.id}')">
-      <div class="player-avatar" style="width:28px;height:28px;font-size:11px">${initials(p.name)}</div>
-      <div style="flex:1"><div style="font-weight:600">${p.name}${blocked?' ⛔':''}</div><div style="font-size:11px;color:var(--muted)">${p.year||''}</div></div>
-      <span class="lk-badge">${p.lkStr||'?'}</span>
-    </div>`;
-  }).join('');
-  list.style.display='block';
-}
 
-function pvSelectPlayer(id){
-  pvPlayerId=id;const p=playerById(id);
-  document.getElementById('pv-ac-input').value=p.name;document.getElementById('pv-ac-list').style.display='none';
-  document.getElementById('pv-selected-info').innerHTML=`<span class="lk-badge">${p.lkStr||'?'}</span><span class="year-badge" style="margin-left:5px">${p.year||'—'}</span>`;
-  renderPvConfirm();
-  document.getElementById('pv-step-player').style.display='none';document.getElementById('pv-step-confirm').style.display='block';
-}
 
-function renderPvConfirm(){
-  const p=playerById(pvPlayerId);
-  const avail=state.availability[pvMatchId]||{};
-  const s=avail[pvPlayerId]||'';
-  const blocked=pvMatchId?isPlayerBlockedForTeam(pvPlayerId,state.matches.find(m=>m.id===pvMatchId)?.teamId):false;
-  const match=state.matches.find(m=>m.id===pvMatchId);
-  const team=match?teamById(match.teamId):null;
-  document.getElementById('pv-confirm-card').innerHTML=`
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-      <div class="player-avatar" style="width:40px;height:40px;font-size:14px">${initials(p.name)}</div>
-      <div><div style="font-weight:600;font-size:15px">${p.name}</div><div style="font-size:11px;color:var(--muted)">${p.lkStr||''} · Jg. ${p.year||'—'}</div></div>
-    </div>
-    ${blocked?`<div class="rule-box danger" style="margin-bottom:12px">⛔ ${T[lang].blockedInLineup(p.name,team?.name||'?')}</div>`:''}
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">${match?`${team?.name||'?'} vs ${match.opponent} · ${fmtDate(match.date)}`:''}</div>
-    <div style="display:flex;gap:9px;flex-wrap:wrap">
-      <button class="avail-btn yes ${s==='yes'?'active':''}" style="padding:9px 18px;font-size:13px" onclick="pvSetAvail('yes')">${tr('yesBtn')}</button>
-      <button class="avail-btn maybe ${s==='notfall'?'active':''}" style="padding:9px 18px;font-size:13px" onclick="pvSetAvail('notfall')">${tr('notfallBtn')}</button>
-      <button class="avail-btn no ${s==='no'?'active':''}" style="padding:9px 18px;font-size:13px" onclick="pvSetAvail('no')">${tr('noBtn')}</button>
-    </div>
-    <div id="pv-saved-msg" style="margin-top:12px;font-size:12px;color:var(--court);min-height:18px">${s?tr('availSaved'):''}</div>`;
-}
 
-async function pvSetAvail(status){
-  if(!pvMatchId||!pvPlayerId)return;
-  document.getElementById('pv-saved-msg').innerHTML=`<span class="spinner"></span>${tr('confirmingAvail')}`;
-  await setAvail(pvMatchId,pvPlayerId,status);
-  renderPvConfirm();document.getElementById('pv-saved-msg').textContent=tr('availSaved');
-}
 
 document.addEventListener('click',e=>{
   if(!e.target.closest('.autocomplete-wrap')){
@@ -2272,75 +1718,9 @@ function toggleOvTeamsMenu(e){
 }
 
 function _buildOvTeamsPanelContent(panel){
-  // Filter teams by selected categories first
-  const availableTeams=(!_ovSelectedCats||_ovSelectedCats.length===0)?
-    state.teams:
-    state.teams.filter(t=>_ovSelectedCats.includes(t.category));
-  
-  if(!availableTeams.length){
-    panel.innerHTML='<div style="padding:10px;color:var(--muted);font-size:12px">'+ct('noTeams')+'</div>';
-    return;
-  }
-  
-  // Sort teams (Herren first, then by name)
-  const sortedTeams=_ovSortTeams(availableTeams);
-  const allSelected=!_ovSelectedTeams;
-  
-  panel.innerHTML='';
-  
-  // "All teams" option
-  const allLbl=document.createElement('label');
-  allLbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:#fff;font-weight:600';
-  allLbl.addEventListener('mouseover',function(){allLbl.style.background='#222';});
-  allLbl.addEventListener('mouseout',function(){allLbl.style.background='transparent';});
-  const allCb=document.createElement('input');
-  allCb.type='checkbox';
-  allCb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
-  allCb.checked=allSelected;
-  allCb.id='_ov_teams_all';
-  allCb.addEventListener('change',function(){
-    _ovSelectedTeams=allCb.checked?null:[];
-    _updateOvTeamsLabel();
-    _buildOvTeamsPanelContent(panel);
-    renderOverview();
-  });
-  const allSpan=document.createElement('span');
-  allSpan.textContent=lang==='de'?'Alle Teams':lang==='es'?'Todos los equipos':'All teams';
-  allLbl.appendChild(allCb);
-  allLbl.appendChild(allSpan);
-  panel.appendChild(allLbl);
-  
-  // Divider
-  const div=document.createElement('div');
-  div.style.cssText='border-top:1px solid #333;margin:3px 6px';
-  panel.appendChild(div);
-  
-  // Individual teams
-  for(const team of sortedTeams){
-    const lbl=document.createElement('label');
-    lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:#aaa';
-    lbl.addEventListener('mouseover',function(){lbl.style.background='#222';});
-    lbl.addEventListener('mouseout',function(){lbl.style.background='transparent';});
-    const cb=document.createElement('input');
-    cb.type='checkbox';
-    cb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
-    cb.checked=allSelected||!!(_ovSelectedTeams&&_ovSelectedTeams.includes(team.id));
-    cb.dataset.teamId=team.id;
-    cb.addEventListener('change',function(){
-      const checked=[..._ovTeamsPanelEl.querySelectorAll('input[data-team-id]:checked')].map(i=>i.dataset.teamId);
-      _ovSelectedTeams=checked.length===sortedTeams.length?null:checked;
-      const allCb=_ovTeamsPanelEl.querySelector('#_ov_teams_all');
-      if(allCb)allCb.checked=!_ovSelectedTeams;
-      _updateOvTeamsLabel();
-      _buildOvTeamsPanelContent(panel);
-      renderOverview();
-    });
-    const span=document.createElement('span');
-    span.textContent=team.name;
-    lbl.appendChild(cb);
-    lbl.appendChild(span);
-    panel.appendChild(lbl);
-  }
+  const teams=(!_ovSelectedCats||_ovSelectedCats.length===0)?state.teams:state.teams.filter(t=>_ovSelectedCats.includes(t.category));
+  ovTeamsPanel(panel,{teams:_ovSortTeams(teams),selected:()=>_ovSelectedTeams,set:v=>{_ovSelectedTeams=v;},allId:'_ov_teams_all',
+    changed:()=>{_updateOvTeamsLabel();_buildOvTeamsPanelContent(panel);renderOverview();}});
 }
 
 function _updateOvTeamsLabel(){
@@ -2486,250 +1866,19 @@ function renderOverview(){
   else renderOverviewPlayers(_ovSelectedCats);
 }
 
-function renderOverviewMatches(selectedCats){
-  const el=document.getElementById('overview-content');
+// teams shown in the Overview: categories, team filter and order of this page
+function _ovTeams(selectedCats){
   let teams=_ovSortTeams((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
-  // Apply team filter
-  if(_ovSelectedTeams&&_ovSelectedTeams.length>0){
-    teams=teams.filter(t=>_ovSelectedTeams.includes(t.id));
-  }
-  const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
-  if(!matches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
-  const dates=[...new Set(matches.map(m=>m.date))].sort();
-
-
-  // Category-level first name counting to detect duplicates across ALL teams
-  function getFirstName(p){
-    if(!p)return'—';
-    const rn=p.rawName||p.raw_name||p.name;
-    if(rn.includes(','))return rn.split(',')[1].trim().split(' ')[0];
-    return p.name.trim().split(' ')[0];
-  }
-  function getLastInitials(p){
-    if(!p)return'';
-    const rn=p.rawName||p.raw_name||p.name;
-    const surname=rn.includes(',')?rn.split(',')[0].trim():p.name.trim().split(' ').slice(1).join(' ');
-    return surname.split(/[ -]+/).map(w=>w[0]).join('.')+'.';
-  }
-  const allCatPlayers=state.players.filter(p=>p.teamIds.some(tid=>teams.find(t=>t.id===tid)));
-  const catFirstNameCounts={};
-  for(const cp of allCatPlayers){const fn=getFirstName(cp);catFirstNameCounts[fn]=(catFirstNameCounts[fn]||0)+1;}
-  function shortPN(p){
-    if(!p)return'—';
-    const fn=getFirstName(p);
-    if(catFirstNameCounts[fn]>1)return`${fn} ${getLastInitials(p)}`;
-    return fn;
-  }
-
-  let html=`<table style="border-collapse:collapse;font-size:12px;min-width:100%">
-    <thead><tr style="border-bottom:1px solid var(--border2)">
-      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:100px">${ct('teamCol')}</th>
-      ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
-    </tr></thead><tbody>`;
-
-  for(const team of teams){
-    html+=`<tr style="border-top:2px solid var(--border2)">
-      <td style="padding:8px 12px;font-weight:600;color:var(--court);white-space:nowrap;vertical-align:top">${team.name}</td>`;
-    for(const d of dates){
-      const m=matches.find(x=>x.teamId===team.id&&x.date===d);
-      if(!m){html+=`<td style="padding:8px 10px;text-align:center;color:var(--border2);vertical-align:top">—</td>`;continue;}
-      const sz=teamSize(team);
-      const slots=state.lineups[m.id]||[];
-      const mainSlots=slots.slice(0,sz);
-      const filled=mainSlots.filter(Boolean).length;
-      const complete=filled>=sz;
-      const partial=filled>0&&!complete;
-      const bg=complete?'#1a2e26':partial?'#2e2a15':'#1a1a1a';
-      const col=complete?'var(--court)':partial?'#ffd700':'var(--muted)';
-      const icon=complete?'✓':partial?'⏳':'·';
-      const ersatzPid=slots[sz]||null;
-      let playersHtml='';
-      for(let i=0;i<sz;i++){
-        const pid=mainSlots[i];
-        const p=pid?playerById(pid):null;
-        playersHtml+=`<div style="font-size:11px;padding:1px 0;color:${p?'var(--white)':'#2e4a42'};display:flex;gap:4px;align-items:center">
-          <span style="color:var(--muted);min-width:12px;font-size:11px">${i+1}.</span>
-          <span title="${p?p.name:''}">${shortPN(p)}</span>
-        </div>`;
-      }
-      if(ersatzPid){
-        const ep=playerById(ersatzPid);
-        if(ep)playersHtml+=`<div style="font-size:11px;padding:2px 0;border-top:1px dashed var(--border2);margin-top:2px;color:var(--muted);display:flex;gap:4px;align-items:center">
-          <span style="color:var(--muted);min-width:12px;font-size:11px">E.</span>
-          <span title="${ep.name}">${shortPN(ep)}</span>
-        </div>`;
-      }
-      html+=`<td style="padding:6px 8px;vertical-align:top">
-        <div onclick="goToLineup('${m.id}')" style="cursor:pointer;background:${bg};border-radius:8px;padding:6px 8px;min-width:100px">
-          <div style="font-size:11px;font-weight:600;color:${col};margin-bottom:4px;width:0;min-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${(m.opponent||'').replace(/"/g,'&quot;')}">${icon} ${m.opponent||''}</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:5px">${m.time} · ${m.home==='Heim'?'H':'A'} · ${filled}/${sz}</div>
-          <div style="border-top:1px solid var(--border2);padding-top:4px">${playersHtml}</div>
-        </div>
-      </td>`;
-    }
-    html+='</tr>';
-  }
-
-  // ── NICHT AUFGESTELLT row ──
-  const naLabel=lang==='de'?'Nicht aufgestellt':lang==='es'?'No alineados':'Not in lineup';
-  html+=`<tr style="border-top:2px solid var(--border2);background:#0f0f0f">
-    <td style="padding:8px 12px;font-weight:600;color:var(--muted);white-space:nowrap;vertical-align:top;font-size:11px;text-transform:uppercase;letter-spacing:.5px">${naLabel}</td>`;
-  for(const d of dates){
-    const dayMatches=matches.filter(x=>x.date===d);
-    if(!dayMatches.length){html+=`<td style="padding:8px 10px;text-align:center;color:var(--border2);vertical-align:top">—</td>`;continue;}
-    const inLineupAcrossDay=new Set();
-    for(const dm of dayMatches){
-      const dmTeam=teamById(dm.teamId);
-      const dmSz=teamSize(dmTeam);
-      const dmSlots=state.lineups[dm.id]||[];
-      dmSlots.slice(0,dmSz).filter(Boolean).forEach(pid=>inLineupAcrossDay.add(pid));
-      if(dmSlots[dmSz])inLineupAcrossDay.add(dmSlots[dmSz]);
-    }
-    const availMap=new Map();
-    const ord={yes:0,conditional:1,notfall:2};
-    for(const dm of dayMatches){
-      const dmTeamPlayers=state.players.filter(p=>p.teamIds.includes(dm.teamId));
-      for(const p of dmTeamPlayers){
-        if(inLineupAcrossDay.has(p.id))continue;
-        const a=state.availability[dm.id]?.[p.id]||'';
-        if(a!=='yes'&&a!=='conditional'&&a!=='notfall')continue;
-        const existing=availMap.get(p.id);
-        if(!existing||ord[a]<ord[existing.a])availMap.set(p.id,{p,a});
-      }
-    }
-    if(!availMap.size){html+=`<td style="padding:8px 10px;text-align:center;color:var(--border2);vertical-align:top">—</td>`;continue;}
-    const sorted=[...availMap.values()].sort((x,y)=>{
-      if(ord[x.a]!==ord[y.a])return ord[x.a]-ord[y.a];
-      return (x.p.rank||999)-(y.p.rank||999);
-    });
-    let cellHtml='<td style="padding:6px 8px;vertical-align:top">';
-    for(const x of sorted){
-      const c=x.a==='yes'?'#52c97a':x.a==='conditional'?'rgba(82,201,122,.7)':'var(--warn)';
-      const mark=x.a==='yes'?'✓':x.a==='conditional'?'(✓)':'!';
-      cellHtml+=`<div style="font-size:11px;padding:1px 0;color:${c};display:flex;gap:4px;align-items:center;white-space:nowrap">
-        <span style="min-width:14px;font-size:11px;opacity:.8">${mark}</span>
-        <span title="${x.p.name}">${shortPN(x.p)}</span>
-      </div>`;
-    }
-    cellHtml+='</td>';
-    html+=cellHtml;
-  }
-  html+='</tr>';
-
-  html+='</tbody></table>';
-  html+=`<div style="margin-top:16px;padding:12px;background:#1a1a1a;border-radius:8px;border:1px solid var(--border2)">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:11px">
-      <div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <span style="color:var(--court);font-size:14px">●</span>
-          <span style="color:var(--muted)">${ct('fullLineup')}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <span style="color:#ffd700;font-size:14px">●</span>
-          <span style="color:var(--muted)">${ct('partLineup')}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="color:var(--muted);font-size:14px">●</span>
-          <span style="color:var(--muted)">${ct('stillOpen')}</span>
-        </div>
-      </div>
-      <div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <span style="color:#52c97a;font-size:14px">✓</span>
-          <span style="color:var(--muted)">${ct('yesPrio1')}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <span style="color:rgba(82,201,122,.7);font-size:14px">(✓)</span>
-          <span style="color:var(--muted)">${ct('prio2')}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="color:var(--warn);font-size:14px">!</span>
-          <span style="color:var(--muted)">${ct('notfall')}</span>
-        </div>
-      </div>
-    </div>
-  </div>`;
-  el.innerHTML=html;
+  if(_ovSelectedTeams&&_ovSelectedTeams.length>0)teams=teams.filter(t=>_ovSelectedTeams.includes(t.id));
+  return teams;
+}
+// the tables come from common.js (OVERVIEW), the same as in kapitaen
+function renderOverviewMatches(selectedCats){
+  document.getElementById('overview-content').innerHTML=ovMatchesHtml(_ovTeams(selectedCats),{open:'goToLineup'});
 }
 
 function renderOverviewPlayers(selectedCats){
-  const el=document.getElementById('overview-content');
-  let teams=_ovSortTeams((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
-  // Apply team filter
-  if(_ovSelectedTeams&&_ovSelectedTeams.length>0){
-    teams=teams.filter(t=>_ovSelectedTeams.includes(t.id));
-  }
-  const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
-  if(!matches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
-  const dates=[...new Set(matches.map(m=>m.date))].sort();
-  const players=[...state.players.filter(p=>p.teamIds.some(tid=>teams.find(t=>t.id===tid)))]
-    .sort((a,b)=>(a.rank||999)-(b.rank||999));
-
-  // Legend — always on top
-  const legendLabels={es:['Aufstellung','Ersatz','Disponible','Si necesario','No','★ Stammmannschaft'],de:['Aufstellung','Ersatz','Verfügbar','Im Notfall','Nein','★ Stammmannschaft'],en:['Lineup','Ersatz','Available','If needed','No','★ Stammmannschaft']};
-  const ll=legendLabels[lang]||legendLabels.de;
-  const legendColors=['var(--court)','var(--muted)','#52c97a','#ffd700','var(--danger)','#d4a017'];
-  let html=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:8px 12px;background:#181818;border-radius:8px;font-size:11px">
-    ${ll.map((l,i)=>`<span style="color:${legendColors[i]}">■ ${l}</span>`).join('')}
-  </div>`;
-
-  html+=`<table style="border-collapse:collapse;font-size:12px;min-width:100%">
-    <thead><tr style="border-bottom:1px solid var(--border2)">
-      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:160px">${ct('playerCol')}</th>
-      <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">LK</th>
-      ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
-    </tr></thead><tbody>`;
-
-  for(const p of players){
-    const smTeams=teams.filter(t=>state.mainTeam[p.id]?.[t.id]);
-    const smLabel=smTeams.length?smTeams.map(t=>t.name).join(', '):null;
-    // Fixed-width star column so alignment is consistent with/without SM
-    html+=`<tr style="border-bottom:1px solid var(--border)22">
-      <td style="padding:7px 12px;white-space:nowrap">
-        <span style="font-weight:600">${p.name}</span>
-        ${smLabel?`<span style="font-size:11px;color:#d4a017;margin-left:4px">★ ${smLabel}</span>`:''}
-      </td>
-      <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:11px">${p.lkStr||'?'}</span></td>`;
-    for(const d of dates){
-      const dayMatches=matches.filter(m=>m.date===d&&p.teamIds.includes(m.teamId)).sort((a,b)=>teamNumber(teamById(a.teamId)||{})-teamNumber(teamById(b.teamId)||{}));
-      if(!dayMatches.length){html+=`<td style="padding:7px 10px;text-align:center;color:var(--border2)">—</td>`;continue;}
-      // Short team name: "Herren I" → "H I", "Damen II" → "D II", "Herren 30 I" → "H30 I"
-      function shortName(t){
-        if(!t)return'?';
-        return t.name
-          .replace('Herren','H').replace('Damen','D')
-          .replace('Senioren','Sen').replace('Seniorinnen','SenF')
-          .trim();
-      }
-      let cellHtml='<td style="padding:4px 6px;text-align:center;min-width:80px"><div style="display:flex;flex-direction:column;gap:3px">';
-      for(const m of dayMatches){
-        const team=teamById(m.teamId);
-        const sz=teamSize(team);
-        const slots=state.lineups[m.id]||[];
-        const inLineup=slots.slice(0,sz).includes(p.id);
-        const isErsatz=slots[sz]===p.id;
-        const avail=state.availability[m.id]?.[p.id]||'';
-        const sn=shortName(team);
-        let bg,col,icon,sublabel;
-        if(inLineup){bg='#1a2e26';col='var(--court)';icon='✓';sublabel=sn;}
-        else if(isErsatz){bg='#252525';col='var(--muted)';icon='E';sublabel=sn;}
-        else if(avail==='yes'){bg='#1a2a1a';col='#52c97a';icon='Ja';sublabel=sn;}
-        else if(avail==='conditional'){bg='rgba(82,201,122,.08)';col='#52c97a';icon='(Ja)';sublabel=sn;}
-        else if(avail==='notfall'){bg='#2e2a1a';col='var(--warn)';icon='Notfall';sublabel=sn;}
-        else if(avail==='no'){bg='#2d1a1a';col='var(--danger)';icon='✗';sublabel=sn;}
-        else{bg='transparent';col='#444';icon='?';sublabel=sn;}
-        cellHtml+=`<div style="background:${bg};border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;color:${col};white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:6px">
-          <span style="opacity:.7;font-size:11px;font-weight:500">${sublabel}</span>
-          <span>${icon}</span>
-        </div>`;
-      }
-      cellHtml+='</div></td>';
-      html+=cellHtml;
-    }
-    html+='</tr>';
-  }
-  html+='</tbody></table>';
-  el.innerHTML=html;
+  document.getElementById('overview-content').innerHTML=ovPlayersHtml(_ovTeams(selectedCats));
 }
 
 // ── LIGA → CATEGORY MAP ──

@@ -70,7 +70,7 @@ window.spLogin=async function(){
 // ── COMMON TEXTS ── (DE → ES → EN) texts shared by several pages, plus a few that had no translation yet.
 // ct(key) uses the page's current language. Elements with data-ct="key" (or data-ct-ph for a placeholder) are filled by applyCT().
 const CT={
-  de:{ovTitle:'Overview',statsTitle:'Statistiken',lkAnalysis:'📊 LK-Analyse',lkAnalysisNote:'<strong>LK-Analyse:</strong> Durchschnittliche Leistungsklassen pro Position, berechnet aus den tatsächlich gespielten Aufstellungen.',teamCol:'Team',stMatchesCol:'Spiele',autoLineup:'⚡ Auto-Aufstellung',spieltagInfo:d=>`Spieltag laut WSpO: <b>${d}</b> – wer an diesem Tag schon gespielt hat, ist gesperrt.`,moveAmtlich:'Verlegung von Amts wegen (Spielleiter)',moveAmtlichSub:d=>`Nur dann gilt der neue Termin als Spieltag. Sonst bleibt der Spieltag ${d} (WSpO § 11 Abs. 4).`,movedFromInfo:(d,t)=>`<b>Verlegt</b> vom ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} Spieler haben für den neuen Termin geantwortet.`,shareBtn:'Teilen',shareTitle:'Aufstellung teilen',shareSub:'Text vor dem Senden anpassen (z.B. Treffpunkt). Die Nachricht ist immer auf Deutsch.',shareWa:'WhatsApp',shareNative:'Teilen…',shareCopy:'Kopieren',shareCopied:'✓ Kopiert',shareClose:'Schließen',moveBtn:'Verlegen',moveTitle:'Spiel verlegen',moveSub:'Es wird ein neuer Termin angelegt. Der alte bleibt als „verlegt“ sichtbar.',moveDate:'Neues Datum',moveTime:'Uhrzeit',movePlace:'Ort',moveNote:'Hinweis (optional)',moveNotePh:'z. B. Halle belegt, mit Gegner abgesprochen',moveKeepLineup:'Aufstellung übernehmen',moveKeepLineupSub:'Die bisherige Aufstellung wird in den neuen Termin kopiert.',moveKeepAvail:'Verfügbarkeiten übernehmen',moveKeepAvailSub:'Aus: Die Spieler werden für den neuen Termin neu abgefragt (empfohlen, weil sich das Datum ändert).',moveNuliga:'Heimspiel: Die Verlegung muss zusätzlich in <strong>nuLiga</strong> eingetragen werden.',moveCancel:'Abbrechen',moveGo:'Verlegen',moveErrMissing:'Bitte Datum und Uhrzeit angeben.',moveErrSame:'Datum, Uhrzeit und Ort sind unverändert.',moveErrSave:'Fehler beim Speichern',
+  de:{noMatchesShort:'Keine Spiele',notInLineup:'Nicht aufgestellt',allTeamsShort:'Alle Teams',ovLegend:['Aufstellung','Ersatz','Verfügbar','Im Notfall','Nein','★ Stammmannschaft'],ovYes:'Ja',ovNotfall:'Notfall',allCategories:'Alle Kategorien',noBlockedShort:'Keine aktiven Sperren.',colYear:'Jg.',ovTitle:'Overview',statsTitle:'Statistiken',lkAnalysis:'📊 LK-Analyse',lkAnalysisNote:'<strong>LK-Analyse:</strong> Durchschnittliche Leistungsklassen pro Position, berechnet aus den tatsächlich gespielten Aufstellungen.',teamCol:'Team',stMatchesCol:'Spiele',autoLineup:'⚡ Auto-Aufstellung',spieltagInfo:d=>`Spieltag laut WSpO: <b>${d}</b> – wer an diesem Tag schon gespielt hat, ist gesperrt.`,moveAmtlich:'Verlegung von Amts wegen (Spielleiter)',moveAmtlichSub:d=>`Nur dann gilt der neue Termin als Spieltag. Sonst bleibt der Spieltag ${d} (WSpO § 11 Abs. 4).`,movedFromInfo:(d,t)=>`<b>Verlegt</b> vom ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} Spieler haben für den neuen Termin geantwortet.`,shareBtn:'Teilen',shareTitle:'Aufstellung teilen',shareSub:'Text vor dem Senden anpassen (z.B. Treffpunkt). Die Nachricht ist immer auf Deutsch.',shareWa:'WhatsApp',shareNative:'Teilen…',shareCopy:'Kopieren',shareCopied:'✓ Kopiert',shareClose:'Schließen',moveBtn:'Verlegen',moveTitle:'Spiel verlegen',moveSub:'Es wird ein neuer Termin angelegt. Der alte bleibt als „verlegt“ sichtbar.',moveDate:'Neues Datum',moveTime:'Uhrzeit',movePlace:'Ort',moveNote:'Hinweis (optional)',moveNotePh:'z. B. Halle belegt, mit Gegner abgesprochen',moveKeepLineup:'Aufstellung übernehmen',moveKeepLineupSub:'Die bisherige Aufstellung wird in den neuen Termin kopiert.',moveKeepAvail:'Verfügbarkeiten übernehmen',moveKeepAvailSub:'Aus: Die Spieler werden für den neuen Termin neu abgefragt (empfohlen, weil sich das Datum ändert).',moveNuliga:'Heimspiel: Die Verlegung muss zusätzlich in <strong>nuLiga</strong> eingetragen werden.',moveCancel:'Abbrechen',moveGo:'Verlegen',moveErrMissing:'Bitte Datum und Uhrzeit angeben.',moveErrSame:'Datum, Uhrzeit und Ort sind unverändert.',moveErrSave:'Fehler beim Speichern',
       countedShort:'Gezählt',movedBadge:'VERLEGT',newBadge:'NEU',movedNewDate:'Neuer Termin',movedOn:(d,u)=>`verlegt am ${d}${u?` von ${u}`:''}`,
       playedOnSpieltag:(n,d,t)=>`⛔ ${n} hat am Spieltag ${d} bereits für ${t} gespielt (WSpO § 10 Abs. 3).`,isBlocked:(n,t)=>`⛔ ${n} ist gesperrt für ${t}`,
       nBlocks:n=>n===1?'1 Sperre in der Aufstellung':`${n} Sperren in der Aufstellung`,nHints:n=>n===1?'1 Hinweis':`${n} Hinweise`,
@@ -103,7 +103,7 @@ const CT={
       wrongPw:'Falsches Passwort',wrongLogin:'Falscher Benutzer oder Passwort',
       tooManyWait:s=>`Zu viele Versuche. Bitte ${s}s warten.`,tooManyLocked:m=>`Zu viele Versuche. ${m} Minute${m>1?'n':''} gesperrt.`,
       capOnly:'Angemeldet · darf nur die eigene Mannschaft bearbeiten'},
-  es:{ovTitle:'Resumen',statsTitle:'Estadísticas',lkAnalysis:'📊 Análisis de LK',lkAnalysisNote:'<strong>Análisis de LK:</strong> LK promedio por posición, calculada con las alineaciones que realmente jugaron.',teamCol:'Equipo',stMatchesCol:'Partidos',autoLineup:'⚡ Alineación automática',spieltagInfo:d=>`Spieltag según la WSpO: <b>${d}</b>: quien ya jugó ese día está bloqueado.`,moveAmtlich:'Movido de oficio (Spielleiter)',moveAmtlichSub:d=>`Solo así la nueva fecha cuenta como Spieltag. Si no, el Spieltag sigue siendo el ${d} (WSpO § 11 Abs. 4).`,movedFromInfo:(d,t)=>`<b>Movido</b> desde el ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} jugadores respondieron para la nueva fecha.`,shareBtn:'Compartir',shareTitle:'Compartir alineación',shareSub:'Podés editar el texto antes de mandarlo (ej. punto de encuentro). El mensaje sale siempre en alemán.',shareWa:'WhatsApp',shareNative:'Compartir…',shareCopy:'Copiar',shareCopied:'✓ Copiado',shareClose:'Cerrar',moveBtn:'Mover',moveTitle:'Mover partido',moveSub:'Se crea una fecha nueva. La anterior queda visible como „verlegt“.',moveDate:'Nueva fecha',moveTime:'Hora',movePlace:'Lugar',moveNote:'Comentario (opcional)',moveNotePh:'p. ej. cancha ocupada, acordado con el rival',moveKeepLineup:'Mantener alineación',moveKeepLineupSub:'La alineación actual se copia a la nueva fecha.',moveKeepAvail:'Mantener disponibilidades',moveKeepAvailSub:'Desactivado: se vuelve a consultar a los jugadores para la nueva fecha (recomendado, porque cambia el día).',moveNuliga:'Partido de local: el cambio también hay que cargarlo en <strong>nuLiga</strong>.',moveCancel:'Cancelar',moveGo:'Mover',moveErrMissing:'Indicá fecha y hora.',moveErrSame:'Fecha, hora y lugar no cambiaron.',moveErrSave:'Error al guardar',
+  es:{noMatchesShort:'No hay partidos',notInLineup:'No alineados',allTeamsShort:'Todos los equipos',ovLegend:['Aufstellung','Ersatz','Disponible','Si es necesario','No','★ Stammmannschaft'],ovYes:'Sí',ovNotfall:'Si nec.',allCategories:'Todas las categorías',noBlockedShort:'Sin bloqueos activos.',colYear:'Año',ovTitle:'Resumen',statsTitle:'Estadísticas',lkAnalysis:'📊 Análisis de LK',lkAnalysisNote:'<strong>Análisis de LK:</strong> LK promedio por posición, calculada con las alineaciones que realmente jugaron.',teamCol:'Equipo',stMatchesCol:'Partidos',autoLineup:'⚡ Alineación automática',spieltagInfo:d=>`Spieltag según la WSpO: <b>${d}</b>: quien ya jugó ese día está bloqueado.`,moveAmtlich:'Movido de oficio (Spielleiter)',moveAmtlichSub:d=>`Solo así la nueva fecha cuenta como Spieltag. Si no, el Spieltag sigue siendo el ${d} (WSpO § 11 Abs. 4).`,movedFromInfo:(d,t)=>`<b>Movido</b> desde el ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} jugadores respondieron para la nueva fecha.`,shareBtn:'Compartir',shareTitle:'Compartir alineación',shareSub:'Podés editar el texto antes de mandarlo (ej. punto de encuentro). El mensaje sale siempre en alemán.',shareWa:'WhatsApp',shareNative:'Compartir…',shareCopy:'Copiar',shareCopied:'✓ Copiado',shareClose:'Cerrar',moveBtn:'Mover',moveTitle:'Mover partido',moveSub:'Se crea una fecha nueva. La anterior queda visible como „verlegt“.',moveDate:'Nueva fecha',moveTime:'Hora',movePlace:'Lugar',moveNote:'Comentario (opcional)',moveNotePh:'p. ej. cancha ocupada, acordado con el rival',moveKeepLineup:'Mantener alineación',moveKeepLineupSub:'La alineación actual se copia a la nueva fecha.',moveKeepAvail:'Mantener disponibilidades',moveKeepAvailSub:'Desactivado: se vuelve a consultar a los jugadores para la nueva fecha (recomendado, porque cambia el día).',moveNuliga:'Partido de local: el cambio también hay que cargarlo en <strong>nuLiga</strong>.',moveCancel:'Cancelar',moveGo:'Mover',moveErrMissing:'Indicá fecha y hora.',moveErrSame:'Fecha, hora y lugar no cambiaron.',moveErrSave:'Error al guardar',
       countedShort:'Contado',movedBadge:'POSTERGADO',newBadge:'NUEVO',movedNewDate:'Nueva fecha',movedOn:(d,u)=>`movido el ${d}${u?` por ${u}`:''}`,
       playedOnSpieltag:(n,d,t)=>`⛔ ${n} ya jugó el Spieltag ${d} para ${t} (WSpO § 10 Abs. 3).`,isBlocked:(n,t)=>`⛔ ${n} está bloqueado para ${t}`,
       nBlocks:n=>n===1?'1 bloqueo en la alineación':`${n} bloqueos en la alineación`,nHints:n=>n===1?'1 aviso':`${n} avisos`,
@@ -136,7 +136,7 @@ const CT={
       wrongPw:'Contraseña incorrecta',wrongLogin:'Usuario o contraseña incorrectos',
       tooManyWait:s=>`Demasiados intentos. Esperá ${s} s.`,tooManyLocked:m=>`Demasiados intentos. Bloqueado por ${m} minuto${m>1?'s':''}.`,
       capOnly:'Conectado · solo puede editar su propio equipo'},
-  en:{ovTitle:'Overview',statsTitle:'Statistics',lkAnalysis:'📊 LK analysis',lkAnalysisNote:'<strong>LK analysis:</strong> average LK per position, from the lineups that actually played.',teamCol:'Team',stMatchesCol:'Matches',autoLineup:'⚡ Auto lineup',spieltagInfo:d=>`Match day per WSpO: <b>${d}</b> – anyone who already played that day is blocked.`,moveAmtlich:'Moved officially (Spielleiter)',moveAmtlichSub:d=>`Only then the new date counts as match day. Otherwise it stays ${d} (WSpO § 11 (4)).`,movedFromInfo:(d,t)=>`<b>Rescheduled</b> from ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} players have answered for the new date.`,shareBtn:'Share',shareTitle:'Share lineup',shareSub:'Edit the text before sending (e.g. meeting point). The message is always in German.',shareWa:'WhatsApp',shareNative:'Share…',shareCopy:'Copy',shareCopied:'✓ Copied',shareClose:'Close',moveBtn:'Reschedule',moveTitle:'Reschedule match',moveSub:'A new date is created. The old one stays visible as “verlegt”.',moveDate:'New date',moveTime:'Time',movePlace:'Venue',moveNote:'Note (optional)',moveNotePh:'e.g. court booked, agreed with opponent',moveKeepLineup:'Keep lineup',moveKeepLineupSub:'The current lineup is copied to the new date.',moveKeepAvail:'Keep availability',moveKeepAvailSub:'Off: players are asked again for the new date (recommended, since the day changes).',moveNuliga:'Home match: the change must also be entered in <strong>nuLiga</strong>.',moveCancel:'Cancel',moveGo:'Reschedule',moveErrMissing:'Please enter date and time.',moveErrSame:'Date, time and venue are unchanged.',moveErrSave:'Error while saving',
+  en:{noMatchesShort:'No matches',notInLineup:'Not in lineup',allTeamsShort:'All teams',ovLegend:['Lineup','Ersatz','Available','If needed','No','★ Stammmannschaft'],ovYes:'Yes',ovNotfall:'If nec.',allCategories:'All categories',noBlockedShort:'No active blocks.',colYear:'Year',ovTitle:'Overview',statsTitle:'Statistics',lkAnalysis:'📊 LK analysis',lkAnalysisNote:'<strong>LK analysis:</strong> average LK per position, from the lineups that actually played.',teamCol:'Team',stMatchesCol:'Matches',autoLineup:'⚡ Auto lineup',spieltagInfo:d=>`Match day per WSpO: <b>${d}</b> – anyone who already played that day is blocked.`,moveAmtlich:'Moved officially (Spielleiter)',moveAmtlichSub:d=>`Only then the new date counts as match day. Otherwise it stays ${d} (WSpO § 11 (4)).`,movedFromInfo:(d,t)=>`<b>Rescheduled</b> from ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} players have answered for the new date.`,shareBtn:'Share',shareTitle:'Share lineup',shareSub:'Edit the text before sending (e.g. meeting point). The message is always in German.',shareWa:'WhatsApp',shareNative:'Share…',shareCopy:'Copy',shareCopied:'✓ Copied',shareClose:'Close',moveBtn:'Reschedule',moveTitle:'Reschedule match',moveSub:'A new date is created. The old one stays visible as “verlegt”.',moveDate:'New date',moveTime:'Time',movePlace:'Venue',moveNote:'Note (optional)',moveNotePh:'e.g. court booked, agreed with opponent',moveKeepLineup:'Keep lineup',moveKeepLineupSub:'The current lineup is copied to the new date.',moveKeepAvail:'Keep availability',moveKeepAvailSub:'Off: players are asked again for the new date (recommended, since the day changes).',moveNuliga:'Home match: the change must also be entered in <strong>nuLiga</strong>.',moveCancel:'Cancel',moveGo:'Reschedule',moveErrMissing:'Please enter date and time.',moveErrSame:'Date, time and venue are unchanged.',moveErrSave:'Error while saving',
       countedShort:'Counted',movedBadge:'RESCHEDULED',newBadge:'NEW',movedNewDate:'New date',movedOn:(d,u)=>`moved on ${d}${u?` by ${u}`:''}`,
       playedOnSpieltag:(n,d,t)=>`⛔ ${n} already played on match day ${d} for ${t} (WSpO § 10 (3)).`,isBlocked:(n,t)=>`⛔ ${n} is blocked for ${t}`,
       nBlocks:n=>n===1?'1 block in the lineup':`${n} blocks in the lineup`,nHints:n=>n===1?'1 note':`${n} notes`,
@@ -736,6 +736,171 @@ async function undoCountDB(match){
   return'ok';
 }
 
+// ── OVERVIEW ── (admin + kapitaen) one table: teams × match days with the lineups, or players × match days.
+// The page decides which teams (filters, scope, order) and passes the function that opens a match.
+// first names; first name + initials of the surname when the first name is used twice in these teams
+function ovNamer(teams){
+  const first=p=>{const rn=p.rawName||p.raw_name||p.name;return rn.includes(',')?rn.split(',')[1].trim().split(' ')[0]:p.name.trim().split(' ')[0];};
+  const initials=p=>{const rn=p.rawName||p.raw_name||p.name;const sur=rn.includes(',')?rn.split(',')[0].trim():p.name.trim().split(' ').slice(1).join(' ');return sur.split(/[ -]+/).map(w=>w[0]).join('.')+'.';};
+  const counts={};
+  for(const p of state.players.filter(p=>p.teamIds.some(tid=>teams.find(t=>t.id===tid)))){const f=first(p);counts[f]=(counts[f]||0)+1;}
+  return p=>{if(!p)return'—';const f=first(p);return counts[f]>1?`${f} ${initials(p)}`:f;};
+}
+const OV_EMPTY_TD='<td style="padding:8px 10px;text-align:center;color:var(--border2);vertical-align:top">—</td>';
+function ovPlayerLine(label,p,name,ersatz){
+  return ersatz
+    ?`<div style="font-size:11px;padding:2px 0;border-top:1px dashed var(--border2);margin-top:2px;color:var(--muted);display:flex;gap:4px;align-items:center">
+          <span style="color:var(--muted);min-width:12px;font-size:11px">${label}</span>
+          <span title="${p.name}">${name(p)}</span>
+        </div>`
+    :`<div style="font-size:11px;padding:1px 0;color:${p?'var(--white)':'#2e4a42'};display:flex;gap:4px;align-items:center">
+          <span style="color:var(--muted);min-width:12px;font-size:11px">${label}</span>
+          <span title="${p?p.name:''}">${name(p)}</span>
+        </div>`;
+}
+// one match: status colour, opponent, time · H/A · filled, then the lineup and the Ersatz
+function ovMatchCell(m,team,name,open){
+  const sz=teamSize(team),slots=state.lineups[m.id]||[],main=slots.slice(0,sz);
+  const filled=main.filter(Boolean).length,complete=filled>=sz,partial=filled>0&&!complete;
+  const bg=complete?'#1a2e26':partial?'#2e2a15':'#1a1a1a',col=complete?'var(--court)':partial?'#ffd700':'var(--muted)',icon=complete?'✓':partial?'⏳':'·';
+  let lines='';
+  for(let i=0;i<sz;i++){const pid=main[i];lines+=ovPlayerLine(`${i+1}.`,pid?playerById(pid):null,name,false);}
+  const ep=slots[sz]?playerById(slots[sz]):null;
+  if(ep)lines+=ovPlayerLine('E.',ep,name,true);
+  return`<td style="padding:6px 8px;vertical-align:top">
+        <div onclick="${open}('${m.id}')" style="cursor:pointer;background:${bg};border-radius:8px;padding:6px 8px;min-width:100px">
+          <div style="font-size:11px;font-weight:600;color:${col};margin-bottom:4px;width:0;min-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${(m.opponent||'').replace(/"/g,'&quot;')}">${icon} ${m.opponent||''}</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:5px">${m.time} · ${m.home==='Heim'?'H':'A'} · ${filled}/${sz}</div>
+          <div style="border-top:1px solid var(--border2);padding-top:4px">${lines}</div>
+        </div>
+      </td>`;
+}
+// "Nicht aufgestellt": who said Ja / (Ja) / Notfall for a match that day and is in no lineup that day
+function ovFreeCell(dayMatches,name){
+  const busy=new Set();
+  for(const dm of dayMatches){const sz=teamSize(teamById(dm.teamId)),sl=state.lineups[dm.id]||[];sl.slice(0,sz).filter(Boolean).forEach(pid=>busy.add(pid));if(sl[sz])busy.add(sl[sz]);}
+  const ord={yes:0,conditional:1,notfall:2},free=new Map();
+  for(const dm of dayMatches)for(const p of state.players.filter(p=>p.teamIds.includes(dm.teamId))){
+    if(busy.has(p.id))continue;
+    const a=state.availability[dm.id]?.[p.id]||'';
+    if(a!=='yes'&&a!=='conditional'&&a!=='notfall')continue;
+    const old=free.get(p.id);if(!old||ord[a]<ord[old.a])free.set(p.id,{p,a});
+  }
+  if(!free.size)return OV_EMPTY_TD;
+  const list=[...free.values()].sort((x,y)=>ord[x.a]-ord[y.a]||(x.p.rank||999)-(y.p.rank||999));
+  return'<td style="padding:6px 8px;vertical-align:top">'+list.map(x=>{
+    const c=x.a==='yes'?'#52c97a':x.a==='conditional'?'rgba(82,201,122,.7)':'var(--warn)',mark=x.a==='yes'?'✓':x.a==='conditional'?'(✓)':'!';
+    return`<div style="font-size:11px;padding:1px 0;color:${c};display:flex;gap:4px;align-items:center;white-space:nowrap">
+        <span style="min-width:14px;font-size:11px;opacity:.8">${mark}</span>
+        <span title="${x.p.name}">${name(x.p)}</span>
+      </div>`;}).join('')+'</td>';
+}
+function ovLegendItem(color,mark,label,last){
+  return`<div style="display:flex;align-items:center;gap:6px${last?'':';margin-bottom:4px'}">
+          <span style="color:${color};font-size:14px">${mark}</span>
+          <span style="color:var(--muted)">${label}</span>
+        </div>`;
+}
+function ovMatchesLegend(){
+  return`<div style="margin-top:16px;padding:12px;background:#1a1a1a;border-radius:8px;border:1px solid var(--border2)">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:11px">
+      <div>${ovLegendItem('var(--court)','●',ct('fullLineup'))}${ovLegendItem('#ffd700','●',ct('partLineup'))}${ovLegendItem('var(--muted)','●',ct('stillOpen'),true)}</div>
+      <div>${ovLegendItem('#52c97a','✓',ct('yesPrio1'))}${ovLegendItem('rgba(82,201,122,.7)','(✓)',ct('prio2'))}${ovLegendItem('var(--warn)','!',ct('notfall'),true)}</div>
+    </div>
+  </div>`;
+}
+// "Spiele" mode: a row per team, a column per match day, plus the "Nicht aufgestellt" row
+function ovMatchesHtml(teams,o){
+  const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!matches.length)return`<div class="empty">${ct('noMatchesShort')}</div>`;
+  const dates=[...new Set(matches.map(m=>m.date))].sort(),name=ovNamer(teams);
+  let html=`<table style="border-collapse:collapse;font-size:12px;min-width:100%">
+    <thead><tr style="border-bottom:1px solid var(--border2)">
+      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:100px">${ct('teamCol')}</th>
+      ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
+    </tr></thead><tbody>`;
+  for(const team of teams){
+    html+=`<tr style="border-top:2px solid var(--border2)">
+      <td style="padding:8px 12px;font-weight:600;color:var(--court);white-space:nowrap;vertical-align:top">${team.name}</td>`;
+    for(const d of dates){const m=matches.find(x=>x.teamId===team.id&&x.date===d);html+=m?ovMatchCell(m,team,name,o.open):OV_EMPTY_TD;}
+    html+='</tr>';
+  }
+  html+=`<tr style="border-top:2px solid var(--border2);background:#0f0f0f">
+    <td style="padding:8px 12px;font-weight:600;color:var(--muted);white-space:nowrap;vertical-align:top;font-size:11px;text-transform:uppercase;letter-spacing:.5px">${ct('notInLineup')}</td>`;
+  for(const d of dates){const dm=matches.filter(x=>x.date===d);html+=dm.length?ovFreeCell(dm,name):OV_EMPTY_TD;}
+  return html+'</tr></tbody></table>'+ovMatchesLegend();
+}
+// "Spieler" mode: a row per player; per match day what he does in each of his teams
+function ovTeamShort(t){return t?t.name.replace('Herren','H').replace('Damen','D').replace('Senioren','Sen').replace('Seniorinnen','SenF').trim():'?';}
+function ovPlayerDayCell(p,dayMatches){
+  if(!dayMatches.length)return'<td style="padding:7px 10px;text-align:center;color:var(--border2)">—</td>';
+  return'<td style="padding:4px 6px;text-align:center;min-width:80px"><div style="display:flex;flex-direction:column;gap:3px">'+dayMatches.map(m=>{
+    const team=teamById(m.teamId),sz=teamSize(team),slots=state.lineups[m.id]||[],avail=state.availability[m.id]?.[p.id]||'';
+    const [bg,col,icon]=slots.slice(0,sz).includes(p.id)?['#1a2e26','var(--court)','✓']:slots[sz]===p.id?['#252525','var(--muted)','E']
+      :avail==='yes'?['#1a2a1a','#52c97a',ct('ovYes')]:avail==='conditional'?['rgba(82,201,122,.08)','#52c97a','('+ct('ovYes')+')']
+      :avail==='notfall'?['#2e2a1a','var(--warn)',ct('ovNotfall')]:avail==='no'?['#2d1a1a','var(--danger)','✗']:['transparent','#444','?'];
+    return`<div style="background:${bg};border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;color:${col};white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:6px">
+            <span style="opacity:.7;font-size:11px;font-weight:500">${ovTeamShort(team)}</span>
+            <span>${icon}</span>
+          </div>`;}).join('')+'</div></td>';
+}
+function ovPlayersLegend(){
+  const colors=['var(--court)','var(--muted)','#52c97a','var(--warn)','var(--danger)','#d4a017'];
+  return`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:8px 12px;background:#181818;border-radius:8px;font-size:11px">
+    ${ct('ovLegend').map((l,i)=>`<span style="color:${colors[i]}">■ ${l}</span>`).join('')}
+  </div>`;
+}
+function ovPlayersHtml(teams){
+  const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!matches.length)return ovPlayersLegend()+`<div class="empty">${ct('noMatchesShort')}</div>`;
+  const dates=[...new Set(matches.map(m=>m.date))].sort();
+  const players=state.players.filter(p=>p.teamIds.some(tid=>teams.find(t=>t.id===tid))).sort((a,b)=>(a.rank||999)-(b.rank||999));
+  let html=`<table style="border-collapse:collapse;font-size:12px;min-width:100%;margin-bottom:24px">
+      <thead><tr style="border-bottom:1px solid var(--border2)">
+        <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:160px">${ct('playerCol')}</th>
+        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">LK</th>
+        ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
+      </tr></thead><tbody>`;
+  for(const p of players){
+    const sm=teams.filter(t=>state.mainTeam[p.id]?.[t.id]).map(t=>t.name).join(', ');
+    html+=`<tr style="border-bottom:1px solid var(--border)22">
+        <td style="padding:7px 12px;white-space:nowrap">
+          <span style="font-weight:600">${p.name}</span>
+          ${sm?`<span style="font-size:11px;color:#d4a017;margin-left:4px">★ ${sm}</span>`:''}
+        </td>
+        <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:11px">${p.lkStr||'?'}</span></td>`;
+    for(const d of dates)html+=ovPlayerDayCell(p,matches.filter(m=>m.date===d&&p.teamIds.includes(m.teamId)).sort((a,b)=>teamNumber(teamById(a.teamId)||{})-teamNumber(teamById(b.teamId)||{})));
+    html+='</tr>';
+  }
+  return ovPlayersLegend()+html+'</tbody></table>';
+}
+// the "Mannschaften" filter menu. o = {teams (sorted), selected: ()=>ids|null, set(ids|null), allId, changed()}
+function ovTeamsPanel(panel,o){
+  if(!o.teams.length){panel.innerHTML='<div style="padding:10px;color:var(--muted);font-size:12px">'+ct('noTeams')+'</div>';return;}
+  const sel=o.selected(),all=!sel;
+  const row=(text,checked,bold,onChange,id,teamId)=>{
+    const lbl=document.createElement('label');
+    lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:'+(bold?'#fff;font-weight:600':'#aaa');
+    lbl.addEventListener('mouseover',()=>{lbl.style.background='#222';});
+    lbl.addEventListener('mouseout',()=>{lbl.style.background='transparent';});
+    const cb=document.createElement('input');cb.type='checkbox';
+    cb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
+    cb.checked=checked;if(id)cb.id=id;if(teamId)cb.dataset.teamId=teamId;
+    cb.addEventListener('change',()=>onChange(cb));
+    const span=document.createElement('span');span.textContent=text;
+    lbl.appendChild(cb);lbl.appendChild(span);panel.appendChild(lbl);
+  };
+  panel.innerHTML='';
+  row(ct('allTeamsShort'),all,true,cb=>{o.set(cb.checked?null:[]);o.changed();},o.allId);
+  const div=document.createElement('div');div.style.cssText='border-top:1px solid #333;margin:3px 6px';panel.appendChild(div);
+  for(const team of o.teams)row(team.name,all||!!(sel&&sel.includes(team.id)),false,()=>{
+    const checked=[...panel.querySelectorAll('input[data-team-id]:checked')].map(i=>i.dataset.teamId);
+    o.set(checked.length===o.teams.length?null:checked);
+    const a=panel.querySelector('#'+o.allId);if(a)a.checked=!o.selected();
+    o.changed();
+  },null,team.id);
+}
+
 // ── SPERREN TABLE ── One cell per player and team, saying in words why a player is blocked (admin and kapitaen).
 const BLK_T={
   de:{stamm:'Stammkader',played:n=>`${n}× gespielt`,kader:t=>`⛔ Kader ${t}`,sm:(n,ts)=>`⛔ ${n}× in ${ts}`,warn:(n,ts)=>`⚠️ ${n}× in ${ts}`,
@@ -789,4 +954,50 @@ function blockLegend(){
     <span style="${BLK_PILL};${BLK_STYLE.warn}">⚠️ …</span>${bT('legWarn')}
     <span style="${BLK_PILL};${BLK_STYLE.played}">${bT('played')('N')}</span>${bT('legPlayed')}
   </div>`;
+}
+
+// The whole Sperren view (rule boxes + one table per category). teams = the teams this page may show.
+function blockingRuleBoxes(){
+  return`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <div class="rule-box" style="flex:1;margin:0"><strong>Stammkader:</strong> ${ct('ruleSK')}</div>
+    <div class="rule-box warn" style="flex:1;margin:0"><strong>Stammmannschaft:</strong> ${ct('ruleSM')}</div>
+  </div>`;
+}
+function blockingRow(p,cat,catTeams){
+  const status=getPlayerBlockStatus(p.id,cat),skTeam=getStammkaderTeam(p.id,cat)||catTeams[catTeams.length-1];
+  return`<tr style="border-bottom:1px solid #2e4a4222;${status.blocked.length>0?'background:#1e1e1e':''}">
+        <td style="padding:7px 12px;white-space:nowrap"><div style="font-weight:600;font-size:12px">${p.name}</div></td>
+        <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:11px">${p.lkStr||'?'}</span></td>
+        <td style="padding:7px 8px;text-align:center;font-size:11px;color:var(--muted)">${p.year||'—'}</td>
+        ${catTeams.map(t=>blockCell(p,t,catTeams,status,skTeam)).join('')}
+      </tr>`;
+}
+function blockingCategoryHtml(cat,catTeams){
+  // sorted by the rank in THIS category's Meldung (p.rank is only the rank of the first list the player was imported from)
+  const players=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>playerRankInTeam(a.id,catTeams[0].id)-playerRankInTeam(b.id,catTeams[0].id));
+  if(!players.length)return'';
+  return`<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court);letter-spacing:1px;margin:14px 0 8px">${cat}</div>`+
+    `<div class="card" style="padding:0;overflow:hidden;overflow-x:auto;margin-bottom:10px">`+
+    `<table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="border-bottom:1px solid #2e4a42">
+        <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);min-width:160px">${ct('playerCol')}</th>
+        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">LK</th>
+        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">${ct('colYear')}</th>
+        ${catTeams.map(t=>`<th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--court);font-size:11px;white-space:nowrap">${t.name}${t.is_4er?' <span style="font-size:11px;color:var(--warn)">(4er)</span>':''}</th>`).join('')}
+      </tr></thead><tbody>`+players.map(p=>blockingRow(p,cat,catTeams)).join('')+`</tbody></table>
+      ${blockLegend()}</div>`;
+}
+// fills #block-cat-filter and #blocking-content (same ids in admin and kapitaen)
+function renderBlockingView(teams){
+  const cats=[...new Set(teams.map(t=>t.category))].sort();
+  const catSel=document.getElementById('block-cat-filter');
+  const curCat=catSel?.value||(cats.includes('Herren')?'Herren':'');
+  if(catSel){catSel.innerHTML=`<option value="">${ct('allCategories')}</option>`+cats.map(c=>`<option value="${c}" ${curCat===c?'selected':''}>${c}</option>`).join('');catSel.value=curCat;}
+  const filterCat=catSel?.value||'';
+  let body='';
+  for(const cat of filterCat?[filterCat]:cats){
+    const catTeams=teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
+    if(catTeams.length)body+=blockingCategoryHtml(cat,catTeams);
+  }
+  document.getElementById('blocking-content').innerHTML=blockingRuleBoxes()+(body||`<div class="empty">${ct('noBlockedShort')}</div>`);
 }

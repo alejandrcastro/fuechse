@@ -89,7 +89,7 @@ input:focus,select:focus{border-color:var(--court)}
 /* Drag & drop lineup slots */
 /* ── VERLEGT ── */
 </style>
-<script src="common.js?v=4"></script>
+<script src="common.js?v=5"></script>
 </head>
 <body>
 
@@ -347,13 +347,6 @@ function isCountedMatch(id){return !!state.matches.find(x=>x.id===id)?.counted;}
 function denyEdit(){if(canEditMatch(selectedMatchId)&&!isCountedMatch(selectedMatchId))return false;setSync('err',tr(isCountedMatch(selectedMatchId)?'countedLocked':'readOnly'));setTimeout(()=>setSync('ok','● sync'),2500);renderLineupSlots();return true;}
 // ── SPIEL BESTÄTIGEN (Zähler für Sperren) ── same logic as admin.html; captains only for their own team
 // Extra player who only played Doppel
-function _countPlayers(match,includeErsatz){
-  if(match.countedPlayers)return match.countedPlayers; // exact list stored at confirmation
-  const size=teamSize(teamById(match.teamId));
-  const slots=state.lineups[match.id]||[];
-  const lineup=slots.slice(0,size).filter(Boolean);
-  return includeErsatz&&slots[size]?[...lineup,slots[size]]:lineup;
-}
 async function kapConfirmMatch(){
   const match=state.matches.find(m=>m.id===selectedMatchId);if(!match)return;
   if(!canEditTeam(match.teamId))return;
@@ -825,57 +818,7 @@ function showKapTab(tab){
 
 // ── BLOCKING VIEW (read-only) ──
 
-function renderBlocking(){
-  const cats=[...new Set(scopeTeams().map(t=>t.category))].sort();
-  const catSel=document.getElementById('block-cat-filter');
-  const defaultCat=cats.includes('Herren')?'Herren':'';
-  const curCat=catSel?.value||defaultCat;
-  if(catSel){catSel.innerHTML=`<option value="">Alle Kategorien</option>`+cats.map(c=>`<option value="${c}" ${curCat===c?'selected':''}>${c}</option>`).join('');catSel.value=curCat;}
-  const el=document.getElementById('blocking-content');
-  const filterCat=catSel?.value||'';
-  const catsToShow=filterCat?[filterCat]:cats;
-  let html=`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <div class="rule-box" style="flex:1;margin:0"><strong>Stammkader:</strong> ${ct('ruleSK')}</div>
-    <div class="rule-box warn" style="flex:1;margin:0"><strong>Stammmannschaft:</strong> ${ct('ruleSM')}</div>
-  </div>`;
-  let anyEntry=false;
-  for(const cat of catsToShow){
-    const catTeams=scopeTeams().filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
-    if(!catTeams.length)continue;
-    const groupSize=teamSize(catTeams[0]);
-    // Sort by the rank in THIS category's Meldung (p.rank is only the rank of the first list the player was imported from)
-    const catPlayers=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>playerRankInTeam(a.id,catTeams[0].id)-playerRankInTeam(b.id,catTeams[0].id));
-    if(!catPlayers.length)continue;
-    anyEntry=true;
-    html+=`<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court);letter-spacing:1px;margin:14px 0 8px">${cat}</div>`;
-    html+=`<div class="card" style="padding:0;overflow:hidden;overflow-x:auto;margin-bottom:10px">`;
-    html+=`<table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead><tr style="border-bottom:1px solid #2e4a42">
-        <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);min-width:160px">${tr('colPlayer')}</th>
-        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">${tr('colLK')}</th>
-        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">${tr('colYear')}</th>
-        ${catTeams.map(t=>`<th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--court);font-size:11px;white-space:nowrap">${t.name}${t.is_4er?' <span style="font-size:11px;color:var(--warn)">(4er)</span>':''}</th>`).join('')}
-      </tr></thead><tbody>`;
-    for(let i=0;i<catPlayers.length;i++){
-      const p=catPlayers[i];
-      const status=getPlayerBlockStatus(p.id,cat);
-      const counts=state.matchCounts[p.id]||{};
-      const skTeam=getStammkaderTeam(p.id,cat)||catTeams[catTeams.length-1];
-      const cells=catTeams.map(t=>blockCell(p,t,catTeams,status,skTeam)).join('');
-      const rowBg=status.blocked.length>0?'background:#1e1e1e':'';
-      html+=`<tr style="border-bottom:1px solid #2e4a4222;${rowBg}">
-        <td style="padding:7px 12px;white-space:nowrap"><div style="font-weight:600;font-size:12px">${p.name}</div></td>
-        <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:11px">${p.lkStr||'?'}</span></td>
-        <td style="padding:7px 8px;text-align:center;font-size:11px;color:var(--muted)">${p.year||'—'}</td>
-        ${cells}
-      </tr>`;
-    }
-    html+=`</tbody></table>
-      ${blockLegend()}</div>`;
-  }
-  if(!anyEntry)html+=`<div class="empty">${tr('noBlocked')}</div>`;
-  el.innerHTML=html;
-}
+function renderBlocking(){renderBlockingView(scopeTeams());} // common.js, the same as in admin
 
 async function runAutoLineup(){
   if(denyEdit())return;
@@ -1000,75 +943,9 @@ function toggleTeamsMenu(e){
 }
 
 function _buildTeamsPanelContent(panel){
-  // Filter teams by selected categories first
-  const availableTeams=(!_kapOvSelectedCats||_kapOvSelectedCats.length===0)?
-    scopeTeams():
-    scopeTeams().filter(t=>_kapOvSelectedCats.includes(t.category));
-  
-  if(!availableTeams.length){
-    panel.innerHTML='<div style="padding:10px;color:var(--muted);font-size:12px">'+ct('noTeams')+'</div>';
-    return;
-  }
-  
-  // Sort teams (Herren first, then by name)
-  const sortedTeams=_kapOvSortTeams(availableTeams);
-  const allSelected=!_kapOvSelectedTeams;
-  
-  panel.innerHTML='';
-  
-  // "All teams" option
-  const allLbl=document.createElement('label');
-  allLbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:#fff;font-weight:600';
-  allLbl.addEventListener('mouseover',function(){allLbl.style.background='#222';});
-  allLbl.addEventListener('mouseout',function(){allLbl.style.background='transparent';});
-  const allCb=document.createElement('input');
-  allCb.type='checkbox';
-  allCb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
-  allCb.checked=allSelected;
-  allCb.id='_kap_teams_all';
-  allCb.addEventListener('change',function(){
-    _kapOvSelectedTeams=allCb.checked?null:[];
-    _updateTeamsLabel();
-    _buildTeamsPanelContent(panel);
-    renderKapOverview();
-  });
-  const allSpan=document.createElement('span');
-  allSpan.textContent=lang==='de'?'Alle Teams':lang==='es'?'Todos los equipos':'All teams';
-  allLbl.appendChild(allCb);
-  allLbl.appendChild(allSpan);
-  panel.appendChild(allLbl);
-  
-  // Divider
-  const div=document.createElement('div');
-  div.style.cssText='border-top:1px solid #333;margin:3px 6px';
-  panel.appendChild(div);
-  
-  // Individual teams
-  for(const team of sortedTeams){
-    const lbl=document.createElement('label');
-    lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:#aaa';
-    lbl.addEventListener('mouseover',function(){lbl.style.background='#222';});
-    lbl.addEventListener('mouseout',function(){lbl.style.background='transparent';});
-    const cb=document.createElement('input');
-    cb.type='checkbox';
-    cb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
-    cb.checked=allSelected||!!(_kapOvSelectedTeams&&_kapOvSelectedTeams.includes(team.id));
-    cb.dataset.teamId=team.id;
-    cb.addEventListener('change',function(){
-      const checked=[..._kapOvTeamsPanelEl.querySelectorAll('input[data-team-id]:checked')].map(i=>i.dataset.teamId);
-      _kapOvSelectedTeams=checked.length===sortedTeams.length?null:checked;
-      const allCb=_kapOvTeamsPanelEl.querySelector('#_kap_teams_all');
-      if(allCb)allCb.checked=!_kapOvSelectedTeams;
-      _updateTeamsLabel();
-      _buildTeamsPanelContent(panel);
-      renderKapOverview();
-    });
-    const span=document.createElement('span');
-    span.textContent=team.name;
-    lbl.appendChild(cb);
-    lbl.appendChild(span);
-    panel.appendChild(lbl);
-  }
+  const teams=(!_kapOvSelectedCats||_kapOvSelectedCats.length===0)?scopeTeams():scopeTeams().filter(t=>_kapOvSelectedCats.includes(t.category));
+  ovTeamsPanel(panel,{teams:_kapOvSortTeams(teams),selected:()=>_kapOvSelectedTeams,set:v=>{_kapOvSelectedTeams=v;},allId:'_kap_teams_all',
+    changed:()=>{_updateTeamsLabel();_buildTeamsPanelContent(panel);renderKapOverview();}});
 }
 
 function _updateTeamsLabel(){
@@ -1199,15 +1076,11 @@ function _updateMultiCatLabel(){
   else lbl.textContent=_kapOvSelectedCats.join(', ');
 }
 
-function updateMultiCatLabel(){_updateMultiCatLabel();}
 function buildMultiCatList(){
   _kapOvSelectedCats=null;
   if(_kapOvPanelEl){_kapOvPanelEl.remove();_kapOvPanelEl=null;}
   _updateMultiCatLabel();
 }
-function onMultiSelectChange(){}
-function onMultiCatAll(){}
-function onMultiCatChange(){}
 
 function setKapOverviewMode(mode){
   _kapOvMode=mode;
@@ -1219,87 +1092,8 @@ function setKapOverviewMode(mode){
 }
 
 function renderKapOverview(){
-  if(_kapOvMode==='matches'){
-    renderKapOverviewMatches(_kapOvSelectedCats);
-    return;
-  }
-
-  // ── SPIELER MODE ──
-  const el=document.getElementById('kap-overview-content');
-  const selected=_kapOvSelectedCats;
-
-  function renderPlayersTable(teams,players,matches){
-    if(!matches.length)return'';
-    const dates=[...new Set(matches.map(m=>m.date))].sort();
-    function shortName(t){
-      if(!t)return'?';
-      return t.name.replace('Herren','H').replace('Damen','D').replace('Senioren','Sen').replace('Seniorinnen','SenF').trim();
-    }
-    let html=`<table style="border-collapse:collapse;font-size:12px;min-width:100%;margin-bottom:24px">
-      <thead><tr style="border-bottom:1px solid var(--border2)">
-        <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:160px">${tr('colPlayer')}</th>
-        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">${tr('colLK')}</th>
-        ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
-      </tr></thead><tbody>`;
-    for(const p of players){
-      const smTeams=teams.filter(t=>state.mainTeam[p.id]?.[t.id]);
-      const smLabel=smTeams.length?smTeams.map(t=>t.name).join(', '):null;
-      html+=`<tr style="border-bottom:1px solid var(--border)22">
-        <td style="padding:7px 12px;white-space:nowrap">
-          <span style="font-weight:600">${p.name}</span>
-          ${smLabel?`<span style="font-size:11px;color:#d4a017;margin-left:4px">★ ${smLabel}</span>`:''}
-        </td>
-        <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:11px">${p.lkStr||'?'}</span></td>`;
-      for(const d of dates){
-        const dayMatches=matches.filter(m=>m.date===d&&p.teamIds.includes(m.teamId)).sort((a,b)=>teamNumber(teamById(a.teamId)||{})-teamNumber(teamById(b.teamId)||{}));
-        if(!dayMatches.length){html+=`<td style="padding:7px 10px;text-align:center;color:var(--border2)">—</td>`;continue;}
-        let cellHtml='<td style="padding:4px 6px;text-align:center;min-width:80px"><div style="display:flex;flex-direction:column;gap:3px">';
-        for(const m of dayMatches){
-          const team=teamById(m.teamId);
-          const sz=teamSize(team);
-          const slots=state.lineups[m.id]||[];
-          const inLineup=slots.slice(0,sz).includes(p.id);
-          const isErsatz=slots[sz]===p.id;
-          const avail=state.availability[m.id]?.[p.id]||'';
-          const sn=shortName(team);
-          let bg,col,icon,sublabel;
-          if(inLineup){bg='#1a2e26';col='var(--court)';icon='✓';sublabel=sn;}
-          else if(isErsatz){bg='#252525';col='var(--muted)';icon='E';sublabel=sn;}
-          else if(avail==='yes'){bg='#1a2a1a';col='#52c97a';icon=tr('overviewIconYes');sublabel=sn;}
-          else if(avail==='conditional'){bg='rgba(82,201,122,.08)';col='#52c97a';icon='('+tr('overviewIconYes')+')';sublabel=sn;}
-          else if(avail==='notfall'){bg='#2e2a1a';col='var(--warn)';icon=tr('overviewIconNotfall');sublabel=sn;}
-          else if(avail==='no'){bg='#2d1a1a';col='var(--danger)';icon='✗';sublabel=sn;}
-          else{bg='transparent';col='#444';icon='?';sublabel=sn;}
-          cellHtml+=`<div style="background:${bg};border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;color:${col};white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:6px">
-            <span style="opacity:.7;font-size:11px;font-weight:500">${sublabel}</span>
-            <span>${icon}</span>
-          </div>`;
-        }
-        cellHtml+='</div></td>';
-        html+=cellHtml;
-      }
-      html+='</tr>';
-    }
-    html+='</tbody></table>';
-    return html;
-  }
-
-  const ll=tr('legendLabels');
-  const legendColors=['var(--court)','var(--muted)','#52c97a','var(--warn)','var(--danger)','#d4a017'];
-  const legend=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:8px 12px;background:#181818;border-radius:8px;font-size:11px">
-    ${ll.map((l,i)=>`<span style="color:${legendColors[i]}">■ ${l}</span>`).join('')}
-  </div>`;
-
-  // Single table with filtered categories
-  let teams=_kapOvSortTeams(!selected||!selected.length?scopeTeams():scopeTeams().filter(t=>selected.includes(t.category)));
-  // Apply team filter
-  if(_kapOvSelectedTeams&&_kapOvSelectedTeams.length>0){
-    teams=teams.filter(t=>_kapOvSelectedTeams.includes(t.id));
-  }
-  const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
-  const players=[...state.players.filter(p=>p.teamIds.some(tid=>teams.find(t=>t.id===tid)))].sort((a,b)=>(a.rank||999)-(b.rank||999));
-  if(!matches.length){el.innerHTML=legend+'<div class="empty">Keine Spiele</div>';return;}
-  el.innerHTML=legend+renderPlayersTable(teams,players,matches);
+  if(_kapOvMode==='matches')renderKapOverviewMatches(_kapOvSelectedCats);
+  else document.getElementById('kap-overview-content').innerHTML=ovPlayersHtml(_kapOvTeams(_kapOvSelectedCats));
 }
 
 function goToMatchKap(matchId){
@@ -1310,170 +1104,15 @@ function goToMatchKap(matchId){
   document.getElementById('avail-panel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function renderKapOverviewMatches(selectedCats){
-  const el=document.getElementById('kap-overview-content');
+// teams shown in the Overview: own scope, categories, team filter and order
+function _kapOvTeams(selectedCats){
   let teams=_kapOvSortTeams((!selectedCats||selectedCats.length===0)?scopeTeams():scopeTeams().filter(t=>selectedCats.includes(t.category)));
-  // Apply team filter
-  if(_kapOvSelectedTeams&&_kapOvSelectedTeams.length>0){
-    teams=teams.filter(t=>_kapOvSelectedTeams.includes(t.id));
-  }
-  const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
-  if(!matches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
-  const dates=[...new Set(matches.map(m=>m.date))].sort();
-  const allCatPlayers=state.players.filter(p=>p.teamIds.some(tid=>teams.find(t=>t.id===tid)));
-  function getFirstName(p){
-    if(!p)return'—';
-    const rn=p.rawName||p.raw_name||p.name;
-    if(rn.includes(','))return rn.split(',')[1].trim().split(' ')[0];
-    return p.name.trim().split(' ')[0];
-  }
-  function getLastInitials(p){
-    if(!p)return'';
-    const rn=p.rawName||p.raw_name||p.name;
-    const surname=rn.includes(',')?rn.split(',')[0].trim():p.name.trim().split(' ').slice(1).join(' ');
-    return surname.split(/[ -]+/).map(w=>w[0]).join('.')+'.';
-  }
-  const catFirstNameCounts={};
-  for(const cp of allCatPlayers){const fn=getFirstName(cp);catFirstNameCounts[fn]=(catFirstNameCounts[fn]||0)+1;}
-  // ── HELPER FUNCTIONS ──
-function shortPN(p){
-    if(!p)return'—';
-    const fn=getFirstName(p);
-    if(catFirstNameCounts[fn]>1)return`${fn} ${getLastInitials(p)}`;
-    return fn;
-  }
-
-  let html=`<table style="border-collapse:collapse;font-size:12px;min-width:100%">
-    <thead><tr style="border-bottom:1px solid var(--border2)">
-      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:100px">${ct('teamCol')}</th>
-      ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
-    </tr></thead><tbody>`;
-
-  for(const team of teams){
-    html+=`<tr style="border-top:2px solid var(--border2)">
-      <td style="padding:8px 12px;font-weight:600;color:var(--court);white-space:nowrap;vertical-align:top">${team.name}</td>`;
-    for(const d of dates){
-      const m=matches.find(x=>x.teamId===team.id&&x.date===d);
-      if(!m){html+=`<td style="padding:8px 10px;text-align:center;color:var(--border2);vertical-align:top">—</td>`;continue;}
-      const sz=teamSize(team);
-      const slots=state.lineups[m.id]||[];
-      const mainSlots=slots.slice(0,sz);
-      const filled=mainSlots.filter(Boolean).length;
-      const complete=filled>=sz;
-      const partial=filled>0&&!complete;
-      const bg=complete?'#1a2e26':partial?'#2e2a15':'#1a1a1a';
-      const col=complete?'var(--court)':partial?'#ffd700':'var(--muted)';
-      const icon=complete?'✓':partial?'⏳':'·';
-      const ersatzPid=slots[sz]||null;
-      let playersHtml='';
-      for(let i=0;i<sz;i++){
-        const pid=mainSlots[i];
-        const p=pid?playerById(pid):null;
-        playersHtml+=`<div style="font-size:11px;padding:1px 0;color:${p?'var(--white)':'#2e4a42'};display:flex;gap:4px;align-items:center">
-          <span style="color:var(--muted);min-width:12px;font-size:11px">${i+1}.</span>
-          <span title="${p?p.name:''}">${shortPN(p)}</span>
-        </div>`;
-      }
-      if(ersatzPid){
-        const ep=playerById(ersatzPid);
-        if(ep)playersHtml+=`<div style="font-size:11px;padding:2px 0;border-top:1px dashed var(--border2);margin-top:2px;color:var(--muted);display:flex;gap:4px;align-items:center">
-          <span style="color:var(--muted);min-width:12px;font-size:11px">E.</span>
-          <span title="${ep.name}">${shortPN(ep)}</span>
-        </div>`;
-      }
-      html+=`<td style="padding:6px 8px;vertical-align:top">
-        <div onclick="goToMatchKap('${m.id}')" style="cursor:pointer;background:${bg};border-radius:8px;padding:6px 8px;min-width:100px">
-          <div style="font-size:11px;font-weight:600;color:${col};margin-bottom:4px;width:0;min-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${(m.opponent||'').replace(/"/g,'&quot;')}">${icon} ${m.opponent||''}</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:5px">${m.time} · ${m.home==='Heim'?'H':'A'} · ${filled}/${sz}</div>
-          <div style="border-top:1px solid var(--border2);padding-top:4px">${playersHtml}</div>
-        </div>
-      </td>`;
-    }
-    html+='</tr>';
-  }
-
-  // ── NICHT AUFGESTELLT row ──
-  const naLabel=lang==='de'?'Nicht aufgestellt':lang==='es'?'No alineados':'Not in lineup';
-  html+=`<tr style="border-top:2px solid var(--border2);background:#0f0f0f">
-    <td style="padding:8px 12px;font-weight:600;color:var(--muted);white-space:nowrap;vertical-align:top;font-size:11px;text-transform:uppercase;letter-spacing:.5px">${naLabel}</td>`;
-  for(const d of dates){
-    const dayMatches=matches.filter(x=>x.date===d);
-    if(!dayMatches.length){html+=`<td style="padding:8px 10px;text-align:center;color:var(--border2);vertical-align:top">—</td>`;continue;}
-    // Build set of player IDs in lineup or Ersatz across all matches that day
-    const inLineupAcrossDay=new Set();
-    for(const dm of dayMatches){
-      const dmTeam=teamById(dm.teamId);
-      const dmSz=teamSize(dmTeam);
-      const dmSlots=state.lineups[dm.id]||[];
-      dmSlots.slice(0,dmSz).filter(Boolean).forEach(pid=>inLineupAcrossDay.add(pid));
-      if(dmSlots[dmSz])inLineupAcrossDay.add(dmSlots[dmSz]);
-    }
-    // Collect available players from all teams playing this day, deduplicated by player id
-    const availMap=new Map(); // pid -> {p, a (best status)}
-    const ord={yes:0,conditional:1,notfall:2};
-    for(const dm of dayMatches){
-      const dmTeamPlayers=state.players.filter(p=>p.teamIds.includes(dm.teamId));
-      for(const p of dmTeamPlayers){
-        if(inLineupAcrossDay.has(p.id))continue;
-        const a=state.availability[dm.id]?.[p.id]||'';
-        if(a!=='yes'&&a!=='conditional'&&a!=='notfall')continue;
-        const existing=availMap.get(p.id);
-        if(!existing||ord[a]<ord[existing.a])availMap.set(p.id,{p,a});
-      }
-    }
-    if(!availMap.size){html+=`<td style="padding:8px 10px;text-align:center;color:var(--border2);vertical-align:top">—</td>`;continue;}
-    const sorted=[...availMap.values()].sort((x,y)=>{
-      if(ord[x.a]!==ord[y.a])return ord[x.a]-ord[y.a];
-      return (x.p.rank||999)-(y.p.rank||999);
-    });
-    let cellHtml='<td style="padding:6px 8px;vertical-align:top">';
-    for(const x of sorted){
-      const c=x.a==='yes'?'#52c97a':x.a==='conditional'?'rgba(82,201,122,.7)':'var(--warn)';
-      const mark=x.a==='yes'?'✓':x.a==='conditional'?'(✓)':'!';
-      cellHtml+=`<div style="font-size:11px;padding:1px 0;color:${c};display:flex;gap:4px;align-items:center;white-space:nowrap">
-        <span style="min-width:14px;font-size:11px;opacity:.8">${mark}</span>
-        <span title="${x.p.name}">${shortPN(x.p)}</span>
-      </div>`;
-    }
-    cellHtml+='</td>';
-    html+=cellHtml;
-  }
-  html+='</tr>';
-
-  html+='</tbody></table>';
-  html+=`<div style="margin-top:16px;padding:12px;background:#1a1a1a;border-radius:8px;border:1px solid var(--border2)">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:11px">
-      <div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <span style="color:var(--court);font-size:14px">●</span>
-          <span style="color:var(--muted)">${ct('fullLineup')}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <span style="color:#ffd700;font-size:14px">●</span>
-          <span style="color:var(--muted)">${ct('partLineup')}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="color:var(--muted);font-size:14px">●</span>
-          <span style="color:var(--muted)">${ct('stillOpen')}</span>
-        </div>
-      </div>
-      <div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <span style="color:#52c97a;font-size:14px">✓</span>
-          <span style="color:var(--muted)">${ct('yesPrio1')}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <span style="color:rgba(82,201,122,.7);font-size:14px">(✓)</span>
-          <span style="color:var(--muted)">${ct('prio2')}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="color:var(--warn);font-size:14px">!</span>
-          <span style="color:var(--muted)">${ct('notfall')}</span>
-        </div>
-      </div>
-    </div>
-  </div>`;
-  el.innerHTML=html;
+  if(_kapOvSelectedTeams&&_kapOvSelectedTeams.length>0)teams=teams.filter(t=>_kapOvSelectedTeams.includes(t.id));
+  return teams;
+}
+// the tables come from common.js (OVERVIEW), the same as in admin
+function renderKapOverviewMatches(selectedCats){
+  document.getElementById('kap-overview-content').innerHTML=ovMatchesHtml(_kapOvTeams(selectedCats),{open:'goToMatchKap'});
 }
 // open in the language chosen last time (static texts are German)
 if(lang!=='de')setLang(lang);
