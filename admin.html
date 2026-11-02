@@ -1192,7 +1192,7 @@ function renderPlayers(){
   const el=document.getElementById('player-list');
   if(!players.length){el.innerHTML=`<div class="empty">${tr('noPlayers')}</div>`;return;}
   el.innerHTML=players.map(p=>{
-    const teams=p.teamIds.map(tid=>teamById(tid)).filter(Boolean);
+    const teams=p.teamIds.map(tid=>teamById(tid)).filter(Boolean).sort(_teamsByCatNum); // Herren, Herren II, Herren 30, …
     const cats=[...new Set(teams.map(t=>t.category))];
     let blockedChips='',warnChips='';
     for(const cat of cats){const{blocked,warned}=getPlayerBlockStatus(p.id,cat);for(const b of blocked)blockedChips+=`<span class="blocked-badge">⛔ ${b.name}</span>`;for(const w of warned)warnChips+=`<span class="warn-badge">⚠️ ${w.name}</span>`;}
@@ -2220,9 +2220,9 @@ function _statsAnswers(m){
   c.stammAvailable=stamm.filter(p=>['yes','conditional','notfall'].includes(avail[p.id])).length;
   return c;
 }
-// average LK of the main lineup (a player that is gone counts as LK 99)
+// average LK of the main lineup (a player that is gone counts as LK 99); Winter and 4er teams = 4 players
 function _statsLineupLK(m,team){
-  const size=team.is_4er?4:6;
+  const size=teamSize(team);
   const ids=(state.lineups[m.id]||[]).slice(0,size).filter(Boolean);
   return _round1Avg(ids.map(pid=>{const p=state.players.find(pl=>pl.id===pid);return p?(p.lk||99):99;}));
 }
@@ -2274,7 +2274,7 @@ function _statsLKSortTeams(teams){
 }
 // LKs per lineup position, from the matches where the main lineup was complete
 function _statsPositionLKs(team){
-  const size=team.is_4er?4:6;
+  const size=teamSize(team);
   const pos=Array(size).fill(null).map(()=>[]);
   let games=0;
   for(const m of state.matches.filter(x=>x.teamId===team.id)){
@@ -2299,7 +2299,7 @@ function renderStatsLKAnalysis(){
   const teams=_statsTeams();
   if(!teams.length){el.innerHTML='<div class="empty">Keine Teams</div>';return;}
   const sorted=_statsLKSortTeams(teams);
-  const has6=sorted.some(t=>!t.is_4er);
+  const has6=sorted.some(t=>teamSize(t)===6);
   const positions=has6?[1,2,3,4,5,6]:[1,2,3,4];
   let html=_statsTable([_statsTh(ct('teamCol'),1),...positions.map(n=>_statsTh('Pos '+n)),_statsTh('LK ⌀ Total'),_statsTh(ct('stMatchesCol'))]);
   for(const team of sorted){
