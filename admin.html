@@ -1130,42 +1130,61 @@ async function addTeam(){
 // squads in the Mannschaften tab start folded; the ones opened stay open when the list is redrawn
 const _openSquads=new Set();
 function _squadToggle(el){if(el.open)_openSquads.add(el.dataset.tid);else _openSquads.delete(el.dataset.tid);}
-function renderTeams(){
-  const el=document.getElementById('team-list');
-  if(!state.teams.length){el.innerHTML=`<div class="empty">${tr('noTeam')}</div>`;return;}
-  // Populate filter select
-  const filterSel=document.getElementById('teams-filter-team');
-  if(filterSel){
-    const cur=filterSel.value;
-    filterSel.innerHTML=`<option value="">${tr('allTeams')}</option>`+
-      [...state.teams].sort((a,b)=>{
-        // Sort: Herren → Damen → Jugend, then age group, then team number
-        const cc=catCmp(a.category,b.category);if(cc)return cc;
-        return teamNumber(a)-teamNumber(b);
-      }).map(t=>`<option value="${t.id}"${cur===t.id?' selected':''}>${t.name}</option>`).join('');
-    filterSel.value=cur;
-  }
-  const filterTeamId=filterSel?filterSel.value:'';
-  const teamsToShow=filterTeamId?state.teams.filter(t=>t.id===filterTeamId):state.teams;
-  const byCat={};
-  for(const t of teamsToShow){const c=t.category||'Herren';if(!byCat[c])byCat[c]=[];byCat[c].push(t);}
-  if(!Object.keys(byCat).length){el.innerHTML=`<div class="empty">${tr('noTeam')}</div>`;return;}
-  let html='';
-  for(const[cat,teams]of Object.entries(byCat).sort(([a],[b])=>catCmp(a,b))){
-    const sorted=teams.sort((a,b)=>teamNumber(a)-teamNumber(b));
-    html+=`<div style="margin-bottom:6px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${cat}</div>`;
-    for(const t of sorted){
-      // Show players assigned to this team whose global rank >= this team's start rank
-      const catTeams4display=state.teams.filter(x=>x.category===t.category).sort((a,b)=>teamNumber(a)-teamNumber(b));
-      const tIdx4display=catTeams4display.findIndex(x=>x.id===t.id);
-      let rankStart4display=1;
-      for(let _i=0;_i<tIdx4display;_i++)rankStart4display+=teamSize(catTeams4display[_i]);
-      const players=[...state.players.filter(p=>{
-        if(!p.teamIds.includes(t.id))return false;
-        const r=playerRankInTeam(p.id,t.id);
-        return r===999||r>=rankStart4display;
-      })].sort((a,b)=>playerRankInTeam(a.id,t.id)-playerRankInTeam(b.id,t.id)||(a.lk??99)-(b.lk??99));
-      html+=`<div class="card" style="margin-bottom:8px">
+// ── Teams list: small pieces ──
+// Herren → Damen → Jugend, then age group, then team number
+function _teamsByCatNum(a,b){
+  const cc=catCmp(a.category,b.category);if(cc)return cc;
+  return teamNumber(a)-teamNumber(b);
+}
+function _fillTeamsFilter(sel){
+  const cur=sel.value;
+  sel.innerHTML=`<option value="">${tr('allTeams')}</option>`+
+    [...state.teams].sort(_teamsByCatNum).map(t=>`<option value="${t.id}"${cur===t.id?' selected':''}>${t.name}</option>`).join('');
+  sel.value=cur;
+}
+// the team's players from its first rank on (players ranked for a higher team of the category are left out)
+function _squadPlayers(t){
+  const catTeams=state.teams.filter(x=>x.category===t.category).sort((a,b)=>teamNumber(a)-teamNumber(b));
+  const idx=catTeams.findIndex(x=>x.id===t.id);
+  let rankStart=1;
+  for(let i=0;i<idx;i++)rankStart+=teamSize(catTeams[i]);
+  return state.players.filter(p=>{
+    if(!p.teamIds.includes(t.id))return false;
+    const r=playerRankInTeam(p.id,t.id);
+    return r===999||r>=rankStart;
+  }).sort((a,b)=>playerRankInTeam(a.id,t.id)-playerRankInTeam(b.id,t.id)||(a.lk??99)-(b.lk??99));
+}
+// ★ SM / ☆ button: marks the player's Stammmannschaft
+function _smButton(p,t){
+  const on=state.mainTeam[p.id]?.[t.id];
+  return `<button id="mt-btn-${p.id}-${t.id}" onclick="toggleMainTeam('${p.id}','${t.id}')"
+            title="${on?'Stammmannschaft — click to remove':'Set as Stammmannschaft'}"
+            style="background:${on?'rgba(212,160,23,.12)':'transparent'};border:${on?'1.5px solid #d4a017':'1px solid #333'};color:${on?'#d4a017':'#8a9a94'};border-radius:6px;padding:2px 0;min-width:42px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s">
+            ${on?'★ SM':'☆'}
+          </button>`;
+}
+function _squadRow(p,i,t){
+  const rank=playerRankInTeam(p.id,t.id);
+  return `<div class="player-row" style="padding:6px 10px;margin-bottom:4px">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--court);min-width:18px">${rank<999?rank:i+1}</span>
+          <div class="player-avatar" style="width:24px;height:24px;font-size:11px">${initials(p.name)}</div>
+          <span class="player-name" style="font-size:12px">${p.name}</span>
+          <span class="year-badge">${p.year||'—'}</span>
+          <span class="lk-badge">${p.lkStr}</span>
+          ${isPlayerBlockedForTeam(p.id,t.id)?`<span class="blocked-badge">⛔</span>`:''}
+          ${_smButton(p,t)}
+        </div>`;
+}
+// the squad folds open and closed; it stays open while a single team is filtered or after the admin opened it
+function _squadHtml(t,players,open){
+  if(!players.length)return `<div style="color:var(--muted);font-size:12px">${tr('noTeamPlayers')}</div>`;
+  const blocked=players.filter(p=>isPlayerBlockedForTeam(p.id,t.id)).length;
+  return `<details class="squad" data-tid="${t.id}" ${open?'open':''} ontoggle="_squadToggle(this)">
+        <summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);padding:2px 0 6px">👥 ${ct('nPlayers')(players.length)}${blocked?` · ⛔ ${blocked}`:''}</summary>
+        ${players.map((p,i)=>_squadRow(p,i,t)).join('')}</details>`;
+}
+function _teamCard(t,filterTeamId){
+  return `<div class="card" style="margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
           <div>
             <div style="display:flex;align-items:center;gap:7px">
@@ -1179,23 +1198,22 @@ function renderTeams(){
               <button class="btn btn-danger" onclick="removeTeam('${t.id}')">✕</button>
             </div>
         </div>
-        ${players.length?`<details class="squad" data-tid="${t.id}" ${filterTeamId||_openSquads.has(t.id)?'open':''} ontoggle="_squadToggle(this)">
-        <summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);padding:2px 0 6px">👥 ${ct('nPlayers')(players.length)}${players.some(p=>isPlayerBlockedForTeam(p.id,t.id))?` · ⛔ ${players.filter(p=>isPlayerBlockedForTeam(p.id,t.id)).length}`:''}</summary>
-        ${players.map((p,i)=>`<div class="player-row" style="padding:6px 10px;margin-bottom:4px">
-          <span style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--court);min-width:18px">${playerRankInTeam(p.id,t.id)<999?playerRankInTeam(p.id,t.id):i+1}</span>
-          <div class="player-avatar" style="width:24px;height:24px;font-size:11px">${initials(p.name)}</div>
-          <span class="player-name" style="font-size:12px">${p.name}</span>
-          <span class="year-badge">${p.year||'—'}</span>
-          <span class="lk-badge">${p.lkStr}</span>
-          ${isPlayerBlockedForTeam(p.id,t.id)?`<span class="blocked-badge">⛔</span>`:''}
-          <button id="mt-btn-${p.id}-${t.id}" onclick="toggleMainTeam('${p.id}','${t.id}')"
-            title="${state.mainTeam[p.id]?.[t.id]?'Stammmannschaft — click to remove':'Set as Stammmannschaft'}"
-            style="background:${state.mainTeam[p.id]?.[t.id]?'rgba(212,160,23,.12)':'transparent'};border:${state.mainTeam[p.id]?.[t.id]?'1.5px solid #d4a017':'1px solid #333'};color:${state.mainTeam[p.id]?.[t.id]?'#d4a017':'#8a9a94'};border-radius:6px;padding:2px 0;min-width:42px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s">
-            ${state.mainTeam[p.id]?.[t.id]?'★ SM':'☆'}
-          </button>
-        </div>`).join('')}</details>`:`<div style="color:var(--muted);font-size:12px">${tr('noTeamPlayers')}</div>`}
+        ${_squadHtml(t,_squadPlayers(t),filterTeamId||_openSquads.has(t.id))}
       </div>`;
-    }
+}
+function renderTeams(){
+  const el=document.getElementById('team-list');
+  if(!state.teams.length){el.innerHTML=`<div class="empty">${tr('noTeam')}</div>`;return;}
+  const filterSel=document.getElementById('teams-filter-team');
+  if(filterSel)_fillTeamsFilter(filterSel);
+  const filterTeamId=filterSel?filterSel.value:'';
+  const byCat={};
+  for(const t of filterTeamId?state.teams.filter(t=>t.id===filterTeamId):state.teams){const c=t.category||'Herren';(byCat[c]=byCat[c]||[]).push(t);}
+  if(!Object.keys(byCat).length){el.innerHTML=`<div class="empty">${tr('noTeam')}</div>`;return;}
+  let html='';
+  for(const[cat,teams]of Object.entries(byCat).sort(([a],[b])=>catCmp(a,b))){
+    html+=`<div style="margin-bottom:6px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${cat}</div>`;
+    html+=teams.sort((a,b)=>teamNumber(a)-teamNumber(b)).map(t=>_teamCard(t,filterTeamId)).join('');
     html+='<div style="height:8px"></div>';
   }
   el.innerHTML=html;
@@ -2415,217 +2433,135 @@ function renderStatistiken(){
   }
 }
 
-function renderStatsMatches(){
-  const el=document.getElementById('stats-content');
+// ── Statistiken: small pieces ──
+function _statsTeams(){
   const selectedCats=_statsSelectedCats;
-  let teams=((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
-  // Apply team filter (reuse overview filter state)
-  if(_ovSelectedTeams&&_ovSelectedTeams.length>0){
-    teams=teams.filter(t=>_ovSelectedTeams.includes(t.id));
-  }
-  if(!teams.length){el.innerHTML='<div class="empty">Keine Teams</div>';return;}
-  
-  const allMatches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId));
-  if(!allMatches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
-  
-  // Sort matches
-  const matches=allMatches.sort((a,b)=>{
-    if(_statsSort==='date'){
-      if(a.date!==b.date)return a.date.localeCompare(b.date);
-      const teamA=teamById(a.teamId);const teamB=teamById(b.teamId);
-      return (teamA?.name||'').localeCompare(teamB?.name||'');
-    }
-    const teamA=teamById(a.teamId);const teamB=teamById(b.teamId);
-    if((teamA?.name||'')!==(teamB?.name||''))return (teamA?.name||'').localeCompare(teamB?.name||'');
-    return a.date.localeCompare(b.date);
+  let teams=(!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category));
+  // the team filter is shared with the Overview
+  if(_ovSelectedTeams&&_ovSelectedTeams.length>0)teams=teams.filter(t=>_ovSelectedTeams.includes(t.id));
+  return teams;
+}
+function _round1Avg(nums){return nums.length?Math.round(nums.reduce((a,b)=>a+b,0)/nums.length*10)/10:'—';}
+function _pctOf(n,total){return total>0?Math.round(n/total*100):0;}
+function _statsTh(label,left){
+  return `<th style="text-align:${left?'left':'center'};padding:8px ${left?'12px':'8px'};color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">${label}</th>`;
+}
+function _statsTable(ths){
+  return '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:2px solid var(--border2)">'+ths.join('')+'</tr></thead><tbody>';
+}
+function _statsNote(inner){
+  return `<div style="margin-top:20px;padding:12px;background:#222;border-radius:8px;font-size:12px;color:var(--muted)">
+    ${inner}
+  </div>`;
+}
+function _statsSortMatches(matches){
+  const nm=m=>teamById(m.teamId)?.name||'';
+  return matches.sort((a,b)=>{
+    if(_statsSort==='date')return a.date!==b.date?a.date.localeCompare(b.date):nm(a).localeCompare(nm(b));
+    return nm(a)!==nm(b)?nm(a).localeCompare(nm(b)):a.date.localeCompare(b.date);
   });
-  
-  let html='<table style="width:100%;border-collapse:collapse;font-size:11px">';
-  html+='<thead><tr style="border-bottom:2px solid var(--border2)">';
-  html+='<th style="text-align:left;padding:8px 12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">'+ct('stDate')+'</th>';
-  html+='<th style="text-align:left;padding:8px 12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">'+ct('stMatch')+'</th>';
-  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">'+ct('stAns')+'</th>';
-  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">'+ct('stYes')+'</th>';
-  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">'+ct('prio2')+'</th>';
-  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">'+ct('stNotfall')+'</th>';
-  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">'+ct('stNo')+'</th>';
-  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">'+ct('stLK')+'</th>';
-  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">'+ct('stSM')+'</th>';
-  html+='</tr></thead><tbody>';
-  
-  let totalMatches=0,totalResponses=0,totalPlayers=0,totalAvailLK=0,totalAvailCount=0;
-  
-  for(const m of matches){
-    const team=teamById(m.teamId);
-    if(!team)continue;
-    const teamPlayers=state.players.filter(p=>p.teamIds.includes(m.teamId));
-    const stammPlayers=teamPlayers.filter(p=>state.mainTeam[p.id]?.[m.teamId]);
-    const avail=state.availability[m.id]||{};
-    
-    let responded=0,ja=0,prio2=0,notfall=0,nein=0;
-    let stammAvailable=0;
-    
-    for(const p of teamPlayers){
-      const status=avail[p.id]||'';
-      if(status)responded++;
-      if(status==='yes')ja++;
-      else if(status==='conditional')prio2++;
-      else if(status==='notfall')notfall++;
-      else if(status==='no')nein++;
-    }
-    
-    for(const p of stammPlayers){
-      const status=avail[p.id]||'';
-      if(status==='yes'||status==='conditional'||status==='notfall'){
-        stammAvailable++;
-      }
-    }
-    
-    // Calculate percentages over responses, not total players
-    const jaPct=responded>0?Math.round(ja/responded*100):0;
-    const prio2Pct=responded>0?Math.round(prio2/responded*100):0;
-    const notfallPct=responded>0?Math.round(notfall/responded*100):0;
-    const neinPct=responded>0?Math.round(nein/responded*100):0;
-    
-    // Calculate lineup average LK
-    const teamSize=team.is_4er?4:6;
-    const lineup=state.lineups[m.id]||[];
-    const mainLineup=lineup.slice(0,teamSize).filter(Boolean);
-    const lineupLKs=mainLineup.map(pid=>{
-      const p=state.players.find(pl=>pl.id===pid);
-      return p?(p.lk||99):99;
-    });
-    const avgLineupLK=lineupLKs.length?Math.round(lineupLKs.reduce((a,b)=>a+b,0)/lineupLKs.length*10)/10:'—';
-    
-    html+=`<tr style="border-bottom:1px solid var(--border2)">
+}
+// answers for one match, over the team's players; Stammmannschaft = how many SM players can play
+function _statsAnswers(m){
+  const players=state.players.filter(p=>p.teamIds.includes(m.teamId));
+  const stamm=players.filter(p=>state.mainTeam[p.id]?.[m.teamId]);
+  const avail=state.availability[m.id]||{};
+  const c={players:players.length,stamm:stamm.length,responded:0,yes:0,conditional:0,notfall:0,no:0};
+  for(const p of players){
+    const s=avail[p.id]||'';
+    if(s)c.responded++;
+    if(s==='yes'||s==='conditional'||s==='notfall'||s==='no')c[s]++;
+  }
+  c.stammAvailable=stamm.filter(p=>['yes','conditional','notfall'].includes(avail[p.id])).length;
+  return c;
+}
+// average LK of the main lineup (a player that is gone counts as LK 99)
+function _statsLineupLK(m,team){
+  const size=team.is_4er?4:6;
+  const ids=(state.lineups[m.id]||[]).slice(0,size).filter(Boolean);
+  return _round1Avg(ids.map(pid=>{const p=state.players.find(pl=>pl.id===pid);return p?(p.lk||99):99;}));
+}
+function _statsMatchRow(m,team,c,lk){
+  // percentages are over the answers, not over all players
+  const share=(n,color)=>`<td style="padding:6px 8px;text-align:center;color:${color}">${n} (${_pctOf(n,c.responded)}%)</td>`;
+  return `<tr style="border-bottom:1px solid var(--border2)">
       <td style="padding:6px 12px;white-space:nowrap">${fmtDate(m.date)}</td>
       <td style="padding:6px 12px">${team.name} vs ${(m.opponent||'').substring(0,20)}</td>
-      <td style="padding:6px 8px;text-align:center">${responded}/${teamPlayers.length}</td>
-      <td style="padding:6px 8px;text-align:center;color:#52c97a">${ja} (${jaPct}%)</td>
-      <td style="padding:6px 8px;text-align:center;color:rgba(82,201,122,.7)">${prio2} (${prio2Pct}%)</td>
-      <td style="padding:6px 8px;text-align:center;color:var(--warn)">${notfall} (${notfallPct}%)</td>
-      <td style="padding:6px 8px;text-align:center;color:var(--danger)">${nein} (${neinPct}%)</td>
-      <td style="padding:6px 8px;text-align:center">${avgLineupLK}</td>
-      <td style="padding:6px 8px;text-align:center">${stammAvailable}/${stammPlayers.length}</td>
+      <td style="padding:6px 8px;text-align:center">${c.responded}/${c.players}</td>
+      ${share(c.yes,'#52c97a')}
+      ${share(c.conditional,'rgba(82,201,122,.7)')}
+      ${share(c.notfall,'var(--warn)')}
+      ${share(c.no,'var(--danger)')}
+      <td style="padding:6px 8px;text-align:center">${lk}</td>
+      <td style="padding:6px 8px;text-align:center">${c.stammAvailable}/${c.stamm}</td>
     </tr>`;
-    
-    totalMatches++;
-    totalResponses+=responded;
-    totalPlayers+=teamPlayers.length;
-    if(typeof avgLineupLK==='number'){totalAvailLK+=avgLineupLK;totalAvailCount++;}
+}
+function renderStatsMatches(){
+  const el=document.getElementById('stats-content');
+  const teams=_statsTeams();
+  if(!teams.length){el.innerHTML='<div class="empty">Keine Teams</div>';return;}
+  const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId));
+  if(!matches.length){el.innerHTML='<div class="empty">Keine Spiele</div>';return;}
+  let html=_statsTable([_statsTh(ct('stDate'),1),_statsTh(ct('stMatch'),1),...['stAns','stYes','prio2','stNotfall','stNo','stLK','stSM'].map(k=>_statsTh(ct(k)))]);
+  let shown=0,answers=0,players=0;const lks=[];
+  for(const m of _statsSortMatches(matches)){
+    const team=teamById(m.teamId);
+    if(!team)continue;
+    const c=_statsAnswers(m),lk=_statsLineupLK(m,team);
+    html+=_statsMatchRow(m,team,c,lk);
+    shown++;answers+=c.responded;players+=c.players;
+    if(typeof lk==='number')lks.push(lk);
   }
-  
   html+='</tbody></table>';
-  
-  const avgResponseRate=totalPlayers>0?Math.round(totalResponses/totalPlayers*100):'—';
-  const overallAvgLK=totalAvailCount>0?Math.round(totalAvailLK/totalAvailCount*10)/10:'—';
-  
-  html+=`<div style="margin-top:20px;padding:12px;background:#222;border-radius:8px;font-size:12px;color:var(--muted)">
-    <strong style="color:var(--white)">${totalMatches}</strong> ${ct('stMatches')} · 
-    <strong style="color:var(--white)">${avgResponseRate}%</strong> ${ct('stRate')} · 
-    ${ct('stLKAvg')} <strong style="color:var(--white)">${overallAvgLK}</strong>
-  </div>`;
-  
-  el.innerHTML=html;
+  const rate=players>0?Math.round(answers/players*100):'—';
+  el.innerHTML=html+_statsNote(`<strong style="color:var(--white)">${shown}</strong> ${ct('stMatches')} · 
+    <strong style="color:var(--white)">${rate}%</strong> ${ct('stRate')} · 
+    ${ct('stLKAvg')} <strong style="color:var(--white)">${_round1Avg(lks)}</strong>`);
 }
 
-function renderStatsLKAnalysis(){
-  const el=document.getElementById('stats-content');
-  const selectedCats=_statsSelectedCats;
-  let teams=((!selectedCats||selectedCats.length===0)?state.teams:state.teams.filter(t=>selectedCats.includes(t.category)));
-  // Apply team filter (reuse overview filter state)
-  if(_ovSelectedTeams&&_ovSelectedTeams.length>0){
-    teams=teams.filter(t=>_ovSelectedTeams.includes(t.id));
-  }
-  if(!teams.length){el.innerHTML='<div class="empty">Keine Teams</div>';return;}
-  
-  // Sort teams by name for consistent display
-  const sortedTeams=teams.sort((a,b)=>{
-    // Herren → Damen → Jugend
+// Herren → Damen → Jugend, then by name (sorts the list in place, as before)
+function _statsLKSortTeams(teams){
+  return teams.sort((a,b)=>{
     const ga=catGroup(a.category),gb=catGroup(b.category);
     if(ga!==gb)return ga-gb;
     return a.name.localeCompare(b.name);
   });
-  
-  let html='<table style="width:100%;border-collapse:collapse;font-size:11px">';
-  html+='<thead><tr style="border-bottom:2px solid var(--border2)">';
-  html+='<th style="text-align:left;padding:8px 12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">'+ct('teamCol')+'</th>';
-  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 1</th>';
-  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 2</th>';
-  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 3</th>';
-  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 4</th>';
-  
-  // Check if any team has 6-player format
-  const has6Players=sortedTeams.some(t=>!t.is_4er);
-  if(has6Players){
-    html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 5</th>';
-    html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pos 6</th>';
+}
+// LKs per lineup position, from the matches where the main lineup was complete
+function _statsPositionLKs(team){
+  const size=team.is_4er?4:6;
+  const pos=Array(size).fill(null).map(()=>[]);
+  let games=0;
+  for(const m of state.matches.filter(x=>x.teamId===team.id)){
+    const ids=(state.lineups[m.id]||[]).slice(0,size).filter(Boolean);
+    if(ids.length!==size)continue;
+    games++;
+    ids.forEach((pid,i)=>{const p=state.players.find(x=>x.id===pid);if(p)pos[i].push(p.lk||99);});
   }
-  
-  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">LK ⌀ Total</th>';
-  html+='<th style="text-align:center;padding:8px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">'+ct('stMatchesCol')+'</th>';
-  html+='</tr></thead><tbody>';
-  
-  for(const team of sortedTeams){
-    const teamMatches=state.matches.filter(m=>m.teamId===team.id);
-    if(!teamMatches.length)continue;
-    
-    const teamSize=team.is_4er?4:6;
-    const positionLKs=Array(teamSize).fill(null).map(()=>[]);
-    let totalGames=0;
-    
-    // Collect LK data for each position across all matches
-    for(const match of teamMatches){
-      const lineup=state.lineups[match.id]||[];
-      const mainLineup=lineup.slice(0,teamSize).filter(Boolean);
-      
-      if(mainLineup.length===teamSize){
-        totalGames++;
-        for(let pos=0;pos<teamSize;pos++){
-          const playerId=mainLineup[pos];
-          const player=state.players.find(p=>p.id===playerId);
-          if(player){
-            positionLKs[pos].push(player.lk||99);
-          }
-        }
-      }
-    }
-    
-    // Calculate averages for each position
-    const positionAverages=positionLKs.map(lks=>{
-      return lks.length>0?Math.round(lks.reduce((a,b)=>a+b,0)/lks.length*10)/10:'—';
-    });
-    
-    // Calculate overall team average
-    const allLKs=positionLKs.flat();
-    const teamAverage=allLKs.length>0?Math.round(allLKs.reduce((a,b)=>a+b,0)/allLKs.length*10)/10:'—';
-    
-    html+=`<tr style="border-bottom:1px solid var(--border2)">
+  return {pos,games};
+}
+function _statsLKRow(team,{pos,games},has6){
+  const td=(v,extra='')=>`<td style="padding:6px 8px;text-align:center${extra}">${v}</td>`;
+  let html=`<tr style="border-bottom:1px solid var(--border2)">
       <td style="padding:8px 12px;font-weight:600">${team.name}</td>`;
-    
-    // Add position columns
-    for(let i=0;i<teamSize;i++){
-      html+=`<td style="padding:6px 8px;text-align:center">${positionAverages[i]}</td>`;
-    }
-    
-    // Fill empty columns for 4-player teams if table has 6 columns
-    if(teamSize===4&&has6Players){
-      html+=`<td style="padding:6px 8px;text-align:center;color:var(--muted)">—</td>`;
-      html+=`<td style="padding:6px 8px;text-align:center;color:var(--muted)">—</td>`;
-    }
-    
-    html+=`<td style="padding:6px 8px;text-align:center;font-weight:600">${teamAverage}</td>`;
-    html+=`<td style="padding:6px 8px;text-align:center;color:var(--muted)">${totalGames}</td>`;
-    html+=`</tr>`;
+  html+=pos.map(lks=>td(_round1Avg(lks))).join('');
+  // a 4er team in a table with 6 positions: empty Pos 5 and 6
+  if(pos.length===4&&has6)html+=td('—',';color:var(--muted)')+td('—',';color:var(--muted)');
+  return html+td(_round1Avg(pos.flat()),';font-weight:600')+td(games,';color:var(--muted)')+'</tr>';
+}
+function renderStatsLKAnalysis(){
+  const el=document.getElementById('stats-content');
+  const teams=_statsTeams();
+  if(!teams.length){el.innerHTML='<div class="empty">Keine Teams</div>';return;}
+  const sorted=_statsLKSortTeams(teams);
+  const has6=sorted.some(t=>!t.is_4er);
+  const positions=has6?[1,2,3,4,5,6]:[1,2,3,4];
+  let html=_statsTable([_statsTh(ct('teamCol'),1),...positions.map(n=>_statsTh('Pos '+n)),_statsTh('LK ⌀ Total'),_statsTh(ct('stMatchesCol'))]);
+  for(const team of sorted){
+    if(!state.matches.some(m=>m.teamId===team.id))continue;
+    html+=_statsLKRow(team,_statsPositionLKs(team),has6);
   }
-  
-  html+='</tbody></table>';
-  
-  html+=`<div style="margin-top:20px;padding:12px;background:#222;border-radius:8px;font-size:12px;color:var(--muted)">
-    📊 ${ct('lkAnalysisNote')}
-  </div>`;
-  
-  el.innerHTML=html;
+  el.innerHTML=html+'</tbody></table>'+_statsNote(`📊 ${ct('lkAnalysisNote')}`);
 }
 
 // Init drop zones after DOM ready
@@ -2688,51 +2624,47 @@ async function loadUmfrage(){
   renderUmfrage();
 }
 
-function renderUmfrage(){
-  document.getElementById('um-title').textContent=umT('title');
-  document.getElementById('um-sub').textContent=umT('sub');
-  document.getElementById('um-reload').textContent=umT('reload');
-  document.getElementById('um-csv').textContent=umT('csv');
-  renderActiveSurveyForm();
-  const out=document.getElementById('um-content');
-  if(_umRows===null)return;
-  if(_umErr){out.innerHTML=`<div style="color:var(--danger);font-size:13px">${umT('err')}</div>`;return;}
-  // survey selector: newest season first
+// ── Umfrage results: small pieces ──
+function _umHeaderTexts(){
+  for(const k of ['title','sub','reload','csv'])document.getElementById('um-'+k).textContent=umT(k);
+}
+// survey selector: the survey with the latest answer first (_umRows is newest-first)
+function _umFillSurveySelect(){
   const sel=document.getElementById('um-survey');
-  const keys=[...new Set(_umRows.map(umKey))]; // _umRows is newest-first → survey with the latest answer comes first
+  const keys=[...new Set(_umRows.map(umKey))];
   const cur=keys.includes(sel.value)?sel.value:keys[0];
   sel.innerHTML=keys.map(k=>`<option value="${umEsc(k)}"${k===cur?' selected':''}>${umEsc(umLabel(k))}</option>`).join('');
   sel.style.display=keys.length?'':'none';
-  if(!keys.length){out.innerHTML=`<div style="color:var(--muted);font-size:13px">${umT('none')}</div>`;return;}
-  const rows=_umRows.filter(r=>umKey(r)===cur);
-  const yes=rows.filter(r=>r.participates);
-  const caps=yes.filter(r=>r.captain);
-  // per category
+  return {keys,cur};
+}
+// per category: answers, how many put it first, and the commitment counts
+function _umCategoryTally(yes){
   const cats={};
   for(const r of yes)for(const c of(r.categories||[])){
     cats[c]=cats[c]||{total:0,first:0,all:0,half:0,ersatz:0};
     cats[c].total++;if(r.commitment&&cats[c][r.commitment]!==undefined)cats[c][r.commitment]++;
     if((r.categories||[])[0]===c)cats[c].first++; // categories are stored in priority order
   }
-  const catNames=Object.keys(cats).sort((a,b)=>{
-    const ma=a.startsWith('Mixed'),mb=b.startsWith('Mixed');if(ma!==mb)return ma?1:-1;
-    return catCmp(a.replace(/ Doppel$/,''),b.replace(/ Doppel$/,''));
-  });
-  const stat=(n,l)=>`<div class="stat-card"><div class="stat-num">${n}</div><div class="stat-label">${l}</div></div>`;
-  const sorted=[...rows].sort((a,b)=>(b.participates-a.participates)||a.name.localeCompare(b.name,'de'));
-  const fmtD=d=>d?new Date(d).toLocaleDateString(lang==='en'?'en-GB':lang==='es'?'es-AR':'de-DE'):'';
-  out.innerHTML=`
-    <div class="stats-row">${stat(rows.length,umT('answers'))}${stat(yes.length,umT('yes'))}${stat(rows.length-yes.length,umT('no'))}${stat(caps.length,umT('captains'))}</div>
-    <div class="card" style="overflow-x:auto">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--court);margin-bottom:6px">${umT('byCat')}</div>
-      ${catNames.length?`<table class="avail-table"><thead><tr><th>${umT('cat')}</th><th>${umT('total')}</th><th>${umT('first')}</th><th>${umT('all')}</th><th>${umT('half')}</th><th>${umT('ersatz')}</th></tr></thead><tbody>
-        ${catNames.map(c=>`<tr><td style="font-weight:600">${umEsc(c)}</td><td style="color:var(--court);font-weight:700">${cats[c].total}</td><td>${cats[c].first}</td><td>${cats[c].all}</td><td>${cats[c].half}</td><td>${cats[c].ersatz}</td></tr>`).join('')}
-      </tbody></table>`:`<div style="color:var(--muted);font-size:12px">—</div>`}
-    </div>
-    <div class="card" style="overflow-x:auto">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--court);margin-bottom:6px">${umT('list')}</div>
-      <table class="avail-table"><thead><tr><th>${umT('name')}</th><th>${umT('lk')}</th><th>${umT('year')}</th><th>${umT('part')}</th><th>${umT('cats')}</th><th>${umT('freq')}</th><th>${umT('mf')}</th><th>${umT('comment')}</th><th>${umT('date')}</th><th></th></tr></thead><tbody>
-      ${sorted.map(r=>`<tr>
+  return cats;
+}
+// usual category order, Mixed last
+function _umCatOrder(a,b){
+  const ma=a.startsWith('Mixed'),mb=b.startsWith('Mixed');if(ma!==mb)return ma?1:-1;
+  return catCmp(a.replace(/ Doppel$/,''),b.replace(/ Doppel$/,''));
+}
+function _umStat(n,l){return `<div class="stat-card"><div class="stat-num">${n}</div><div class="stat-label">${l}</div></div>`;}
+function _umCardTitle(t){return `<div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--court);margin-bottom:6px">${t}</div>`;}
+function _umHeadRow(keys){return `<thead><tr>${keys.map(k=>`<th>${k?umT(k):''}</th>`).join('')}</tr></thead>`;}
+function _umCatTable(cats){
+  const names=Object.keys(cats).sort(_umCatOrder);
+  if(!names.length)return `<div style="color:var(--muted);font-size:12px">—</div>`;
+  return `<table class="avail-table">${_umHeadRow(['cat','total','first','all','half','ersatz'])}<tbody>
+        ${names.map(c=>`<tr><td style="font-weight:600">${umEsc(c)}</td><td style="color:var(--court);font-weight:700">${cats[c].total}</td><td>${cats[c].first}</td><td>${cats[c].all}</td><td>${cats[c].half}</td><td>${cats[c].ersatz}</td></tr>`).join('')}
+      </tbody></table>`;
+}
+function _umDate(d){return d?new Date(d).toLocaleDateString(lang==='en'?'en-GB':lang==='es'?'es-AR':'de-DE'):'';}
+function _umAnswerRow(r){
+  return `<tr>
         <td style="font-weight:600;white-space:nowrap">${umEsc(r.name)}${r.player_id?'':` <span style="font-size:11px;color:var(--warn)">${umT('newP')}</span>`}</td>
         <td>${umEsc(r.lk||'—')}</td><td>${umEsc(r.birth_year||'')}</td>
         <td style="color:${r.participates?'var(--court)':'var(--danger)'};font-weight:700">${r.participates?'✓ '+umT('yes'):'✗ '+umT('no')}</td>
@@ -2740,10 +2672,37 @@ function renderUmfrage(){
         <td>${r.commitment?umEsc(umT('freqL')[r.commitment]):''}</td>
         <td>${r.captain?'✓':''}</td>
         <td style="max-width:220px;color:var(--muted)">${umEsc(r.comment||'')}</td>
-        <td style="white-space:nowrap;color:var(--muted)">${fmtD(r.updated_at||r.created_at)}</td>
+        <td style="white-space:nowrap;color:var(--muted)">${_umDate(r.updated_at||r.created_at)}</td>
         <td><button class="btn btn-danger" onclick="deleteUmfrage('${umEsc(r.id)}')">✕</button></td>
-      </tr>`).join('')}
-      </tbody></table>
+      </tr>`;
+}
+// all answers: who plays first, then by name
+function _umAnswersTable(rows){
+  const sorted=[...rows].sort((a,b)=>(b.participates-a.participates)||a.name.localeCompare(b.name,'de'));
+  return `<table class="avail-table">${_umHeadRow(['name','lk','year','part','cats','freq','mf','comment','date',''])}<tbody>
+      ${sorted.map(_umAnswerRow).join('')}
+      </tbody></table>`;
+}
+function renderUmfrage(){
+  _umHeaderTexts();
+  renderActiveSurveyForm();
+  const out=document.getElementById('um-content');
+  if(_umRows===null)return;
+  if(_umErr){out.innerHTML=`<div style="color:var(--danger);font-size:13px">${umT('err')}</div>`;return;}
+  const {keys,cur}=_umFillSurveySelect();
+  if(!keys.length){out.innerHTML=`<div style="color:var(--muted);font-size:13px">${umT('none')}</div>`;return;}
+  const rows=_umRows.filter(r=>umKey(r)===cur);
+  const yes=rows.filter(r=>r.participates);
+  const caps=yes.filter(r=>r.captain);
+  out.innerHTML=`
+    <div class="stats-row">${_umStat(rows.length,umT('answers'))}${_umStat(yes.length,umT('yes'))}${_umStat(rows.length-yes.length,umT('no'))}${_umStat(caps.length,umT('captains'))}</div>
+    <div class="card" style="overflow-x:auto">
+      ${_umCardTitle(umT('byCat'))}
+      ${_umCatTable(_umCategoryTally(yes))}
+    </div>
+    <div class="card" style="overflow-x:auto">
+      ${_umCardTitle(umT('list'))}
+      ${_umAnswersTable(rows)}
     </div>`;
 }
 
