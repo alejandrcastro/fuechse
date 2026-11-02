@@ -746,35 +746,37 @@ function ovNamer(teams){
   for(const p of state.players.filter(p=>p.teamIds.some(tid=>teams.find(t=>t.id===tid)))){const f=first(p);counts[f]=(counts[f]||0)+1;}
   return p=>{if(!p)return'—';const f=first(p);return counts[f]>1?`${f} ${initials(p)}`:f;};
 }
-const OV_EMPTY_TD='<td style="padding:8px 10px;text-align:center;color:var(--border2);vertical-align:top">—</td>';
+const OV_EMPTY_TD='<td class="ov-empty">—</td>';
 function ovPlayerLine(label,p,name,ersatz){
   return ersatz
-    ?`<div style="font-size:11px;padding:2px 0;border-top:1px dashed var(--border2);margin-top:2px;color:var(--muted);display:flex;gap:4px;align-items:center">
-          <span style="color:var(--muted);min-width:12px;font-size:11px">${label}</span>
+    ?`<div class="ov-line is-ersatz">
+          <span class="ov-pos">${label}</span>
           <span title="${p.name}">${name(p)}</span>
         </div>`
-    :`<div style="font-size:11px;padding:1px 0;color:${p?'var(--white)':'var(--court-line)'};display:flex;gap:4px;align-items:center">
-          <span style="color:var(--muted);min-width:12px;font-size:11px">${label}</span>
+    :`<div class="ov-line${p?'':' is-none'}">
+          <span class="ov-pos">${label}</span>
           <span title="${p?p.name:''}">${name(p)}</span>
         </div>`;
 }
 // one match: status colour, opponent, time · H/A · filled, then the lineup and the Ersatz
+// one match: status colour (is-full / is-part / is-open), opponent, time · H/A · filled, then the lineup and the Ersatz
 function ovMatchCell(m,team,name,open){
   const sz=teamSize(team),slots=state.lineups[m.id]||[],main=slots.slice(0,sz);
   const filled=main.filter(Boolean).length,complete=filled>=sz,partial=filled>0&&!complete;
-  const bg=complete?'var(--court-bg)':partial?'#2e2a15':'var(--soft)',col=complete?'var(--court)':partial?'var(--partial)':'var(--muted)',icon=complete?'✓':partial?'⏳':'·';
+  const st=complete?'is-full':partial?'is-part':'is-open',icon=complete?'✓':partial?'⏳':'·';
   let lines='';
   for(let i=0;i<sz;i++){const pid=main[i];lines+=ovPlayerLine(`${i+1}.`,pid?playerById(pid):null,name,false);}
   const ep=slots[sz]?playerById(slots[sz]):null;
   if(ep)lines+=ovPlayerLine('E.',ep,name,true);
-  return`<td style="padding:6px 8px;vertical-align:top">
-        <div onclick="${open}('${m.id}')" style="cursor:pointer;background:${bg};border-radius:8px;padding:6px 8px;min-width:100px">
-          <div style="font-size:11px;font-weight:600;color:${col};margin-bottom:4px;width:0;min-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${(m.opponent||'').replace(/"/g,'&quot;')}">${icon} ${m.opponent||''}</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:5px">${m.time} · ${m.home==='Heim'?'H':'A'} · ${filled}/${sz}</div>
-          <div style="border-top:1px solid var(--border2);padding-top:4px">${lines}</div>
+  return`<td class="ov-cell">
+        <div onclick="${open}('${m.id}')" class="ov-match ${st}">
+          <div class="ov-opp" title="${(m.opponent||'').replace(/"/g,'&quot;')}">${icon} ${m.opponent||''}</div>
+          <div class="ov-meta">${m.time} · ${m.home==='Heim'?'H':'A'} · ${filled}/${sz}</div>
+          <div class="ov-lines">${lines}</div>
         </div>
       </td>`;
 }
+// "Nicht aufgestellt": who said Ja / (Ja) / Notfall for a match that day and is in no lineup that day
 // "Nicht aufgestellt": who said Ja / (Ja) / Notfall for a match that day and is in no lineup that day
 function ovFreeCell(dayMatches,name){
   const busy=new Set();
@@ -788,66 +790,69 @@ function ovFreeCell(dayMatches,name){
   }
   if(!free.size)return OV_EMPTY_TD;
   const list=[...free.values()].sort((x,y)=>ord[x.a]-ord[y.a]||(x.p.rank||999)-(y.p.rank||999));
-  return'<td style="padding:6px 8px;vertical-align:top">'+list.map(x=>{
-    const c=x.a==='yes'?'var(--yes)':x.a==='conditional'?'var(--yes-soft)':'var(--warn)',mark=x.a==='yes'?'✓':x.a==='conditional'?'(✓)':'!';
-    return`<div style="font-size:11px;padding:1px 0;color:${c};display:flex;gap:4px;align-items:center;white-space:nowrap">
-        <span style="min-width:14px;font-size:11px;opacity:.8">${mark}</span>
+  return'<td class="ov-cell">'+list.map(x=>{
+    const mark=x.a==='yes'?'✓':x.a==='conditional'?'(✓)':'!';
+    return`<div class="ov-free is-${x.a}">
+        <span class="ov-mark">${mark}</span>
         <span title="${x.p.name}">${name(x.p)}</span>
       </div>`;}).join('')+'</td>';
 }
-function ovLegendItem(color,mark,label,last){
-  return`<div style="display:flex;align-items:center;gap:6px${last?'':';margin-bottom:4px'}">
-          <span style="color:${color};font-size:14px">${mark}</span>
-          <span style="color:var(--muted)">${label}</span>
+// color = one of the c-… classes in ui.css
+function ovLegendItem(color,mark,label){
+  return`<div class="ov-legend-item">
+          <span class="ov-legend-mark ${color}">${mark}</span>
+          <span class="c-muted">${label}</span>
         </div>`;
 }
 function ovMatchesLegend(){
-  return`<div style="margin-top:16px;padding:12px;background:var(--soft);border-radius:8px;border:1px solid var(--border2)">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:11px">
-      <div>${ovLegendItem('var(--court)','●',ct('fullLineup'))}${ovLegendItem('var(--partial)','●',ct('partLineup'))}${ovLegendItem('var(--muted)','●',ct('stillOpen'),true)}</div>
-      <div>${ovLegendItem('var(--yes)','✓',ct('yesPrio1'))}${ovLegendItem('var(--yes-soft)','(✓)',ct('prio2'))}${ovLegendItem('var(--warn)','!',ct('notfall'),true)}</div>
+  return`<div class="ov-legend">
+    <div class="ov-legend-grid">
+      <div>${ovLegendItem('c-court','●',ct('fullLineup'))}${ovLegendItem('c-partial','●',ct('partLineup'))}${ovLegendItem('c-muted','●',ct('stillOpen'))}</div>
+      <div>${ovLegendItem('c-yes','✓',ct('yesPrio1'))}${ovLegendItem('c-yes-soft','(✓)',ct('prio2'))}${ovLegendItem('c-warn','!',ct('notfall'))}</div>
     </div>
   </div>`;
 }
+// "Spiele" mode: a row per team, a column per match day, plus the "Nicht aufgestellt" row
 // "Spiele" mode: a row per team, a column per match day, plus the "Nicht aufgestellt" row
 function ovMatchesHtml(teams,o){
   const matches=state.matches.filter(m=>teams.find(t=>t.id===m.teamId)).sort((a,b)=>a.date.localeCompare(b.date));
   if(!matches.length)return`<div class="empty">${ct('noMatchesShort')}</div>`;
   const dates=[...new Set(matches.map(m=>m.date))].sort(),name=ovNamer(teams);
-  let html=`<table style="border-collapse:collapse;font-size:12px;min-width:100%">
-    <thead><tr style="border-bottom:1px solid var(--border2)">
-      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:100px">${ct('teamCol')}</th>
-      ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
+  let html=`<table class="ov-table">
+    <thead><tr class="ov-head">
+      <th class="ov-th-first">${ct('teamCol')}</th>
+      ${dates.map(d=>`<th class="ov-th">${fmtDate(d)}</th>`).join('')}
     </tr></thead><tbody>`;
   for(const team of teams){
-    html+=`<tr style="border-top:2px solid var(--border2)">
-      <td style="padding:8px 12px;font-weight:600;color:var(--court);white-space:nowrap;vertical-align:top">${team.name}</td>`;
+    html+=`<tr class="ov-row">
+      <td class="ov-team">${team.name}</td>`;
     for(const d of dates){const m=matches.find(x=>x.teamId===team.id&&x.date===d);html+=m?ovMatchCell(m,team,name,o.open):OV_EMPTY_TD;}
     html+='</tr>';
   }
-  html+=`<tr style="border-top:2px solid var(--border2);background:#0f0f0f">
-    <td style="padding:8px 12px;font-weight:600;color:var(--muted);white-space:nowrap;vertical-align:top;font-size:11px;text-transform:uppercase;letter-spacing:.5px">${ct('notInLineup')}</td>`;
+  html+=`<tr class="ov-row free">
+    <td class="ov-team">${ct('notInLineup')}</td>`;
   for(const d of dates){const dm=matches.filter(x=>x.date===d);html+=dm.length?ovFreeCell(dm,name):OV_EMPTY_TD;}
   return html+'</tr></tbody></table>'+ovMatchesLegend();
 }
 // "Spieler" mode: a row per player; per match day what he does in each of his teams
 function ovTeamShort(t){return t?t.name.replace('Herren','H').replace('Damen','D').replace('Senioren','Sen').replace('Seniorinnen','SenF').trim():'?';}
+// what the player does that day in each of his teams: in the lineup, Ersatz, or his answer
 function ovPlayerDayCell(p,dayMatches){
-  if(!dayMatches.length)return'<td style="padding:7px 10px;text-align:center;color:var(--border2)">—</td>';
-  return'<td style="padding:4px 6px;text-align:center;min-width:80px"><div style="display:flex;flex-direction:column;gap:3px">'+dayMatches.map(m=>{
+  if(!dayMatches.length)return'<td class="ov-day-empty">—</td>';
+  return'<td class="ov-day"><div class="ov-day-list">'+dayMatches.map(m=>{
     const team=teamById(m.teamId),sz=teamSize(team),slots=state.lineups[m.id]||[],avail=state.availability[m.id]?.[p.id]||'';
-    const [bg,col,icon]=slots.slice(0,sz).includes(p.id)?['var(--court-bg)','var(--court)','✓']:slots[sz]===p.id?['var(--border)','var(--muted)','E']
-      :avail==='yes'?['var(--ok-bg)','var(--yes)',ct('ovYes')]:avail==='conditional'?['rgba(82,201,122,.08)','var(--yes)','('+ct('ovYes')+')']
-      :avail==='notfall'?['var(--warn-bg)','var(--warn)',ct('ovNotfall')]:avail==='no'?['var(--danger-bg)','var(--danger)','✗']:['transparent','var(--line2)','?'];
-    return`<div style="background:${bg};border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;color:${col};white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:6px">
-            <span style="opacity:.7;font-size:11px;font-weight:500">${ovTeamShort(team)}</span>
+    const [st,icon]=slots.slice(0,sz).includes(p.id)?['lineup','✓']:slots[sz]===p.id?['ersatz','E']
+      :avail==='yes'?['yes',ct('ovYes')]:avail==='conditional'?['conditional','('+ct('ovYes')+')']
+      :avail==='notfall'?['notfall',ct('ovNotfall')]:avail==='no'?['no','✗']:['none','?'];
+    return`<div class="ov-chip is-${st}">
+            <span class="ov-chip-team">${ovTeamShort(team)}</span>
             <span>${icon}</span>
           </div>`;}).join('')+'</div></td>';
 }
 function ovPlayersLegend(){
-  const colors=['var(--court)','var(--muted)','var(--yes)','var(--warn)','var(--danger)','var(--gold)'];
-  return`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:8px 12px;background:var(--row);border-radius:8px;font-size:11px">
-    ${ct('ovLegend').map((l,i)=>`<span style="color:${colors[i]}">■ ${l}</span>`).join('')}
+  const colors=['c-court','c-muted','c-yes','c-warn','c-danger','c-gold'];
+  return`<div class="ov-plegend">
+    ${ct('ovLegend').map((l,i)=>`<span class="${colors[i]}">■ ${l}</span>`).join('')}
   </div>`;
 }
 function ovPlayersHtml(teams){
@@ -855,20 +860,20 @@ function ovPlayersHtml(teams){
   if(!matches.length)return ovPlayersLegend()+`<div class="empty">${ct('noMatchesShort')}</div>`;
   const dates=[...new Set(matches.map(m=>m.date))].sort();
   const players=state.players.filter(p=>p.teamIds.some(tid=>teams.find(t=>t.id===tid))).sort((a,b)=>(a.rank||999)-(b.rank||999));
-  let html=`<table style="border-collapse:collapse;font-size:12px;min-width:100%;margin-bottom:24px">
-      <thead><tr style="border-bottom:1px solid var(--border2)">
-        <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);white-space:nowrap;min-width:160px">${ct('playerCol')}</th>
-        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">LK</th>
-        ${dates.map(d=>`<th style="padding:8px 10px;text-align:center;font-weight:600;color:var(--muted);white-space:nowrap">${fmtDate(d)}</th>`).join('')}
+  let html=`<table class="ov-table players">
+      <thead><tr class="ov-head">
+        <th class="ov-th-first player">${ct('playerCol')}</th>
+        <th class="th-small">LK</th>
+        ${dates.map(d=>`<th class="ov-th">${fmtDate(d)}</th>`).join('')}
       </tr></thead><tbody>`;
   for(const p of players){
     const sm=teams.filter(t=>state.mainTeam[p.id]?.[t.id]).map(t=>t.name).join(', ');
-    html+=`<tr style="border-bottom:1px solid var(--border)22">
-        <td style="padding:7px 12px;white-space:nowrap">
-          <span style="font-weight:600">${p.name}</span>
-          ${sm?`<span style="font-size:11px;color:var(--gold);margin-left:4px">★ ${sm}</span>`:''}
+    html+=`<tr>
+        <td class="td-name">
+          <span class="b">${p.name}</span>
+          ${sm?`<span class="ov-sm">★ ${sm}</span>`:''}
         </td>
-        <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:11px">${p.lkStr||'?'}</span></td>`;
+        <td class="td-lk"><span class="lk-badge sm">${p.lkStr||'?'}</span></td>`;
     for(const d of dates)html+=ovPlayerDayCell(p,matches.filter(m=>m.date===d&&p.teamIds.includes(m.teamId)).sort((a,b)=>teamNumber(teamById(a.teamId)||{})-teamNumber(teamById(b.teamId)||{})));
     html+='</tr>';
   }
@@ -989,8 +994,7 @@ const BLK_T={
       legStamm:'team per the Meldeliste',legBlock:'blocked, with the reason',legWarn:'blocked after the next match higher up',legPlayed:'matches in this team'}
 };
 function bT(k){return(BLK_T[lang]||BLK_T.de)[k];}
-const BLK_PILL='display:inline-block;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap';
-const BLK_STYLE={stamm:'background:var(--court-bg);color:var(--court);box-shadow:inset 0 0 0 1.5px var(--court)',played:'background:var(--court-bg);color:var(--court)',block:'background:#3a1b18;color:#ffb3aa',warn:'background:#33260f;color:#f7c48f'};
+
 function blkShort(t){
   let n=(t?.name||'?').replace('Seniorinnen','SenF').replace('Senioren','Sen').replace('Herren','H').replace('Damen','D').trim();
   const siblings=(state.allTeams||state.teams).filter(x=>x.category===t?.category);
@@ -1017,33 +1021,33 @@ function blockCell(p,t,catTeams,status,skTeam){
   else if(c>0){kind='played';label=bT('played')(c);}
   // own Stammkader team that is also on warning → one line: the Stammkader pill + just the ⚠️ symbol (reason in the tooltip)
   const skWarn=kind==='warn'&&isSk;
-  const inner=skWarn?`<span style="white-space:nowrap"><span style="${BLK_PILL};${BLK_STYLE.stamm}">${bT('stamm')}</span> <span style="font-size:12px;cursor:help">⚠️</span></span>`
-    :kind?`<span style="${BLK_PILL};${BLK_STYLE[kind]}">${label}</span>`
-    :`<span style="font-size:11px;color:${p.teamIds.includes(t.id)?'var(--muted)':'#3a4a42'}">${p.teamIds.includes(t.id)?'—':'·'}</span>`;
-  return`<td style="padding:6px 8px;text-align:center;border-left:1px solid #2e4a4222" title="${title.replace(/"/g,'&quot;')}">${inner}</td>`;
+  const inner=skWarn?`<span class="nowrap"><span class="blk-pill stamm">${bT('stamm')}</span> <span class="blk-hint">⚠️</span></span>`
+    :kind?`<span class="blk-pill ${kind}">${label}</span>`
+    :`<span class="blk-dash${p.teamIds.includes(t.id)?'':' is-out'}">${p.teamIds.includes(t.id)?'—':'·'}</span>`;
+  return`<td class="blk-td" title="${title.replace(/"/g,'&quot;')}">${inner}</td>`;
 }
 function blockLegend(){
-  return`<div style="padding:9px 12px;display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--court-line);font-size:11px;color:#c8d2ce">
-    <span style="${BLK_PILL};${BLK_STYLE.stamm}">${bT('stamm')}</span>${bT('legStamm')}
-    <span style="${BLK_PILL};${BLK_STYLE.block}">⛔ …</span>${bT('legBlock')}
-    <span style="${BLK_PILL};${BLK_STYLE.warn}">⚠️ …</span>${bT('legWarn')}
-    <span style="${BLK_PILL};${BLK_STYLE.played}">${bT('played')('N')}</span>${bT('legPlayed')}
+  return`<div class="blk-legend">
+    <span class="blk-pill stamm">${bT('stamm')}</span>${bT('legStamm')}
+    <span class="blk-pill block">⛔ …</span>${bT('legBlock')}
+    <span class="blk-pill warn">⚠️ …</span>${bT('legWarn')}
+    <span class="blk-pill played">${bT('played')('N')}</span>${bT('legPlayed')}
   </div>`;
 }
 
 // The whole Sperren view (rule boxes + one table per category). teams = the teams this page may show.
 function blockingRuleBoxes(){
-  return`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <div class="rule-box" style="flex:1;margin:0"><strong>Stammkader:</strong> ${ct('ruleSK')}</div>
-    <div class="rule-box warn" style="flex:1;margin:0"><strong>Stammmannschaft:</strong> ${ct('ruleSM')}</div>
+  return`<div class="blk-rules">
+    <div class="rule-box"><strong>Stammkader:</strong> ${ct('ruleSK')}</div>
+    <div class="rule-box warn"><strong>Stammmannschaft:</strong> ${ct('ruleSM')}</div>
   </div>`;
 }
 function blockingRow(p,cat,catTeams){
   const status=getPlayerBlockStatus(p.id,cat),skTeam=getStammkaderTeam(p.id,cat)||catTeams[catTeams.length-1];
-  return`<tr style="border-bottom:1px solid #2e4a4222;${status.blocked.length>0?'background:var(--card)':''}">
-        <td style="padding:7px 12px;white-space:nowrap"><div style="font-weight:600;font-size:12px">${p.name}</div></td>
-        <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:11px">${p.lkStr||'?'}</span></td>
-        <td style="padding:7px 8px;text-align:center;font-size:11px;color:var(--muted)">${p.year||'—'}</td>
+  return`<tr class="blk-row${status.blocked.length>0?' is-blocked':''}">
+        <td class="td-name"><div class="blk-name">${p.name}</div></td>
+        <td class="td-lk"><span class="lk-badge sm">${p.lkStr||'?'}</span></td>
+        <td class="td-year">${p.year||'—'}</td>
         ${catTeams.map(t=>blockCell(p,t,catTeams,status,skTeam)).join('')}
       </tr>`;
 }
@@ -1051,14 +1055,14 @@ function blockingCategoryHtml(cat,catTeams){
   // sorted by the rank in THIS category's Meldung (p.rank is only the rank of the first list the player was imported from)
   const players=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>playerRankInTeam(a.id,catTeams[0].id)-playerRankInTeam(b.id,catTeams[0].id));
   if(!players.length)return'';
-  return`<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court);letter-spacing:1px;margin:14px 0 8px">${cat}</div>`+
-    `<div class="card" style="padding:0;overflow:hidden;overflow-x:auto;margin-bottom:10px">`+
-    `<table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead><tr style="border-bottom:1px solid var(--court-line)">
-        <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);min-width:160px">${ct('playerCol')}</th>
-        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">LK</th>
-        <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">${ct('colYear')}</th>
-        ${catTeams.map(t=>`<th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--court);font-size:11px;white-space:nowrap">${t.name}${t.is_4er?' <span style="font-size:11px;color:var(--warn)">(4er)</span>':''}</th>`).join('')}
+  return`<div class="blk-cat">${cat}</div>`+
+    `<div class="card blk-card">`+
+    `<table class="blk-table">
+      <thead><tr class="blk-head">
+        <th class="blk-th-player">${ct('playerCol')}</th>
+        <th class="th-small">LK</th>
+        <th class="th-small">${ct('colYear')}</th>
+        ${catTeams.map(t=>`<th class="blk-th-team">${t.name}${t.is_4er?' <span class="blk-4er">(4er)</span>':''}</th>`).join('')}
       </tr></thead><tbody>`+players.map(p=>blockingRow(p,cat,catTeams)).join('')+`</tbody></table>
       ${blockLegend()}</div>`;
 }
