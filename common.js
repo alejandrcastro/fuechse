@@ -518,13 +518,12 @@ function mvPlayedSelection(){return[...document.querySelectorAll('.mx-played:che
 function mvUpdatePlayedCount(){
   const m=state.matches.find(x=>x.id===document.getElementById('mx-count')?.dataset.mid);if(!m)return;
   const size=teamSize(teamById(m.teamId)),n=mvPlayedSelection().length,max=size*2; // every Doppel can be played by others
-  const c=document.getElementById('mx-played-count');if(c){c.textContent=`(${n})`;c.style.color=n>max?'var(--danger)':n>=size?'var(--court)':'var(--warn)';}
+  const c=document.getElementById('mx-played-count');if(c){c.textContent=`(${n})`;c.className=n>max?'c-danger':n>=size?'c-court':'c-warn';}
   const b=document.getElementById('mx-confirm-btn');if(b)b.disabled=n===0||n>max;
   const st=document.getElementById('mx-confirm-status');
   if(st){
-    if(n>max){st.textContent=ct('tooManyPlayed')(max);st.style.color='var(--danger)';}
-    else if(n>size){st.textContent=ct('morePlayed')(size);st.style.color='var(--warn)';}
-    else st.textContent='';
+    st.textContent=n>max?ct('tooManyPlayed')(max):n>size?ct('morePlayed')(size):'';
+    st.classList.toggle('c-danger',n>max);st.classList.toggle('c-warn',n>size&&n<=max);
   }
 }
 // match cards of one team (moved matches crossed out). o = {selected, open:'fnName'}

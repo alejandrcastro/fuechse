@@ -26,6 +26,8 @@ Club Manager is a standalone web application made up of three independent HTML f
 
 The Overview tables, the Sperren table and the filter menus above Overview and Statistiken (age groups, teams, order) also come from `common.js`, so admin and kapitaen show them the same way.
 
+`ui.css` holds the look of admin and kapitaen: every colour is named once at the top (`--court`, `--warn`, `--gold`, …) and the pages use those names and the classes below it instead of `style="…"`. To change a colour, change it there. Page-only classes stay in the page's own `<style>`. After editing a `.css` file, raise its `?v=` number in the `<link>` lines too.
+
 The rules have tests: `node tests/rules.test.js` (no install needed). They also run on GitHub on every push; if one fails, the site is not updated.
 
 ---

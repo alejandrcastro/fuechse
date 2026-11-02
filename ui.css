@@ -9,7 +9,9 @@
   /* tinted backgrounds behind a status */
   --court-bg:#1a2e26;--court-line:#2e4a42;--ok-bg:#1a2a1a;--warn-bg:#2e2a1a;--danger-bg:#2d1a1a;
   /* availability and Stammmannschaft */
-  --yes:#52c97a;--yes-soft:rgba(82,201,122,.7);--partial:#ffd700;--gold:#d4a017;--check:#52b788;--whatsapp:#25d366
+  --yes:#52c97a;--yes-soft:rgba(82,201,122,.7);--partial:#ffd700;--gold:#d4a017;--check:#52b788;--whatsapp:#25d366;
+  /* gender badges and a few darker status backgrounds */
+  --male:#7eb8e0;--male-bg:#1a1a2e;--female:#c77dff;--female-bg:#2d1a2d;--partial-bg:#2e2a15;--warn-deep:#2e2414;--danger-deep:#3d1a1a;--select-bg:#1b2926
 }
 
 /* LOGIN (admin + kapitaen) */
@@ -103,7 +105,7 @@
 .ov-empty{padding:8px 10px;text-align:center;color:var(--border2);vertical-align:top}
 .ov-cell{padding:6px 8px;vertical-align:top}
 .ov-match{cursor:pointer;border-radius:8px;padding:6px 8px;min-width:100px}
-.ov-match.is-full{background:var(--court-bg)}.ov-match.is-part{background:#2e2a15}.ov-match.is-open{background:var(--soft)}
+.ov-match.is-full{background:var(--court-bg)}.ov-match.is-part{background:var(--partial-bg)}.ov-match.is-open{background:var(--soft)}
 .ov-opp{font-size:11px;font-weight:600;margin-bottom:4px;width:0;min-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .is-full .ov-opp{color:var(--court)}.is-part .ov-opp{color:var(--partial)}.is-open .ov-opp{color:var(--muted)}
 .ov-meta{font-size:11px;color:var(--muted);margin-bottom:5px}
@@ -158,3 +160,7 @@
 .blk-dash{font-size:11px;color:var(--muted)}
 .blk-dash.is-out{color:#3a4a42}
 .blk-legend{padding:9px 12px;display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--court-line);font-size:11px;color:#c8d2ce}
+
+/* plain small text */
+.note{font-size:11px;color:var(--muted)}
+.note.big{font-size:12px}
