@@ -5,41 +5,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sportwart – Füchse Berlin</title>
 <link href="fonts/fonts.css?v=1" rel="stylesheet">
-<link href="match.css?v=2" rel="stylesheet">
+<link href="match.css?v=3" rel="stylesheet">
+<link href="ui.css?v=1" rel="stylesheet">
 <script src="vendor/pdf-3.11.174.min.js" integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"></script>
 <style>
-:root{
-  --green:#2d6a4f;--green-light:#40916c;--court:#74c69d;
-  --white:#f0f2f1;--dark:#161616;--card:#1e1e1e;--muted:#a8b8b0;
-  --warn:#f4a261;--danger:#ff6b5b;--info:#4ea8de;--red:#c0392b;
-  --border:#252525;--border2:#333
-}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);min-height:100vh}
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:var(--dark)}
-::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:var(--green)}
 
-header{background:#111;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:8px}
+header{background:var(--bar);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:8px}
 .logo{display:flex;align-items:center;gap:10px}
 .logo-img{width:36px;height:36px;object-fit:contain;flex-shrink:0}
 .logo h1{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px}
 .logo span{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block}
 .header-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.tvbb-badge{background:#1a2e26;border:1px solid var(--court)44;color:var(--court);font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;letter-spacing:1px}
+.tvbb-badge{background:var(--court-bg);border:1px solid var(--court)44;color:var(--court);font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;letter-spacing:1px}
 .sync-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;transition:all .3s;white-space:nowrap}
-.sync-ok{background:#1a2a1a;border:1px solid var(--court)55;color:var(--court)}
+.sync-ok{background:var(--ok-bg);border:1px solid var(--court)55;color:var(--court)}
 .sync-err{background:#3d1a1a;border:1px solid var(--danger)55;color:var(--danger)}
-.sync-ing{background:#2e2a1a;border:1px solid var(--warn)55;color:var(--warn)}
+.sync-ing{background:var(--warn-bg);border:1px solid var(--warn)55;color:var(--warn)}
 .lang-bar{display:flex;gap:4px}
 .lang-btn{padding:3px 8px;font-size:11px;font-weight:600;border:1px solid var(--border2);border-radius:6px;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s}
 .lang-btn:hover{color:var(--white)}
 .lang-btn.active{background:var(--green);color:#fff;border-color:var(--green-light)}
-.tabs{display:flex;padding:0 28px;background:#111;border-bottom:1px solid var(--border2);overflow-x:auto}
-.tab{padding:11px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif}
-.tab:hover{color:var(--white)}
-.tab.active{color:var(--court);border-bottom-color:var(--court)}
 main{padding:22px 28px;max-width:1080px;margin:0 auto}
 .section{display:none}.section.active{display:block}
 .section-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--court);margin-bottom:3px}
@@ -49,26 +40,26 @@ main{padding:22px 28px;max-width:1080px;margin:0 auto}
 .form-row{display:flex;gap:9px;margin-bottom:9px;flex-wrap:wrap}
 .form-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:120px}
 label{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.5px;text-transform:uppercase}
-input,select{background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:13px;transition:border-color .2s;outline:none;width:100%}
+input,select{background:var(--bar);border:1px solid var(--border2);border-radius:8px;color:var(--white);padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:13px;transition:border-color .2s;outline:none;width:100%}
 input:focus,select:focus{border-color:var(--court)}
 select option{background:#1b2926}
 .btn{padding:7px 15px;border-radius:8px;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
 .btn-primary{background:var(--red);color:#fff}
 .btn-primary:hover{background:var(--court);color:#fff}
 .btn-danger{background:transparent;border:1px solid var(--danger);color:var(--danger);font-size:11px;padding:3px 7px}
-.btn-danger:hover{background:#c0392b;color:#fff}
+.btn-danger:hover{background:var(--red);color:#fff}
 .btn-sm{padding:4px 10px;font-size:11px}
 .btn-outline{background:transparent;border:1px solid var(--green-light);color:var(--court)}
 .btn-outline:hover{background:var(--green-light);color:#fff}
 .btn-warn{background:var(--warn);color:var(--dark);border:none}
-.player-row{display:flex;align-items:center;gap:9px;background:#181818;border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:6px;transition:border-color .2s;flex-wrap:wrap}
+.player-row{display:flex;align-items:center;gap:9px;background:var(--row);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:6px;transition:border-color .2s;flex-wrap:wrap}
 .player-row:hover{border-color:var(--court)55}
 .player-avatar{width:30px;height:30px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#d8f3dc;flex-shrink:0}
 .player-name{font-weight:600;font-size:13px;flex:1;min-width:120px}
 .player-meta{font-size:11px;color:var(--muted)}
-.lk-badge{background:#1a2e26;color:var(--court);border:1px solid var(--court)33;font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;min-width:46px;text-align:center;white-space:nowrap}
-.year-badge{background:#181818;border:1px solid var(--border);color:var(--muted);font-size:11px;padding:2px 6px;border-radius:6px;white-space:nowrap}
-.team-chip{font-size:11px;font-weight:600;padding:2px 7px;border-radius:12px;background:#2e4a42;color:var(--muted);white-space:nowrap}
+.lk-badge{background:var(--court-bg);color:var(--court);border:1px solid var(--court)33;font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;min-width:46px;text-align:center;white-space:nowrap}
+.year-badge{background:var(--row);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:2px 6px;border-radius:6px;white-space:nowrap}
+.team-chip{font-size:11px;font-weight:600;padding:2px 7px;border-radius:12px;background:var(--court-line);color:var(--muted);white-space:nowrap}
 .team-chip.m{background:#1a2d3d;color:var(--info)}
 .team-chip.f{background:#2d1a2d;color:#c77dff}
 .warn-badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:12px;background:#2d2215;color:var(--warn);border:1px solid var(--warn)44;white-space:nowrap}
@@ -77,15 +68,15 @@ select option{background:#1b2926}
 .match-info{font-size:11px;color:var(--muted);margin-top:2px}
 .avail-table{width:100%;border-collapse:collapse}
 .um-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
-.avail-table th{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:6px 10px;text-align:left;border-bottom:1px solid #2e4a42}
+.avail-table th{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:6px 10px;text-align:left;border-bottom:1px solid var(--court-line)}
 .avail-table td{padding:7px 10px;border-bottom:1px solid #1b292611;font-size:12px;vertical-align:middle}
 .avail-table tr:last-child td{border-bottom:none}
 .avail-table tr:hover td{background:#22222255}
 .avail-btn{padding:3px 9px;border-radius:6px;border:1px solid transparent;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
 .avail-btn.yes{background:var(--green)55;color:var(--court);border-color:var(--court)44}
 .avail-btn.yes.active{background:var(--green);color:#fff;border-color:var(--court)}
-.avail-btn.no{background:#3d1a1a55;color:#ff6b5b;border-color:#ff6b5b44}
-.avail-btn.no.active{background:#c0392b;color:#fff;border-color:#ff6b5b}
+.avail-btn.no{background:#3d1a1a55;color:var(--danger);border-color:#ff6b5b44}
+.avail-btn.no.active{background:var(--red);color:#fff;border-color:var(--danger)}
 .avail-btn.maybe{background:#2e2a1a55;color:var(--warn);border-color:var(--warn)44}
 .avail-btn.maybe.active{background:var(--warn);color:var(--dark);border-color:var(--warn)}
 .stats-row{display:flex;gap:9px;margin-bottom:18px;flex-wrap:wrap}
@@ -98,19 +89,19 @@ select option{background:#1b2926}
 .upload-area p{font-size:12px;color:var(--muted);margin-top:5px}
 .team-section-header{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:6px 12px;background:#141414;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
 .autocomplete-wrap{position:relative}
-.ac-list{position:absolute;top:100%;left:0;right:0;background:#1e1e1e;border:1px solid var(--border2);border-radius:8px;z-index:50;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4);margin-top:3px}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border2);border-radius:8px;z-index:50;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4);margin-top:3px}
 .ac-item{padding:8px 12px;font-size:13px;cursor:pointer;color:var(--white);display:flex;align-items:center;gap:8px}
 .ac-item:hover{background:#2a2a2a}
 .ac-item .ac-meta{font-size:11px;color:var(--muted);margin-left:auto}
 .ac-item.blocked{opacity:.6}
-.rule-box{background:#181818;border-left:3px solid var(--court);border-radius:0 8px 8px 0;padding:8px 12px;margin:9px 0;font-size:12px;color:var(--muted);line-height:1.6}
+.rule-box{background:var(--row);border-left:3px solid var(--court);border-radius:0 8px 8px 0;padding:8px 12px;margin:9px 0;font-size:12px;color:var(--muted);line-height:1.6}
 .rule-box.warn{border-left-color:var(--warn)}
 .rule-box.danger{border-left-color:var(--danger)}
 .rule-box strong{color:var(--white)}
 .empty{text-align:center;padding:2.5rem 20px;color:var(--muted);font-size:13px}
 .modal-overlay{position:fixed;inset:0;background:#000000bb;z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.open{display:flex}
-.modal{background:#1e1e1e;border:1px solid var(--border2);border-radius:16px;padding:20px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto}
+.modal{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:20px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto}
 .modal-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:var(--court);margin-bottom:12px}
 .modal-close{float:right;cursor:pointer;color:var(--muted);font-size:18px;background:none;border:none}
 .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--muted);border-top-color:var(--court);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
@@ -142,33 +133,55 @@ select option{background:#1b2926}
   /* Smaller fonts for mobile */
   h1,h2{font-size:18px}
 }
-#sec-spieleadmin{padding:0!important}
+#sec-spieleadmin{padding:0!important;max-width:none}
+.sa-grid{display:grid;grid-template-columns:240px 1fr;gap:0;min-height:calc(100vh - 120px)}
+.sa-sidebar{border-right:1px solid var(--border2);padding:18px 14px;overflow-y:auto}
+#sa-content-wrap{padding:18px;overflow-y:auto}
+.sa-add{margin-bottom:10px}
+.sa-add-btn{width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left}
+#sa-add-form{margin-top:8px;background:var(--row);border-radius:8px;padding:10px}
+#sa-add-form label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px}
+#sa-add-form input,#sa-add-form select{width:100%;background:var(--bar);border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif}
+#sa-add-form .btn{width:100%;font-size:12px}
+.sa-field{margin-bottom:6px}
+.sa-row{display:flex;gap:6px;margin-bottom:6px}
+.sa-row.last{margin-bottom:8px}
+.sa-row .grow{flex:1}
+.sa-time{width:80px}
+#sa-team-name{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--court);letter-spacing:1px}
+#sa-team-meta{font-size:11px;color:var(--muted);margin-bottom:14px}
+#sa-panel{margin-top:14px}
+.players-filter{margin-bottom:12px}
+#search-players{width:160px}
+#um-survey{padding:6px 10px}
+footer{text-align:center;padding:18px 28px;font-size:11px;color:var(--muted);border-top:1px solid var(--card);margin-top:32px}
+.stats-modes{display:flex;gap:8px;margin-bottom:14px}
+.stats-modes .mode-btn{border-bottom-color:transparent}
+.stats-modes .mode-btn.under{color:var(--court);border-bottom-color:var(--court)}
 </style>
 <script src="common.js?v=6"></script>
 </head>
 <body>
-<div id="login-overlay" style="position:fixed;inset:0;background:#0d1a10;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Sans',sans-serif;">
-  <div style="background:#1e1e1e;border:1px solid #333;border-radius:14px;padding:36px 32px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.6);">
-    <div style="text-align:center;margin-bottom:28px">
-      <img src="logo.svg" alt="Füchse Berlin" style="width:56px;height:56px;object-fit:contain;display:block;margin:0 auto 10px">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:.1em;color:#74c69d">FÜCHSE BERLIN</div>
-      <div style="font-size:.7rem;color:#a8b8b0;letter-spacing:.1em;text-transform:uppercase;margin-top:2px">Sportwart</div>
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-brand">
+      <img class="login-logo" src="logo.svg" alt="Füchse Berlin">
+      <div class="name">FÜCHSE BERLIN</div>
+      <div class="sub">Sportwart</div>
     </div>
-    <div style="margin-bottom:12px">
-      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#a8b8b0;display:block;margin-bottom:5px" data-ct="username">Benutzername</label>
+    <div class="login-field">
+      <label data-ct="username">Benutzername</label>
       <input id="login-user" type="text" autocomplete="username" autocapitalize="none" spellcheck="false"
-        style="width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none"
         placeholder="Benutzername" data-ct-ph="username"
         onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
     </div>
-    <div style="margin-bottom:20px">
-      <label style="font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#a8b8b0;display:block;margin-bottom:5px" data-ct="password">Passwort</label>
+    <div class="login-field last">
+      <label data-ct="password">Passwort</label>
       <input id="login-pass" type="password" autocomplete="off"
-        style="width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none"
         onkeydown="if(event.key==='Enter')doLogin()">
     </div>
-    <button id="login-btn" onclick="doLogin()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer" data-ct="loginBtn">Einloggen</button>
-    <div id="login-error" style="margin-top:12px;font-size:.8rem;color:#ff6b5b;text-align:center;min-height:18px;font-weight:500"></div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()" data-ct="loginBtn">Einloggen</button>
+    <div class="login-err" id="login-error"></div>
   </div>
 </div>
 <script>
@@ -273,8 +286,8 @@ window.doLogin=async function(){
       <button class="lang-btn" onclick="setLang('es')">ES</button>
       <button class="lang-btn" onclick="setLang('en')">EN</button>
     </div>
-    <a id="download-spieler-btn" href="index.html" target="_blank" rel="noopener" style="padding:3px 9px;font-size:11px;font-weight:600;border:1px solid var(--court)55;border-radius:20px;color:var(--court);background:#1a2e26;text-decoration:none;white-space:nowrap"><span data-ct="playerAppLink">↗ Spieler-App</span></a>
-    <select id="season-switch" onchange="onSeasonSwitch(this)" title="Saison" style="width:auto;padding:3px 8px;font-size:11px;font-weight:700;background:#111;border:1px solid var(--court)55;border-radius:20px;color:var(--court);font-family:'DM Sans',sans-serif;cursor:pointer"></select>
+    <a id="download-spieler-btn" href="index.html" target="_blank" rel="noopener" style="padding:3px 9px;font-size:11px;font-weight:600;border:1px solid var(--court)55;border-radius:20px;color:var(--court);background:var(--court-bg);text-decoration:none;white-space:nowrap"><span data-ct="playerAppLink">↗ Spieler-App</span></a>
+    <select id="season-switch" onchange="onSeasonSwitch(this)" title="Saison" style="width:auto;padding:3px 8px;font-size:11px;font-weight:700;background:var(--bar);border:1px solid var(--court)55;border-radius:20px;color:var(--court);font-family:'DM Sans',sans-serif;cursor:pointer"></select>
     <button id="season-publish" onclick="publishSeason()" style="display:none;padding:3px 10px;font-size:11px;font-weight:700;background:#2e2414;border:1px solid var(--warn);border-radius:20px;color:var(--warn);font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap"></button>
     <div id="sync-badge" class="sync-badge sync-ing">⟳</div>
     <div class="tvbb-badge">TVBB</div>
@@ -369,14 +382,14 @@ window.doLogin=async function(){
 <div class="section" id="sec-players">
   <div class="section-title" data-i18n="playersTitle"></div>
   <div class="section-sub" data-i18n="playersSub"></div>
-  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-    <select id="filter-team" onchange="renderPlayers()" style="width:auto;font-size:12px;padding:5px 9px"></select>
-    <select id="filter-gender" onchange="renderPlayers()" style="width:auto;font-size:12px;padding:5px 9px">
+  <div class="filter-row players-filter">
+    <select id="filter-team" class="filter-select" onchange="renderPlayers()"></select>
+    <select id="filter-gender" class="filter-select" onchange="renderPlayers()">
       <option value="" data-i18n="allGenders"></option>
       <option value="M" data-i18n="genderM"></option>
       <option value="F" data-i18n="genderF"></option>
     </select>
-    <input id="search-players" oninput="renderPlayers()" style="width:160px;font-size:12px;padding:5px 9px" data-i18n-placeholder="searchPlaceholder">
+    <input id="search-players" class="filter-select" oninput="renderPlayers()" data-i18n-placeholder="searchPlaceholder">
     <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0">
       <input type="checkbox" id="filter-blocked" onchange="renderPlayers()" style="width:auto;padding:0"> <span data-i18n="showBlocked"></span>
     </label>
@@ -429,8 +442,8 @@ window.doLogin=async function(){
     </div>
     <button class="btn btn-primary" onclick="addTeam()" data-i18n="addTeamBtn"></button>
   </div>
-  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <select id="teams-filter-team" onchange="renderTeams()" style="width:auto;font-size:12px;padding:5px 9px">
+  <div class="filter-row">
+    <select id="teams-filter-team" class="filter-select" onchange="renderTeams()">
       <option value="" data-i18n="allTeams"></option>
     </select>
   </div>
@@ -438,86 +451,85 @@ window.doLogin=async function(){
 </div>
 
 <!-- SPIELE & AUFSTELLUNG (integrated) -->
-<div class="section" id="sec-spieleadmin" style="padding:0;max-width:none">
-  <div class="sa-grid" style="display:grid;grid-template-columns:240px 1fr;gap:0;min-height:calc(100vh - 120px)">
+<div class="section" id="sec-spieleadmin">
+  <div class="sa-grid">
     <!-- Sidebar -->
-    <div class="sa-sidebar" style="border-right:1px solid var(--border2);padding:18px 14px;overflow-y:auto">
-      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px" data-ct="teams">Mannschaften</div>
-      <div style="margin-bottom:10px">
-        <button onclick="document.getElementById('sa-add-form').style.display=document.getElementById('sa-add-form').style.display==='none'?'block':'none'"
-          style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" data-ct="addMatch">
+    <div class="sa-sidebar">
+      <div class="sidebar-title" data-ct="teams">Mannschaften</div>
+      <div class="sa-add">
+        <button class="sa-add-btn" onclick="document.getElementById('sa-add-form').style.display=document.getElementById('sa-add-form').style.display==='none'?'block':'none'" data-ct="addMatch">
           + Spiel hinzufügen
         </button>
-        <div id="sa-add-form" style="display:none;margin-top:8px;background:#181818;border-radius:8px;padding:10px">
-          <div style="margin-bottom:6px">
-            <label style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px" data-i18n="team"></label>
-            <select id="m-team" style="width:100%;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif"></select>
+        <div id="sa-add-form" style="display:none">
+          <div class="sa-field">
+            <label data-i18n="team"></label>
+            <select id="m-team"></select>
           </div>
-          <div style="margin-bottom:6px">
-            <label style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px" data-i18n="opponent"></label>
-            <input id="m-opp" placeholder="TC Blau-Weiss" style="width:100%;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif">
+          <div class="sa-field">
+            <label data-i18n="opponent"></label>
+            <input id="m-opp" placeholder="TC Blau-Weiss">
           </div>
-          <div style="display:flex;gap:6px;margin-bottom:6px">
-            <div style="flex:1">
-              <label style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px" data-i18n="date"></label>
-              <input type="date" id="m-date" style="width:100%;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif">
+          <div class="sa-row">
+            <div class="grow">
+              <label data-i18n="date"></label>
+              <input type="date" id="m-date">
             </div>
-            <div style="width:80px">
-              <label style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px" data-i18n="time"></label>
-              <input type="time" id="m-time" value="10:00" style="width:100%;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif">
+            <div class="sa-time">
+              <label data-i18n="time"></label>
+              <input type="time" id="m-time" value="10:00">
             </div>
           </div>
-          <div style="display:flex;gap:6px;margin-bottom:8px">
-            <div style="flex:1">
-              <label style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px" data-i18n="venueType"></label>
-              <select id="m-home" style="width:100%;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif">
+          <div class="sa-row last">
+            <div class="grow">
+              <label data-i18n="venueType"></label>
+              <select id="m-home">
                 <option value="Heim" data-i18n="home"></option>
                 <option value="Auswärts" data-i18n="away"></option>
               </select>
             </div>
-            <div style="flex:1">
-              <label style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px" data-i18n="venue"></label>
-              <input id="m-venue" data-i18n-placeholder="venuePh" style="width:100%;background:#111;border:1px solid var(--border2);border-radius:6px;color:var(--white);padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif">
+            <div class="grow">
+              <label data-i18n="venue"></label>
+              <input id="m-venue" data-i18n-placeholder="venuePh">
             </div>
           </div>
-          <button class="btn btn-primary" onclick="saAddMatch()" style="width:100%;font-size:12px" data-i18n="addMatchBtn"></button>
+          <button class="btn btn-primary" onclick="saAddMatch()" data-i18n="addMatchBtn"></button>
         </div>
       </div>
       <div id="sa-team-sidebar"></div>
     </div>
     <!-- Content -->
-    <div style="padding:18px;overflow-y:auto" id="sa-content-wrap">
-      <div id="sa-no-team" class="empty" style="margin-top:60px">← Mannschaft auswählen</div>
+    <div id="sa-content-wrap">
+      <div id="sa-no-team" class="empty pick">← Mannschaft auswählen</div>
       <div id="sa-team-content" style="display:none">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--court);letter-spacing:1px" id="sa-team-name"></div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:14px" id="sa-team-meta"></div>
+        <div id="sa-team-name"></div>
+        <div id="sa-team-meta"></div>
         <div id="sa-match-list"></div>
-        <div id="sa-panel" style="display:none;margin-top:14px">
-          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div id="sa-panel" style="display:none">
+          <div class="panel-box">
+            <div class="avail-panel-header">
               <div>
                 <div class="avail-panel-title" id="sa-panel-title"></div>
-                <div style="font-size:11px;color:var(--muted);margin-top:2px" id="sa-panel-meta"></div>
+                <div class="panel-meta" id="sa-panel-meta"></div>
               </div>
-              <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <div class="btn-row">
                 <button class="move-btn" id="sa-move-btn" onclick="mvOpenMove(_saMatchId)">⇄ Verlegen</button>
                 <button class="auto-btn" id="sa-auto-btn" onclick="saAutoLineup()" data-ct="autoLineup">⚡ Auto-Aufstellung</button>
-                <button class="auto-btn" id="sa-sort-btn" onclick="saSortLineup()" style="background:transparent;border-color:var(--court)44;color:var(--muted)">↕ Sort</button>
-                <button class="auto-btn" id="sa-share-btn" onclick="mvOpenShare(_saMatchId)" style="background:#14301f;border-color:#25d36666;color:#25d366">📤 Teilen</button>
+                <button class="auto-btn ghost" id="sa-sort-btn" onclick="saSortLineup()">↕ Sort</button>
+                <button class="auto-btn share" id="sa-share-btn" onclick="mvOpenShare(_saMatchId)">📤 Teilen</button>
               </div>
             </div>
             <div id="sa-move-info"></div>
             <!-- Lineup (same view as kapitaen: common.js → MATCH VIEW) -->
-            <div class="lineup-section" style="margin-top:0;margin-bottom:18px">
+            <div class="lineup-section first">
               <div class="lineup-title" id="sa-lineup-label"></div>
               <div id="sa-warnings"></div>
               <div id="sa-lineup-slots"></div>
               <div class="save-indicator" id="sa-save-indicator"></div>
-              <div id="sa-count-wrap" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px"></div>
+              <div id="sa-count-wrap" class="count-wrap"></div>
             </div>
-            <div style="border-top:1px solid var(--border);margin-bottom:14px"></div>
+            <div class="divider"></div>
             <!-- Availability -->
-            <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px" data-i18n="availTitle"></div>
+            <div class="sidebar-title avail-head" data-i18n="availTitle"></div>
             <div id="sa-avail-content"></div>
           </div>
         </div>
@@ -530,8 +542,8 @@ window.doLogin=async function(){
 <div class="section" id="sec-blocking">
   <div class="section-title" data-i18n="blockingTitle"></div>
   <div class="section-sub" data-i18n="blockingSub"></div>
-  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <select id="block-cat-filter" onchange="renderBlocking()" style="width:auto;font-size:12px;padding:5px 9px">
+  <div class="filter-row">
+    <select id="block-cat-filter" class="filter-select" onchange="renderBlocking()">
       <option value="" data-i18n="allCategories"></option>
     </select>
   </div>
@@ -542,67 +554,63 @@ window.doLogin=async function(){
 <div class="section" id="sec-overview">
   <div class="section-title" data-ct="ovTitle">Overview</div>
   <div class="section-sub" id="overview-sub"></div>
-  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;position:relative;z-index:200">
-    <div id="ov-multicat" style="position:relative">
-      <button id="ov-multicat-btn" onclick="ovCatsMenu.toggle(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
-        <span id="ov-multicat-label" style="font-size:12px;white-space:nowrap">Alle Altersklassen</span>
-        <span style="font-size:9px;color:var(--muted)">▼</span>
+  <div class="fm-bar">
+    <div id="ov-multicat" class="fm-wrap">
+      <button id="ov-multicat-btn" onclick="ovCatsMenu.toggle(event)" class="fm-btn">
+        <span id="ov-multicat-label" class="fm-lbl">Alle Altersklassen</span>
+        <span class="fm-arrow">▼</span>
       </button>
     </div>
-    <div id="ov-teams-wrap" style="position:relative">
-      <button id="ov-teams-btn" onclick="ovTeamsMenu.toggle(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
-        <span id="ov-teams-label" style="font-size:12px;white-space:nowrap">Alle Teams</span>
-        <span style="font-size:9px;color:var(--muted)">▼</span>
+    <div id="ov-teams-wrap" class="fm-wrap">
+      <button id="ov-teams-btn" onclick="ovTeamsMenu.toggle(event)" class="fm-btn">
+        <span id="ov-teams-label" class="fm-lbl">Alle Teams</span>
+        <span class="fm-arrow">▼</span>
       </button>
     </div>
-    <div id="ov-sort-wrap" style="position:relative">
-      <button id="ov-sort-btn" onclick="ovSortMenu.toggle(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
-        <span id="ov-sort-label" style="font-size:12px;white-space:nowrap">Nach Mannschaftsnummer</span>
-        <span style="font-size:9px;color:var(--muted)">▼</span>
+    <div id="ov-sort-wrap" class="fm-wrap">
+      <button id="ov-sort-btn" onclick="ovSortMenu.toggle(event)" class="fm-btn">
+        <span id="ov-sort-label" class="fm-lbl">Nach Mannschaftsnummer</span>
+        <span class="fm-arrow">▼</span>
       </button>
     </div>
-    <div style="display:flex;gap:4px;margin-left:auto">
-      <button id="ov-btn-matches" onclick="setOverviewMode('matches')"
-        style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--court);background:var(--court);color:#0d1a10" data-i18n="ovMatches">📋 Partidos</button>
-      <button id="ov-btn-players" onclick="setOverviewMode('players')"
-        style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border2);background:transparent;color:var(--muted)" data-i18n="ovPlayers">👥 Spieler</button>
+    <div class="mode-btns">
+      <button id="ov-btn-matches" onclick="setOverviewMode('matches')" class="mode-btn on" data-i18n="ovMatches">📋 Partidos</button>
+      <button id="ov-btn-players" onclick="setOverviewMode('players')" class="mode-btn" data-i18n="ovPlayers">👥 Spieler</button>
     </div>
   </div>
-  <div id="overview-content" style="overflow-x:auto"></div>
+  <div id="overview-content" class="scroll-x"></div>
 </div>
 
 <!-- STATISTIKEN -->
 <div class="section" id="sec-statistiken">
   <div class="section-title" data-ct="statsTitle">Statistiken</div>
-  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;position:relative;z-index:200">
-    <div id="stats-multicat" style="position:relative">
-      <button id="stats-multicat-btn" onclick="statsCatsMenu.toggle(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
-        <span id="stats-multicat-label" style="font-size:12px;white-space:nowrap">Alle Altersklassen</span>
-        <span style="font-size:9px;color:var(--muted)">▼</span>
+  <div class="fm-bar">
+    <div id="stats-multicat" class="fm-wrap">
+      <button id="stats-multicat-btn" onclick="statsCatsMenu.toggle(event)" class="fm-btn">
+        <span id="stats-multicat-label" class="fm-lbl">Alle Altersklassen</span>
+        <span class="fm-arrow">▼</span>
       </button>
     </div>
-    <div id="stats-sort-wrap" style="position:relative">
-      <button id="stats-sort-btn" onclick="statsSortMenu.toggle(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
-        <span id="stats-sort-label" style="font-size:12px;white-space:nowrap">Nach Datum</span>
-        <span style="font-size:9px;color:var(--muted)">▼</span>
+    <div id="stats-sort-wrap" class="fm-wrap">
+      <button id="stats-sort-btn" onclick="statsSortMenu.toggle(event)" class="fm-btn">
+        <span id="stats-sort-label" class="fm-lbl">Nach Datum</span>
+        <span class="fm-arrow">▼</span>
       </button>
     </div>
   </div>
-  <div style="display:flex;gap:8px;margin-bottom:14px">
-    <button id="stats-btn-matches" onclick="setStatsMode('matches')"
-      style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border2);background:transparent;color:var(--muted)" data-ct="statsMatches">🎾 Spiele</button>
-    <button id="stats-btn-lkanalysis" onclick="setStatsMode('lkanalysis')"
-      style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border2);background:transparent;color:var(--muted)" data-ct="lkAnalysis">📊 LK-Analyse</button>
+  <div class="stats-modes">
+    <button id="stats-btn-matches" onclick="setStatsMode('matches')" class="mode-btn" data-ct="statsMatches">🎾 Spiele</button>
+    <button id="stats-btn-lkanalysis" onclick="setStatsMode('lkanalysis')" class="mode-btn" data-ct="lkAnalysis">📊 LK-Analyse</button>
   </div>
-  <div id="stats-content" style="overflow-x:auto"></div>
+  <div id="stats-content" class="scroll-x"></div>
 </div>
 
 <!-- UMFRAGE (survey_responses, filled via umfrage.html) -->
 <div class="section" id="sec-umfrage">
   <div class="section-title" id="um-title"></div>
   <div class="section-sub" id="um-sub"></div>
-  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
-    <select id="um-survey" onchange="renderUmfrage()" style="width:auto;padding:6px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif"></select>
+  <div class="filter-row">
+    <select id="um-survey" class="filter-select" onchange="renderUmfrage()"></select>
     <button class="btn btn-outline btn-sm" onclick="loadUmfrage()" id="um-reload"></button>
     <button class="btn btn-outline btn-sm" onclick="exportUmfrageCSV()" id="um-csv"></button>
   </div>
@@ -1088,7 +1096,7 @@ function renderPlayers(){
     <div class="stat-card"><div class="stat-num">${state.players.length}</div><div class="stat-label">${tr('players')}</div></div>
     <div class="stat-card"><div class="stat-num">${state.teams.length}</div><div class="stat-label">${tr('teams')}</div></div>
     <div class="stat-card"><div class="stat-num">${state.matches.length}</div><div class="stat-label">${tr('matches')}</div></div>
-    <div class="stat-card" style="${blockedCount>0?'border-color:var(--danger)55;background:#2d1a1a':''}"><div class="stat-num" style="${blockedCount>0?'color:var(--danger)':''}">${blockedCount}</div><div class="stat-label">${tr('blockingTitle')}</div></div>`;
+    <div class="stat-card" style="${blockedCount>0?'border-color:var(--danger)55;background:var(--danger-bg)':''}"><div class="stat-num" style="${blockedCount>0?'color:var(--danger)':''}">${blockedCount}</div><div class="stat-label">${tr('blockingTitle')}</div></div>`;
   const el=document.getElementById('player-list');
   if(!players.length){el.innerHTML=`<div class="empty">${tr('noPlayers')}</div>`;return;}
   el.innerHTML=players.map(p=>{
@@ -1096,7 +1104,7 @@ function renderPlayers(){
     const cats=[...new Set(teams.map(t=>t.category))];
     let blockedChips='',warnChips='';
     for(const cat of cats){const{blocked,warned}=getPlayerBlockStatus(p.id,cat);for(const b of blocked)blockedChips+=`<span class="blocked-badge">⛔ ${b.name}</span>`;for(const w of warned)warnChips+=`<span class="warn-badge">⚠️ ${w.name}</span>`;}
-    const teamChips=teams.map(t=>{const isMT=!!(state.mainTeam[p.id]?.[t.id]);return isMT?`<span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:12px;background:rgba(212,160,23,.12);border:1px solid #d4a01766;color:#d4a017;white-space:nowrap">★ ${t.name}</span>`:`<span class="team-chip ${t.gender==='F'?'f':'m'}">${t.name}</span>`;}).join('');
+    const teamChips=teams.map(t=>{const isMT=!!(state.mainTeam[p.id]?.[t.id]);return isMT?`<span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:12px;background:rgba(212,160,23,.12);border:1px solid #d4a01766;color:var(--gold);white-space:nowrap">★ ${t.name}</span>`:`<span class="team-chip ${t.gender==='F'?'f':'m'}">${t.name}</span>`;}).join('');
     return`<div class="player-row">
       <div class="player-avatar">${initials(p.name)}</div>
       <div style="flex:1;min-width:100px"><div class="player-name">${p.name}</div><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">${teamChips}</div></div>
@@ -1157,7 +1165,7 @@ function _smButton(p,t){
   const on=state.mainTeam[p.id]?.[t.id];
   return `<button id="mt-btn-${p.id}-${t.id}" onclick="toggleMainTeam('${p.id}','${t.id}')"
             title="${on?'Stammmannschaft — click to remove':'Set as Stammmannschaft'}"
-            style="background:${on?'rgba(212,160,23,.12)':'transparent'};border:${on?'1.5px solid #d4a017':'1px solid #333'};color:${on?'#d4a017':'#8a9a94'};border-radius:6px;padding:2px 0;min-width:42px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s">
+            style="background:${on?'rgba(212,160,23,.12)':'transparent'};border:${on?'1.5px solid var(--gold)':'1px solid var(--border2)'};color:${on?'var(--gold)':'#8a9a94'};border-radius:6px;padding:2px 0;min-width:42px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s">
             ${on?'★ SM':'☆'}
           </button>`;
 }
@@ -1244,8 +1252,8 @@ async function toggleMainTeam(playerId, teamId){
   state.mainTeam[playerId][teamId]=next;
   const btn=document.getElementById(`mt-btn-${playerId}-${teamId}`);
   if(btn){
-    btn.style.border=next?'1.5px solid #d4a017':'1px solid #333';
-    btn.style.color=next?'#d4a017':'#8a9a94';
+    btn.style.border=next?'1.5px solid var(--gold)':'1px solid var(--border2)';
+    btn.style.color=next?'var(--gold)':'#8a9a94';
     btn.style.background=next?'rgba(212,160,23,.12)':'transparent';
     btn.style.minWidth='42px';
     btn.style.padding='2px 0';
@@ -1279,7 +1287,7 @@ function openAssignModal(playerId){
       const counts=state.matchCounts[p.id]?.[t.id]||0;
       const blocked=isPlayerBlockedForTeam(p.id,t.id);
       const reason=blocked?blockReasonForTeam(p.id,t.id):'';
-      html+=`<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1b2926;border-radius:8px;margin-bottom:4px;cursor:pointer;border:1px solid ${blocked?'var(--danger)33':'#2e4a42'}">
+      html+=`<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#1b2926;border-radius:8px;margin-bottom:4px;cursor:pointer;border:1px solid ${blocked?'var(--danger)33':'var(--court-line)'}">
         <input type="checkbox" data-tid="${t.id}" ${checked?'checked':''} style="width:auto;padding:0">
         <span style="flex:1;font-size:13px">${t.name}</span>
         <span style="font-size:11px;color:var(--muted)">${counts} Sp.</span>
@@ -1292,15 +1300,15 @@ function openAssignModal(playerId){
     <button class="btn btn-primary" onclick="saveAssign('${playerId}')">${tr('saveAssign')}</button>
     <button class="btn btn-outline btn-sm" style="font-size:12px" onclick="closeModal('assign-modal')" data-i18n="cancel"></button>
   </div>`;
-  html+=`<div style="margin-top:14px;border-top:1px solid #2e4a42;padding-top:12px">
+  html+=`<div style="margin-top:14px;border-top:1px solid var(--court-line);padding-top:12px">
     <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${tr('matchesPlayed')}</div>
     ${state.teams.filter(t=>compatible.some(x=>x.id===t.id)).map(t=>{
       const c=state.matchCounts[p.id]?.[t.id]||0;
       return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:12px">
         <span style="flex:1">${t.name}</span>
-        <button onclick="adjustCount('${p.id}','${t.id}',-1)" style="background:#181818;border:1px solid var(--border);color:var(--white);border-radius:5px;padding:1px 7px;cursor:pointer">−</button>
+        <button onclick="adjustCount('${p.id}','${t.id}',-1)" style="background:var(--row);border:1px solid var(--border);color:var(--white);border-radius:5px;padding:1px 7px;cursor:pointer">−</button>
         <span style="min-width:20px;text-align:center;font-weight:600" id="cnt-${p.id}-${t.id}">${c}</span>
-        <button onclick="adjustCount('${p.id}','${t.id}',1)" style="background:#181818;border:1px solid var(--border);color:var(--white);border-radius:5px;padding:1px 7px;cursor:pointer">+</button>
+        <button onclick="adjustCount('${p.id}','${t.id}',1)" style="background:var(--row);border:1px solid var(--border);color:var(--white);border-radius:5px;padding:1px 7px;cursor:pointer">+</button>
       </div>`;
     }).join('')}
   </div>`;
@@ -1436,17 +1444,17 @@ function renderSATeamSidebar(){
   for(const t of state.teams){const c=t.category||'Herren';if(!byCat[c])byCat[c]=[];byCat[c].push(t);}
   let html='';
   for(const[cat,teams] of Object.entries(byCat).sort(([a],[b])=>catCmp(a,b))){
-    html+=`<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;padding-left:4px">${cat}</div>`;
+    html+=`<div class="sidebar-title cat-head">${cat}</div>`;
     for(const t of teams.sort((a,b)=>teamNumber(a)-teamNumber(b))){
       const active=_saTeamId===t.id;
       html+=`<button class="team-btn ${active?'active':''}" onclick="saSelectTeam('${t.id}')">
         <span class="team-dot"></span>
-        <span style="flex:1">${t.name}</span>
-        <span style="font-size:11px;color:var(--muted)">${state.matches.filter(m=>m.teamId===t.id).length}</span>
+        <span class="name">${t.name}</span>
+        <span class="count">${state.matches.filter(m=>m.teamId===t.id).length}</span>
       </button>`;
     }
   }
-  document.getElementById('sa-team-sidebar').innerHTML=html||'<div class="empty" style="padding:10px">Keine Teams</div>';
+  document.getElementById('sa-team-sidebar').innerHTML=html||'<div class="empty small">Keine Teams</div>';
 }
 
 function saSelectTeam(teamId){
@@ -1658,12 +1666,8 @@ function _updateOvMultiCatLabel(){
 
 function setOverviewMode(mode){
   _ovMode=mode;
-  document.getElementById('ov-btn-matches').style.background=mode==='matches'?'var(--court)':'transparent';
-  document.getElementById('ov-btn-matches').style.color=mode==='matches'?'#0d1a10':'var(--muted)';
-  document.getElementById('ov-btn-matches').style.borderColor=mode==='matches'?'var(--court)':'var(--border2)';
-  document.getElementById('ov-btn-players').style.background=mode==='players'?'var(--court)':'transparent';
-  document.getElementById('ov-btn-players').style.color=mode==='players'?'#0d1a10':'var(--muted)';
-  document.getElementById('ov-btn-players').style.borderColor=mode==='players'?'var(--court)':'var(--border2)';
+  document.getElementById('ov-btn-matches').classList.toggle('on',mode==='matches');
+  document.getElementById('ov-btn-players').classList.toggle('on',mode==='players');
   renderOverview();
 }
 
@@ -2045,10 +2049,8 @@ let _statsMode='matches'; // 'matches' or 'lkanalysis'
 
 function setStatsMode(mode){
   _statsMode=mode;
-  document.getElementById('stats-btn-matches').style.color=mode==='matches'?'var(--court)':'var(--muted)';
-  document.getElementById('stats-btn-matches').style.borderBottomColor=mode==='matches'?'var(--court)':'transparent';
-  document.getElementById('stats-btn-lkanalysis').style.color=mode==='lkanalysis'?'var(--court)':'var(--muted)';
-  document.getElementById('stats-btn-lkanalysis').style.borderBottomColor=mode==='lkanalysis'?'var(--court)':'transparent';
+  document.getElementById('stats-btn-matches').classList.toggle('under',mode==='matches');
+  document.getElementById('stats-btn-lkanalysis').classList.toggle('under',mode==='lkanalysis');
   
   // Show/hide sort controls based on mode
   const sortWrap=document.getElementById('stats-sort-wrap');
@@ -2107,7 +2109,7 @@ function _statsTable(ths){
   return '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:2px solid var(--border2)">'+ths.join('')+'</tr></thead><tbody>';
 }
 function _statsNote(inner){
-  return `<div style="margin-top:20px;padding:12px;background:#222;border-radius:8px;font-size:12px;color:var(--muted)">
+  return `<div style="margin-top:20px;padding:12px;background:var(--hover);border-radius:8px;font-size:12px;color:var(--muted)">
     ${inner}
   </div>`;
 }
@@ -2145,8 +2147,8 @@ function _statsMatchRow(m,team,c,lk){
       <td style="padding:6px 12px;white-space:nowrap">${fmtDate(m.date)}</td>
       <td style="padding:6px 12px">${team.name} vs ${(m.opponent||'').substring(0,20)}</td>
       <td style="padding:6px 8px;text-align:center">${c.responded}/${c.players}</td>
-      ${share(c.yes,'#52c97a')}
-      ${share(c.conditional,'rgba(82,201,122,.7)')}
+      ${share(c.yes,'var(--yes)')}
+      ${share(c.conditional,'var(--yes-soft)')}
       ${share(c.notfall,'var(--warn)')}
       ${share(c.no,'var(--danger)')}
       <td style="padding:6px 8px;text-align:center">${lk}</td>
@@ -2231,7 +2233,7 @@ window.addEventListener('DOMContentLoaded',()=>{
 
 setLang(lang);
 </script>
-<footer style="text-align:center;padding:18px 28px;font-size:11px;color:var(--muted);border-top:1px solid #1e1e1e;margin-top:32px">
+<footer>
   <span data-ct="footer1">Daten basieren auf öffentlichen TVBB-Informationen · Nur für interne Vereinszwecke</span><br>
   <span data-ct="footer2">Sportwart der Tennisabteilung · Füchse Berlin Reinickendorf e.V.</span>
 </footer>

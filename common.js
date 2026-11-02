@@ -440,7 +440,7 @@ function mvSlotsHtml(match,o){
 function mvAvailHtml(match,o={}){
   const avail=state.availability[match.id]||{};
   const label={yes:ct('groupYes'),conditional:ct('groupConditional'),notfall:ct('groupNotfall'),no:ct('groupNo'),'':ct('noAnswer')};
-  const color={yes:'var(--court)',conditional:'#52c97a',notfall:'var(--warn)',no:'var(--danger)','':'var(--muted)'};
+  const color={yes:'var(--court)',conditional:'var(--yes)',notfall:'var(--warn)',no:'var(--danger)','':'var(--muted)'};
   const tag=(title,text,extra='')=>`<span title="${title}" class="mx-tag${extra}">${text}</span>`;
   let last,html='';
   for(const p of mvTeamPlayers(match)){
@@ -463,7 +463,7 @@ function mvAvailHtml(match,o={}){
       }
     }
     if(!extra)extra=weekendBadges(p.id,match); // max. one extra badge: same-day beats the weekend hint
-    const bg=s==='yes'?'#1a2e26':s==='conditional'?'rgba(82,201,122,.1)':s==='notfall'?'#2e2a1a':s==='no'?'#2d1a1a':'#252525';
+    const bg=s==='yes'?'var(--court-bg)':s==='conditional'?'rgba(82,201,122,.1)':s==='notfall'?'var(--warn-bg)':s==='no'?'var(--danger-bg)':'var(--border)';
     const right=o.actions?o.actions(p,s):`<span class="avail-badge" style="background:${bg};color:${color[s]};margin-left:4px">${badge}</span>`;
     html+=`<div class="avail-row">
       <div class="avail-avatar${sm?' sm':''}">${initials(p.name)}</div>
@@ -664,7 +664,7 @@ function mvOpenShare(matchId){
   const m=state.matches.find(x=>x.id===matchId);if(!m)return;
   const modal=_mvModal('share-modal');
   document.getElementById('share-modal-box').innerHTML=`
-    <h2 style="color:#25d366">📤 ${ct('shareTitle')}</h2>
+    <h2 style="color:var(--whatsapp)">📤 ${ct('shareTitle')}</h2>
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">${ct('shareSub')}</div>
     <textarea class="share-text" id="share-text"></textarea>
     <div class="mv-err" id="share-msg" style="color:var(--court)"></div>
@@ -753,7 +753,7 @@ function ovPlayerLine(label,p,name,ersatz){
           <span style="color:var(--muted);min-width:12px;font-size:11px">${label}</span>
           <span title="${p.name}">${name(p)}</span>
         </div>`
-    :`<div style="font-size:11px;padding:1px 0;color:${p?'var(--white)':'#2e4a42'};display:flex;gap:4px;align-items:center">
+    :`<div style="font-size:11px;padding:1px 0;color:${p?'var(--white)':'var(--court-line)'};display:flex;gap:4px;align-items:center">
           <span style="color:var(--muted);min-width:12px;font-size:11px">${label}</span>
           <span title="${p?p.name:''}">${name(p)}</span>
         </div>`;
@@ -762,7 +762,7 @@ function ovPlayerLine(label,p,name,ersatz){
 function ovMatchCell(m,team,name,open){
   const sz=teamSize(team),slots=state.lineups[m.id]||[],main=slots.slice(0,sz);
   const filled=main.filter(Boolean).length,complete=filled>=sz,partial=filled>0&&!complete;
-  const bg=complete?'#1a2e26':partial?'#2e2a15':'#1a1a1a',col=complete?'var(--court)':partial?'#ffd700':'var(--muted)',icon=complete?'✓':partial?'⏳':'·';
+  const bg=complete?'var(--court-bg)':partial?'#2e2a15':'var(--soft)',col=complete?'var(--court)':partial?'var(--partial)':'var(--muted)',icon=complete?'✓':partial?'⏳':'·';
   let lines='';
   for(let i=0;i<sz;i++){const pid=main[i];lines+=ovPlayerLine(`${i+1}.`,pid?playerById(pid):null,name,false);}
   const ep=slots[sz]?playerById(slots[sz]):null;
@@ -789,7 +789,7 @@ function ovFreeCell(dayMatches,name){
   if(!free.size)return OV_EMPTY_TD;
   const list=[...free.values()].sort((x,y)=>ord[x.a]-ord[y.a]||(x.p.rank||999)-(y.p.rank||999));
   return'<td style="padding:6px 8px;vertical-align:top">'+list.map(x=>{
-    const c=x.a==='yes'?'#52c97a':x.a==='conditional'?'rgba(82,201,122,.7)':'var(--warn)',mark=x.a==='yes'?'✓':x.a==='conditional'?'(✓)':'!';
+    const c=x.a==='yes'?'var(--yes)':x.a==='conditional'?'var(--yes-soft)':'var(--warn)',mark=x.a==='yes'?'✓':x.a==='conditional'?'(✓)':'!';
     return`<div style="font-size:11px;padding:1px 0;color:${c};display:flex;gap:4px;align-items:center;white-space:nowrap">
         <span style="min-width:14px;font-size:11px;opacity:.8">${mark}</span>
         <span title="${x.p.name}">${name(x.p)}</span>
@@ -802,10 +802,10 @@ function ovLegendItem(color,mark,label,last){
         </div>`;
 }
 function ovMatchesLegend(){
-  return`<div style="margin-top:16px;padding:12px;background:#1a1a1a;border-radius:8px;border:1px solid var(--border2)">
+  return`<div style="margin-top:16px;padding:12px;background:var(--soft);border-radius:8px;border:1px solid var(--border2)">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:11px">
-      <div>${ovLegendItem('var(--court)','●',ct('fullLineup'))}${ovLegendItem('#ffd700','●',ct('partLineup'))}${ovLegendItem('var(--muted)','●',ct('stillOpen'),true)}</div>
-      <div>${ovLegendItem('#52c97a','✓',ct('yesPrio1'))}${ovLegendItem('rgba(82,201,122,.7)','(✓)',ct('prio2'))}${ovLegendItem('var(--warn)','!',ct('notfall'),true)}</div>
+      <div>${ovLegendItem('var(--court)','●',ct('fullLineup'))}${ovLegendItem('var(--partial)','●',ct('partLineup'))}${ovLegendItem('var(--muted)','●',ct('stillOpen'),true)}</div>
+      <div>${ovLegendItem('var(--yes)','✓',ct('yesPrio1'))}${ovLegendItem('var(--yes-soft)','(✓)',ct('prio2'))}${ovLegendItem('var(--warn)','!',ct('notfall'),true)}</div>
     </div>
   </div>`;
 }
@@ -836,17 +836,17 @@ function ovPlayerDayCell(p,dayMatches){
   if(!dayMatches.length)return'<td style="padding:7px 10px;text-align:center;color:var(--border2)">—</td>';
   return'<td style="padding:4px 6px;text-align:center;min-width:80px"><div style="display:flex;flex-direction:column;gap:3px">'+dayMatches.map(m=>{
     const team=teamById(m.teamId),sz=teamSize(team),slots=state.lineups[m.id]||[],avail=state.availability[m.id]?.[p.id]||'';
-    const [bg,col,icon]=slots.slice(0,sz).includes(p.id)?['#1a2e26','var(--court)','✓']:slots[sz]===p.id?['#252525','var(--muted)','E']
-      :avail==='yes'?['#1a2a1a','#52c97a',ct('ovYes')]:avail==='conditional'?['rgba(82,201,122,.08)','#52c97a','('+ct('ovYes')+')']
-      :avail==='notfall'?['#2e2a1a','var(--warn)',ct('ovNotfall')]:avail==='no'?['#2d1a1a','var(--danger)','✗']:['transparent','#444','?'];
+    const [bg,col,icon]=slots.slice(0,sz).includes(p.id)?['var(--court-bg)','var(--court)','✓']:slots[sz]===p.id?['var(--border)','var(--muted)','E']
+      :avail==='yes'?['var(--ok-bg)','var(--yes)',ct('ovYes')]:avail==='conditional'?['rgba(82,201,122,.08)','var(--yes)','('+ct('ovYes')+')']
+      :avail==='notfall'?['var(--warn-bg)','var(--warn)',ct('ovNotfall')]:avail==='no'?['var(--danger-bg)','var(--danger)','✗']:['transparent','var(--line2)','?'];
     return`<div style="background:${bg};border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;color:${col};white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:6px">
             <span style="opacity:.7;font-size:11px;font-weight:500">${ovTeamShort(team)}</span>
             <span>${icon}</span>
           </div>`;}).join('')+'</div></td>';
 }
 function ovPlayersLegend(){
-  const colors=['var(--court)','var(--muted)','#52c97a','var(--warn)','var(--danger)','#d4a017'];
-  return`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:8px 12px;background:#181818;border-radius:8px;font-size:11px">
+  const colors=['var(--court)','var(--muted)','var(--yes)','var(--warn)','var(--danger)','var(--gold)'];
+  return`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:8px 12px;background:var(--row);border-radius:8px;font-size:11px">
     ${ct('ovLegend').map((l,i)=>`<span style="color:${colors[i]}">■ ${l}</span>`).join('')}
   </div>`;
 }
@@ -866,7 +866,7 @@ function ovPlayersHtml(teams){
     html+=`<tr style="border-bottom:1px solid var(--border)22">
         <td style="padding:7px 12px;white-space:nowrap">
           <span style="font-weight:600">${p.name}</span>
-          ${sm?`<span style="font-size:11px;color:#d4a017;margin-left:4px">★ ${sm}</span>`:''}
+          ${sm?`<span style="font-size:11px;color:var(--gold);margin-left:4px">★ ${sm}</span>`:''}
         </td>
         <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:11px">${p.lkStr||'?'}</span></td>`;
     for(const d of dates)html+=ovPlayerDayCell(p,matches.filter(m=>m.date===d&&p.teamIds.includes(m.teamId)).sort((a,b)=>teamNumber(teamById(a.teamId)||{})-teamNumber(teamById(b.teamId)||{})));
@@ -895,13 +895,12 @@ function ovSortTeams(teams,mode){
 }
 
 // ── FILTER MENUS ── (admin + kapitaen) the small dropdowns above Overview and Statistiken: age groups, teams, order.
-const FM_PANEL='display:none;position:fixed;background:#161616;border:1px solid #444;border-radius:10px;padding:6px 4px;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,.9)';
 // one menu: a floating panel under its button, filled by o.build(panel) each time it opens; a click outside o.wrap closes it.
 // o = {btn, wrap (element ids), width?, nowrap?, build(panel)}
 function dropMenu(o){
   const m={el:null};
   m.panel=()=>{
-    if(!m.el){m.el=document.createElement('div');m.el.style.cssText=FM_PANEL+(o.nowrap?';white-space:nowrap':'');document.body.appendChild(m.el);}
+    if(!m.el){m.el=document.createElement('div');m.el.className='fm-panel'+(o.nowrap?' nowrap':'');m.el.style.display='none';document.body.appendChild(m.el);}
     return m.el;
   };
   m.toggle=e=>{
@@ -926,12 +925,10 @@ function dropMenu(o){
 // one line of a menu: a checkbox (or radio) and its text. r = {type?, name?, checked, bold?, plain?, id?, data?: [key,value], change(input)}
 function fmRow(panel,text,r){
   const lbl=document.createElement('label');
-  lbl.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:'+(r.bold?'#fff;font-weight:600':'#aaa'+(r.plain?';font-weight:400':''));
-  lbl.addEventListener('mouseover',()=>{lbl.style.background='#222';});
-  lbl.addEventListener('mouseout',()=>{lbl.style.background='transparent';});
+  lbl.className='fm-row'+(r.bold?' all':'')+(r.plain?' plain':'');
   const cb=document.createElement('input');
   cb.type=r.type||'checkbox';if(r.name)cb.name=r.name;
-  cb.style.cssText='accent-color:#52b788;flex-shrink:0;margin:0;width:14px;height:14px';
+  cb.className='fm-check';
   cb.checked=r.checked;if(r.id)cb.id=r.id;if(r.data)cb.dataset[r.data[0]]=r.data[1];
   cb.addEventListener('change',()=>r.change(cb));
   const span=document.createElement('span');span.textContent=text;
@@ -942,7 +939,7 @@ function checkList(panel,o){
   const sel=o.selected(),all=!sel,attr=o.data.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
   panel.innerHTML='';
   fmRow(panel,o.allLabel,{checked:all,bold:true,id:o.allId,change:cb=>{o.set(cb.checked?null:[]);o.changed();}});
-  const div=document.createElement('div');div.style.cssText='border-top:1px solid #333;margin:3px 6px';panel.appendChild(div);
+  const div=document.createElement('div');div.className='fm-sep';panel.appendChild(div);
   for(const it of o.items)fmRow(panel,it.label,{checked:all||!!(sel&&sel.includes(it.id)),plain:o.plain,data:[o.data,it.id],change:()=>{
     const checked=[...panel.querySelectorAll(`input[data-${attr}]:checked`)].map(i=>i.dataset[o.data]);
     o.set(checked.length===o.items.length?null:checked);
@@ -956,7 +953,7 @@ function catMenuList(panel,o){
 }
 // the "Mannschaften" menu. o = {teams (sorted), allId, selected, set, changed} as in checkList
 function ovTeamsPanel(panel,o){
-  if(!o.teams.length){panel.innerHTML='<div style="padding:10px;color:var(--muted);font-size:12px">'+ct('noTeams')+'</div>';return;}
+  if(!o.teams.length){panel.innerHTML='<div class="fm-empty">'+ct('noTeams')+'</div>';return;}
   checkList(panel,{items:o.teams.map(t=>({id:t.id,label:t.name})),allLabel:ct('allTeamsShort'),data:'teamId',allId:o.allId,selected:o.selected,set:o.set,changed:o.changed});
 }
 // an order menu: picking a line sets the button text, closes the menu and calls o.pick(key). o = {keys, name, current, labelId, pick(key)}
@@ -993,7 +990,7 @@ const BLK_T={
 };
 function bT(k){return(BLK_T[lang]||BLK_T.de)[k];}
 const BLK_PILL='display:inline-block;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap';
-const BLK_STYLE={stamm:'background:#1a2e26;color:#74c69d;box-shadow:inset 0 0 0 1.5px #74c69d',played:'background:#1a2e26;color:#74c69d',block:'background:#3a1b18;color:#ffb3aa',warn:'background:#33260f;color:#f7c48f'};
+const BLK_STYLE={stamm:'background:var(--court-bg);color:var(--court);box-shadow:inset 0 0 0 1.5px var(--court)',played:'background:var(--court-bg);color:var(--court)',block:'background:#3a1b18;color:#ffb3aa',warn:'background:#33260f;color:#f7c48f'};
 function blkShort(t){
   let n=(t?.name||'?').replace('Seniorinnen','SenF').replace('Senioren','Sen').replace('Herren','H').replace('Damen','D').trim();
   const siblings=(state.allTeams||state.teams).filter(x=>x.category===t?.category);
@@ -1026,7 +1023,7 @@ function blockCell(p,t,catTeams,status,skTeam){
   return`<td style="padding:6px 8px;text-align:center;border-left:1px solid #2e4a4222" title="${title.replace(/"/g,'&quot;')}">${inner}</td>`;
 }
 function blockLegend(){
-  return`<div style="padding:9px 12px;display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center;border-top:1px solid #2e4a42;font-size:11px;color:#c8d2ce">
+  return`<div style="padding:9px 12px;display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--court-line);font-size:11px;color:#c8d2ce">
     <span style="${BLK_PILL};${BLK_STYLE.stamm}">${bT('stamm')}</span>${bT('legStamm')}
     <span style="${BLK_PILL};${BLK_STYLE.block}">⛔ …</span>${bT('legBlock')}
     <span style="${BLK_PILL};${BLK_STYLE.warn}">⚠️ …</span>${bT('legWarn')}
@@ -1043,7 +1040,7 @@ function blockingRuleBoxes(){
 }
 function blockingRow(p,cat,catTeams){
   const status=getPlayerBlockStatus(p.id,cat),skTeam=getStammkaderTeam(p.id,cat)||catTeams[catTeams.length-1];
-  return`<tr style="border-bottom:1px solid #2e4a4222;${status.blocked.length>0?'background:#1e1e1e':''}">
+  return`<tr style="border-bottom:1px solid #2e4a4222;${status.blocked.length>0?'background:var(--card)':''}">
         <td style="padding:7px 12px;white-space:nowrap"><div style="font-weight:600;font-size:12px">${p.name}</div></td>
         <td style="padding:7px 8px;text-align:center"><span class="lk-badge" style="font-size:11px">${p.lkStr||'?'}</span></td>
         <td style="padding:7px 8px;text-align:center;font-size:11px;color:var(--muted)">${p.year||'—'}</td>
@@ -1057,7 +1054,7 @@ function blockingCategoryHtml(cat,catTeams){
   return`<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--court);letter-spacing:1px;margin:14px 0 8px">${cat}</div>`+
     `<div class="card" style="padding:0;overflow:hidden;overflow-x:auto;margin-bottom:10px">`+
     `<table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead><tr style="border-bottom:1px solid #2e4a42">
+      <thead><tr style="border-bottom:1px solid var(--court-line)">
         <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--muted);min-width:160px">${ct('playerCol')}</th>
         <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">LK</th>
         <th style="padding:8px 8px;text-align:center;font-weight:600;color:var(--muted);font-size:11px">${ct('colYear')}</th>

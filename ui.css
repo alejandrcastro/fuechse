@@ -1,0 +1,77 @@
+/* ui.css: the look of admin and kapitaen. Colors are named here once; the pages use var(--name) and the classes below. */
+:root{
+  --green:#2d6a4f;--green-light:#40916c;--court:#74c69d;
+  --white:#f0f2f1;--dark:#161616;--card:#1e1e1e;--muted:#a8b8b0;
+  --warn:#f4a261;--danger:#ff6b5b;--info:#4ea8de;--red:#c0392b;
+  --border:#252525;--border2:#333;
+  /* surfaces, darkest to lightest */
+  --deep:#0d1a10;--bar:#111;--row:#181818;--soft:#1a1a1a;--hover:#222;--line2:#444;--dim:#aaa;
+  /* tinted backgrounds behind a status */
+  --court-bg:#1a2e26;--court-line:#2e4a42;--ok-bg:#1a2a1a;--warn-bg:#2e2a1a;--danger-bg:#2d1a1a;
+  /* availability and Stammmannschaft */
+  --yes:#52c97a;--yes-soft:rgba(82,201,122,.7);--partial:#ffd700;--gold:#d4a017;--check:#52b788;--whatsapp:#25d366
+}
+
+/* LOGIN (admin + kapitaen) */
+#login-overlay{position:fixed;inset:0;background:var(--deep);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:var(--card);border:1px solid var(--border2);border-radius:14px;padding:36px 32px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.login-brand{text-align:center;margin-bottom:28px}
+.login-brand .name{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:.1em;color:var(--court)}
+.login-brand .sub{font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.login-field{margin-bottom:12px}
+.login-field label{font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px}
+.login-field input{width:100%;background:var(--bar);border:1px solid var(--border2);border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none}
+.login-field input:focus{border-color:var(--court)}
+.login-btn{width:100%;padding:11px;border-radius:8px;border:none;background:var(--green);color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:background .15s}
+.login-btn:hover{background:var(--green-light)}
+.login-err{margin-top:12px;font-size:.8rem;color:var(--danger);text-align:center;min-height:18px;font-weight:500}
+
+.login-logo{width:56px;height:56px;object-fit:contain;display:block;margin:0 auto 10px}
+.login-field.last{margin-bottom:20px}
+
+/* TABS under the header */
+.tabs{display:flex;padding:0 28px;background:var(--bar);border-bottom:1px solid var(--border2);overflow-x:auto}
+.tab{padding:11px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif}
+.tab:hover{color:var(--white)}
+.tab.active{color:var(--court);border-bottom-color:var(--court)}
+
+/* FILTER MENUS above Overview and Statistiken (buttons here, the panels come from common.js) */
+.fm-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;position:relative;z-index:200}
+.fm-wrap{position:relative}
+.fm-btn{padding:5px 10px;font-size:12px;background:var(--bar);border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.fm-lbl{font-size:12px;white-space:nowrap}
+.fm-arrow{font-size:9px;color:var(--muted)}
+.fm-panel{position:fixed;background:var(--dark);border:1px solid var(--line2);border-radius:10px;padding:6px 4px;z-index:99999;box-shadow:0 8px 32px rgba(0,0,0,.9)}
+.fm-panel.nowrap{white-space:nowrap}
+.fm-row{display:flex;align-items:center;gap:6px;padding:5px 10px;cursor:pointer;font-size:12px;border-radius:6px;white-space:nowrap;color:var(--dim)}
+.fm-row:hover{background:var(--hover)}
+.fm-row.all{color:#fff;font-weight:600}
+.fm-row.plain{font-weight:400}
+.fm-check{accent-color:var(--check);flex-shrink:0;margin:0;width:14px;height:14px}
+.fm-sep{border-top:1px solid var(--border2);margin:3px 6px}
+.fm-empty{padding:10px;color:var(--muted);font-size:12px}
+/* two or three buttons that switch a view (Spiele / Spieler); .on = chosen */
+.mode-btns{display:flex;gap:4px;margin-left:auto}
+.mode-btn{padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border2);background:transparent;color:var(--muted)}
+.mode-btn.on{border-color:var(--court);background:var(--court);color:var(--deep)}
+
+/* MATCH PANEL (kapitaen + admin Spiele & Aufstellung) */
+.panel-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
+.avail-panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.panel-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap}
+.auto-btn.ghost{background:transparent;border-color:var(--court)44;color:var(--muted)}
+.auto-btn.share{background:#14301f;border-color:#25d36666;color:var(--whatsapp)}
+.lineup-section.first{margin-top:0;margin-bottom:18px}
+.count-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.divider{border-top:1px solid var(--border);margin-bottom:14px}
+.sidebar-title.avail-head{margin-bottom:8px}
+.sidebar-title.cat-head{margin:10px 0 4px;padding-left:4px}
+.team-btn .name{flex:1}
+.team-btn .count{font-size:11px;color:var(--muted)}
+/* small helpers */
+.empty.pick{margin-top:60px}
+.empty.small{padding:10px}
+.scroll-x{overflow-x:auto}
+.filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.filter-select{width:auto;font-size:12px;padding:5px 9px;border-radius:8px}

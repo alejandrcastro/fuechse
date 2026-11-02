@@ -5,44 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kapitän – Füchse Berlin</title>
 <link href="fonts/fonts.css?v=1" rel="stylesheet">
-<link href="match.css?v=2" rel="stylesheet">
+<link href="match.css?v=3" rel="stylesheet">
+<link href="ui.css?v=1" rel="stylesheet">
 <style>
-:root{
-  --green:#2d6a4f;--green-light:#40916c;--court:#74c69d;
-  --white:#f0f2f1;--dark:#161616;--card:#1e1e1e;--muted:#a8b8b0;
-  --warn:#f4a261;--danger:#ff6b5b;--info:#4ea8de;--red:#c0392b;
-  --border:#252525;--border2:#333
-}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--white);min-height:100vh}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--dark)}
-::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
-
-/* LOGIN */
-#login-overlay{position:fixed;inset:0;background:#0d1a10;display:flex;align-items:center;justify-content:center;z-index:9999}
-.login-box{background:#1e1e1e;border:1px solid #333;border-radius:14px;padding:36px 32px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
-.login-brand{text-align:center;margin-bottom:28px}
-.login-brand .name{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:.1em;color:var(--court)}
-.login-brand .sub{font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
-.login-field{margin-bottom:12px}
-.login-field label{font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px}
-.login-field input{width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#f0f0f0;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none}
-.login-field input:focus{border-color:var(--court)}
-.login-btn{width:100%;padding:11px;border-radius:8px;border:none;background:#2d6a4f;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:background .15s}
-.login-btn:hover{background:var(--green-light)}
-.login-err{margin-top:12px;font-size:.8rem;color:var(--danger);text-align:center;min-height:18px;font-weight:500}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 
 /* HEADER */
-header{background:#111;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:8px}
+#who-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid var(--court);color:var(--court);white-space:nowrap}
+footer{text-align:center;padding:18px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:40px}
+.tabs{padding:0 22px}
+header{background:var(--bar);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:8px}
 .logo{display:flex;align-items:center;gap:10px}
 .logo h1{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px}
 .logo-img{width:36px;height:36px;object-fit:contain;flex-shrink:0}
 .logo span{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block}
 .header-right{display:flex;align-items:center;gap:8px}
 .sync-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;transition:all .3s;white-space:nowrap}
-.sync-ok{background:#1a2a1a;border:1px solid var(--court)55;color:var(--court)}
+.sync-ok{background:var(--ok-bg);border:1px solid var(--court)55;color:var(--court)}
 .sync-err{background:#3d1a1a;border:1px solid var(--danger)55;color:var(--danger)}
-.sync-ing{background:#2e2a1a;border:1px solid var(--warn)55;color:var(--warn)}
+.sync-ing{background:var(--warn-bg);border:1px solid var(--warn)55;color:var(--warn)}
 .lang-bar{display:flex;gap:4px}
 .lang-btn{padding:3px 9px;font-size:11px;font-weight:600;border:1px solid var(--border2);border-radius:6px;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s}
 .lang-btn:hover{color:var(--white)}
@@ -54,7 +38,7 @@ header{background:#111;padding:14px 22px;display:flex;align-items:center;justify
 main{padding:22px;max-width:1080px;margin:0 auto;display:grid;grid-template-columns:240px 1fr;gap:18px;min-height:calc(100vh - 60px)}
 @media(max-width:700px){main{grid-template-columns:1fr}}
 /* mobile: team dropdown instead of the full list (desktop keeps the list) */
-.team-select{display:none;width:100%;background:#111;border:1px solid var(--border2);border-radius:10px;color:var(--white);padding:11px 12px;font:600 14px 'DM Sans',sans-serif}
+.team-select{display:none;width:100%;background:var(--bar);border:1px solid var(--border2);border-radius:10px;color:var(--white);padding:11px 12px;font:600 14px 'DM Sans',sans-serif}
 @media(max-width:700px){.team-select{display:block}#team-list-sidebar,#sidebar-teams-title,#no-team-selected{display:none!important}.sidebar-card{padding:10px}}
 
 /* SIDEBAR */
@@ -69,19 +53,18 @@ main{padding:22px;max-width:1080px;margin:0 auto;display:grid;grid-template-colu
 
 /* AVAILABILITY PANEL */
 .avail-panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-top:14px}
-.avail-panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px}
-.av-yes{background:#1a2e26;color:var(--court)}
-.av-maybe{background:#2e2a1a;color:var(--warn)}
-.av-no{background:#2d1a1a;color:var(--danger)}
-.av-open{background:#252525;color:var(--muted)}
+.av-yes{background:var(--court-bg);color:var(--court)}
+.av-maybe{background:var(--warn-bg);color:var(--warn)}
+.av-no{background:var(--danger-bg);color:var(--danger)}
+.av-open{background:var(--border);color:var(--muted)}
 
 /* LINEUP */
 .empty{color:var(--muted);font-size:13px;text-align:center;padding:30px}
 .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--court)44;border-top-color:var(--court);border-radius:50%;animation:spin .6s linear infinite;margin-right:6px;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
-input,select{background:#111;border:1px solid var(--border2);border-radius:7px;color:var(--white);padding:7px 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;width:100%}
+input,select{background:var(--bar);border:1px solid var(--border2);border-radius:7px;color:var(--white);padding:7px 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;width:100%}
 input:focus,select:focus{border-color:var(--court)}
-.rule-box{background:#181818;border-left:3px solid var(--court);border-radius:0 8px 8px 0;padding:8px 12px;margin:9px 0;font-size:12px;color:var(--muted);line-height:1.6}
+.rule-box{background:var(--row);border-left:3px solid var(--court);border-radius:0 8px 8px 0;padding:8px 12px;margin:9px 0;font-size:12px;color:var(--muted);line-height:1.6}
 .rule-box.warn{border-left-color:var(--warn)}
 .rule-box.danger{border-left-color:var(--danger)}
 .rule-box strong{color:var(--white)}
@@ -97,7 +80,7 @@ input:focus,select:focus{border-color:var(--court)}
 <div id="login-overlay">
   <div class="login-box">
     <div class="login-brand">
-      <img src="logo.svg" alt="Füchse Berlin" style="width:56px;height:56px;object-fit:contain;display:block;margin:0 auto 10px">
+      <img class="login-logo" src="logo.svg" alt="Füchse Berlin">
       <div class="name">FÜCHSE BERLIN</div>
       <div class="sub" data-ct="captainApp">Kapitän-App</div>
     </div>
@@ -106,7 +89,7 @@ input:focus,select:focus{border-color:var(--court)}
       <input id="login-email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Benutzername" data-ct-ph="username"
         onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
     </div>
-    <div class="login-field" style="margin-bottom:20px">
+    <div class="login-field last">
       <label data-ct="password">Passwort</label>
       <input id="login-pass" type="password" autocomplete="current-password"
         onkeydown="if(event.key==='Enter')doLogin()">
@@ -131,17 +114,17 @@ input:focus,select:focus{border-color:var(--court)}
       <button class="lang-btn" onclick="setLang('es')">ES</button>
       <button class="lang-btn" onclick="setLang('en')">EN</button>
     </div>
-    <span id="who-badge" style="display:none;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid var(--court);color:var(--court);white-space:nowrap"></span>
+    <span id="who-badge" style="display:none"></span>
     <span class="sync-badge sync-ing" id="sync-badge">⟳</span>
     <button class="logout-btn" id="btn-logout" onclick="doLogout()">Abmelden</button>
   </div>
 </header>
 
 <!-- TABS -->
-<div style="display:flex;padding:0 22px;background:#111;border-bottom:1px solid var(--border2);overflow-x:auto">
-  <button id="tab-spiele" onclick="showKapTab('spiele')" style="padding:11px 18px;font-size:13px;font-weight:500;color:var(--court);cursor:pointer;border-bottom:3px solid var(--court);border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif;white-space:nowrap">Spiele &amp; Aufstellung</button>
-  <button id="tab-overview" onclick="showKapTab('overview')" style="padding:11px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif;white-space:nowrap">Overview</button>
-  <button id="tab-sperren" onclick="showKapTab('sperren')" style="padding:11px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif;white-space:nowrap">Sperren</button>
+<div class="tabs">
+  <button id="tab-spiele" class="tab active" onclick="showKapTab('spiele')">Spiele &amp; Aufstellung</button>
+  <button id="tab-overview" class="tab" onclick="showKapTab('overview')">Overview</button>
+  <button id="tab-sperren" class="tab" onclick="showKapTab('sperren')">Sperren</button>
 </div>
 
 <!-- MAIN -->
@@ -151,15 +134,15 @@ input:focus,select:focus{border-color:var(--court)}
     <div class="sidebar-card">
       <div class="sidebar-title" id="sidebar-teams-title">Mannschaften</div>
       <select id="team-select" class="team-select" onchange="if(this.value)selectTeam(this.value)"></select>
-      <div id="team-list-sidebar"><div class="empty" style="padding:10px" id="sidebar-loading">Laden...</div></div>
+      <div id="team-list-sidebar"><div class="empty small" id="sidebar-loading">Laden...</div></div>
     </div>
   </div>
 
   <!-- CONTENT WRAPPER (single grid cell, tabs switch between views inside) -->
-  <div style="min-width:0" id="main-content-wrapper">
+  <div class="content" id="main-content-wrapper">
     <!-- CONTENT: Spiele & Aufstellung -->
     <div id="view-spiele">
-    <div id="no-team-selected" class="empty" style="margin-top:60px" data-ct="pickTeamLeft">
+    <div id="no-team-selected" class="empty pick" data-ct="pickTeamLeft">
       &#8592; Mannschaft auswählen
     </div>
     <div id="team-content" style="display:none">
@@ -174,31 +157,31 @@ input:focus,select:focus{border-color:var(--court)}
         <div class="avail-panel-header">
           <div>
             <div class="avail-panel-title" id="panel-match-title"></div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px" id="panel-match-meta"></div>
+            <div class="panel-meta" id="panel-match-meta"></div>
           </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <div class="btn-row">
             <button class="move-btn" id="move-btn" onclick="openMoveModal()" style="display:none">⇄ Verlegen</button>
             <button class="auto-btn" id="auto-btn" onclick="runAutoLineup()" data-ct="autoLineup">⚡ Auto-Aufstellung</button>
-            <button class="auto-btn" id="sort-btn" onclick="sortLineupKap()" style="background:transparent;border-color:var(--court)44;color:var(--muted)">↕ Sort</button>
-            <button class="auto-btn" id="share-btn" onclick="openShareModal()" style="background:#14301f;border-color:#25d36666;color:#25d366">📤 Teilen</button>
+            <button class="auto-btn ghost" id="sort-btn" onclick="sortLineupKap()">↕ Sort</button>
+            <button class="auto-btn share" id="share-btn" onclick="openShareModal()">📤 Teilen</button>
           </div>
         </div>
 
         <div id="move-info"></div>
         <!-- Lineup FIRST (above availability) -->
-        <div class="lineup-section" style="margin-top:0;margin-bottom:18px">
+        <div class="lineup-section first">
           <div class="lineup-title" id="lineup-label">Aufstellung</div>
           <div id="lineup-warnings"></div>
           <div id="lineup-slots"></div>
           <div class="save-indicator" id="save-indicator"></div>
-          <div id="count-wrap" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px"></div>
+          <div id="count-wrap" class="count-wrap"></div>
         </div>
 
         <!-- Divider -->
-        <div style="border-top:1px solid var(--border);margin-bottom:14px"></div>
+        <div class="divider"></div>
 
         <!-- Availability table BELOW -->
-        <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px" data-ct="availability">Verfügbarkeit</div>
+        <div class="sidebar-title avail-head" data-ct="availability">Verfügbarkeit</div>
         <div id="avail-list"></div>
       </div>
     </div>
@@ -207,42 +190,40 @@ input:focus,select:focus{border-color:var(--court)}
     <!-- CONTENT: Overview -->
     <div id="view-overview" style="display:none">
       <div class="section-title" data-ct="ovTitle">Overview</div>
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;position:relative;z-index:200">
+      <div class="fm-bar">
         <!-- Multi-select dropdown: shown in both Spiele and Spieler modes -->
-        <div id="kap-ov-multicat" style="position:relative">
-          <button id="kap-ov-multicat-btn" onclick="kapCatsMenu.toggle(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
-            <span id="kap-ov-multicat-label" style="font-size:12px;white-space:nowrap">Alle Altersklassen</span>
-            <span style="font-size:9px;color:var(--muted)">▼</span>
+        <div id="kap-ov-multicat" class="fm-wrap">
+          <button id="kap-ov-multicat-btn" onclick="kapCatsMenu.toggle(event)" class="fm-btn">
+            <span id="kap-ov-multicat-label" class="fm-lbl">Alle Altersklassen</span>
+            <span class="fm-arrow">▼</span>
           </button>
         </div>
-        <div id="kap-ov-teams-wrap" style="position:relative">
-          <button id="kap-ov-teams-btn" onclick="kapTeamsMenu.toggle(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
-            <span id="kap-ov-teams-label" style="font-size:12px;white-space:nowrap">Alle Teams</span>
-            <span style="font-size:9px;color:var(--muted)">▼</span>
+        <div id="kap-ov-teams-wrap" class="fm-wrap">
+          <button id="kap-ov-teams-btn" onclick="kapTeamsMenu.toggle(event)" class="fm-btn">
+            <span id="kap-ov-teams-label" class="fm-lbl">Alle Teams</span>
+            <span class="fm-arrow">▼</span>
           </button>
         </div>
-        <div id="kap-ov-sort-wrap" style="position:relative">
-          <button id="kap-ov-sort-btn" onclick="kapSortMenu.toggle(event)" style="padding:5px 10px;font-size:12px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap">
-            <span id="kap-ov-sort-label" style="font-size:12px;white-space:nowrap">Nach Mannschaftsnummer</span>
-            <span style="font-size:9px;color:var(--muted)">▼</span>
+        <div id="kap-ov-sort-wrap" class="fm-wrap">
+          <button id="kap-ov-sort-btn" onclick="kapSortMenu.toggle(event)" class="fm-btn">
+            <span id="kap-ov-sort-label" class="fm-lbl">Nach Mannschaftsnummer</span>
+            <span class="fm-arrow">▼</span>
           </button>
         </div>
-        <div style="display:flex;gap:4px;margin-left:auto">
-          <button id="kap-ov-btn-matches" onclick="setKapOverviewMode('matches')"
-            style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--court);background:var(--court);color:#0d1a10" data-ct="ovMatches">📋 Spiele</button>
-          <button id="kap-ov-btn-players" onclick="setKapOverviewMode('players')"
-            style="padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border2);background:transparent;color:var(--muted)" data-ct="ovPlayers">👥 Spieler</button>
+        <div class="mode-btns">
+          <button id="kap-ov-btn-matches" onclick="setKapOverviewMode('matches')" class="mode-btn on" data-ct="ovMatches">📋 Spiele</button>
+          <button id="kap-ov-btn-players" onclick="setKapOverviewMode('players')" class="mode-btn" data-ct="ovPlayers">👥 Spieler</button>
         </div>
       </div>
-      <div id="kap-overview-content" style="overflow-x:auto"></div>
+      <div id="kap-overview-content" class="scroll-x"></div>
     </div>
 
     <!-- CONTENT: Sperren (read-only) -->
     <div id="view-sperren" style="display:none">
       <div class="section-title" id="sperren-title">Sperren</div>
       <div class="section-sub" id="sperren-sub">Übersicht der gesperrten Spieler nach Stammkader- und Stammmannschaftsregel</div>
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-        <select id="block-cat-filter" onchange="renderBlocking()" style="width:auto;font-size:12px;padding:5px 9px;background:#111;border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:'DM Sans',sans-serif;outline:none"></select>
+      <div class="filter-row">
+        <select id="block-cat-filter" class="filter-select" onchange="renderBlocking()"></select>
       </div>
       <div id="blocking-content"><div class="empty" id="blocking-loading">Laden...</div></div>
     </div>
@@ -631,18 +612,18 @@ function renderTeamSidebar(){
     const cc=catCmp(a[0],b[0]);if(cc)return cc;
     return a[0].localeCompare(b[0]);
   })){
-    html+=`<div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;padding-left:4px">${cat}</div>`;
+    html+=`<div class="sidebar-title cat-head">${cat}</div>`;
     for(const t of teams.sort((a,b)=>teamNumber(a)-teamNumber(b))){
       const matches=state.matches.filter(m=>m.teamId===t.id);
       const active=selectedTeamId===t.id?'active':'';
       html+=`<button class="team-btn ${active}" onclick="selectTeam('${t.id}')">
         <span class="team-dot"></span>
-        <span style="flex:1">${t.name}</span>
-        <span style="font-size:11px;color:var(--muted)">${matches.length}</span>
+        <span class="name">${t.name}</span>
+        <span class="count">${matches.length}</span>
       </button>`;
     }
   }
-  document.getElementById('team-list-sidebar').innerHTML=html||'<div class="empty" style="padding:10px">Keine Teams</div>';
+  document.getElementById('team-list-sidebar').innerHTML=html||'<div class="empty small">Keine Teams</div>';
   // mobile dropdown with the same teams, grouped by category
   const sel=document.getElementById('team-select');
   if(sel){
@@ -801,7 +782,7 @@ function showKapTab(tab){
   document.getElementById('view-overview').style.display=tab==='overview'?'block':'none';
   ['spiele','sperren','overview'].forEach(t=>{
     const btn=document.getElementById('tab-'+t);
-    if(btn){btn.style.color=tab===t?'var(--court)':'var(--muted)';btn.style.borderBottomColor=tab===t?'var(--court)':'transparent';}
+    if(btn)btn.classList.toggle('active',tab===t);
   });
   const sidebar=document.getElementById('main-sidebar');
   const wrapper=document.getElementById('main-content-wrapper');
@@ -891,8 +872,8 @@ function setKapOverviewMode(mode){
   _kapOvMode=mode;
   const bm=document.getElementById('kap-ov-btn-matches');
   const bp=document.getElementById('kap-ov-btn-players');
-  if(bm){bm.style.background=mode==='matches'?'var(--court)':'transparent';bm.style.color=mode==='matches'?'#0d1a10':'var(--muted)';bm.style.borderColor=mode==='matches'?'var(--court)':'var(--border2)';}
-  if(bp){bp.style.background=mode==='players'?'var(--court)':'transparent';bp.style.color=mode==='players'?'#0d1a10':'var(--muted)';bp.style.borderColor=mode==='players'?'var(--court)':'var(--border2)';}
+  if(bm)bm.classList.toggle('on',mode==='matches');
+  if(bp)bp.classList.toggle('on',mode==='players');
   renderKapOverview();
 }
 
@@ -922,7 +903,7 @@ function renderKapOverviewMatches(selectedCats){
 // open in the language chosen last time (static texts are German)
 if(lang!=='de')setLang(lang);
 </script>
-<footer style="text-align:center;padding:18px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:40px">
+<footer>
   Füchse Berlin Reinickendorf e.V. · <span data-ct="captainApp">Kapitän-App</span> · TVBB Berlin
 </footer>
 </body>
