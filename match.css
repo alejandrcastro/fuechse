@@ -112,3 +112,31 @@
 .mv textarea.share-text:focus{border-color:var(--court)}
 .mv-wa{padding:8px 16px;border-radius:8px;border:none;background:var(--whatsapp);color:#08210f;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
 .mv-err{font-size:12px;color:var(--danger);min-height:16px;margin-top:8px}
+
+/* small parts of the match view (common.js MATCH VIEW / MOVE + SHARE) */
+.opt-group{color:var(--muted);font-size:11px}
+.lineup-slot.is-ersatz{opacity:.85;border-style:dashed}
+.lineup-pos.is-e{color:var(--muted)}
+.warn-banner.small{margin-top:6px;font-size:11px}
+.avail-group-label.is-yes{color:var(--court)}.avail-group-label.is-conditional{color:var(--yes)}.avail-group-label.is-notfall{color:var(--warn)}.avail-group-label.is-no{color:var(--danger)}.avail-group-label.is-none{color:var(--muted)}
+.avail-info{flex:1}
+.mx-badge{margin-left:4px}
+.mx-badge.is-yes{background:var(--court-bg);color:var(--court)}
+.mx-badge.is-conditional{background:rgba(82,201,122,.1);color:var(--yes)}
+.mx-badge.is-notfall{background:var(--warn-bg);color:var(--warn)}
+.mx-badge.is-no{background:var(--danger-bg);color:var(--danger)}
+.mx-badge.is-none{background:var(--border);color:var(--muted)}
+.match-status.big{font-size:12px;padding:5px 12px}
+.mx-note{font-size:11px;color:var(--muted)}
+.auto-btn.undo{background:transparent;border-color:var(--danger)55;color:var(--danger)}
+.mx-count{width:100%}
+.mx-played-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.mx-add{width:auto;max-width:100%;font-size:12px;padding:5px 8px;margin-bottom:10px}
+.mx-confirm-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mc-avail{font-size:11px;color:var(--muted);margin-top:4px}
+.mv-sub{font-size:12px;color:var(--muted)}
+.mv-sub.spaced{margin-bottom:12px}
+.rule-box.mv-nuliga{margin:6px 0 0}
+.mv h2.share{color:var(--whatsapp)}
+.mv-err.ok{color:var(--court)}
+.mv-actions.wrap{flex-wrap:wrap}

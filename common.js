@@ -399,7 +399,7 @@ function mvSlotsHtml(match,o){
     let h='<option value="">—</option>',last;
     for(const tp of sorted){
       const bl=isPlayerBlockedForLineup(tp.id,match.teamId,match.id),grp=avail[tp.id]||'';
-      if(grp!==last){last=grp;h+=`<option disabled style="color:var(--muted);font-size:11px">${gl[grp]}</option>`;}
+      if(grp!==last){last=grp;h+=`<option disabled class="opt-group">${gl[grp]}</option>`;}
       h+=`<option value="${tp.id}" ${sel===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;
     }
     return h;
@@ -428,11 +428,11 @@ function mvSlotsHtml(match,o){
   }
   html+=`<div class="mx-ersatz">
     <div class="mx-label">Ersatz</div>
-    <div class="lineup-slot ${eP?(eBlocked?'blocked-slot':'ok'):''}" style="opacity:.85;border-style:dashed">
-      <div class="lineup-pos" style="color:var(--muted)">E</div>
+    <div class="lineup-slot is-ersatz ${eP?(eBlocked?'blocked-slot':'ok'):''}">
+      <div class="lineup-pos is-e">E</div>
       <select ${dis} onchange="${o.set}(${size},this.value)">${opts(ePid)}</select>
     </div>
-    ${eWarn?`<div class="warn-banner" style="margin-top:6px;font-size:11px">${eWarn}</div>`:''}
+    ${eWarn?`<div class="warn-banner small">${eWarn}</div>`:''}
   </div>`;
   return html;
 }
@@ -440,12 +440,11 @@ function mvSlotsHtml(match,o){
 function mvAvailHtml(match,o={}){
   const avail=state.availability[match.id]||{};
   const label={yes:ct('groupYes'),conditional:ct('groupConditional'),notfall:ct('groupNotfall'),no:ct('groupNo'),'':ct('noAnswer')};
-  const color={yes:'var(--court)',conditional:'var(--yes)',notfall:'var(--warn)',no:'var(--danger)','':'var(--muted)'};
   const tag=(title,text,extra='')=>`<span title="${title}" class="mx-tag${extra}">${text}</span>`;
   let last,html='';
   for(const p of mvTeamPlayers(match)){
     const s=avail[p.id]||'';
-    if(s!==last){last=s;html+=`<div class="avail-group-label" style="color:${color[s]}">${label[s]}</div>`;}
+    if(s!==last){last=s;html+=`<div class="avail-group-label is-${s||'none'}">${label[s]}</div>`;}
     const blocked=isPlayerBlockedForLineup(p.id,match.teamId,match.id);
     const sm=!!(state.mainTeam[p.id]?.[match.teamId]);
     const r=playerRankInTeam(p.id,match.teamId);
@@ -463,11 +462,10 @@ function mvAvailHtml(match,o={}){
       }
     }
     if(!extra)extra=weekendBadges(p.id,match); // max. one extra badge: same-day beats the weekend hint
-    const bg=s==='yes'?'var(--court-bg)':s==='conditional'?'rgba(82,201,122,.1)':s==='notfall'?'var(--warn-bg)':s==='no'?'var(--danger-bg)':'var(--border)';
-    const right=o.actions?o.actions(p,s):`<span class="avail-badge" style="background:${bg};color:${color[s]};margin-left:4px">${badge}</span>`;
+    const right=o.actions?o.actions(p,s):`<span class="avail-badge mx-badge is-${s||'none'}">${badge}</span>`;
     html+=`<div class="avail-row">
       <div class="avail-avatar${sm?' sm':''}">${initials(p.name)}</div>
-      <div style="flex:1">
+      <div class="avail-info">
         <div class="avail-name">${p.name}${sm?' <span class="sm-badge">★ SM</span>':''}${blocked?' <span class="blocked-badge">⛔</span>':''}</div>
         <div class="avail-meta">${p.lkStr||''} · Jg. ${p.year||'—'} · ${ct('rank')} ${r<999?r:'—'}</div>
       </div>
@@ -481,32 +479,32 @@ function mvCountHtml(match,o){
   const size=teamSize(teamById(match.teamId)),lineup=state.lineups[match.id]||[],filled=lineup.slice(0,size).filter(Boolean).length;
   if(match.counted){
     const who=(match.countedPlayers||[]).map(pid=>playerById(pid)?.name).filter(Boolean);
-    return`<span class="match-status status-ready" style="font-size:12px;padding:5px 12px">✔ ${ct('countedLabel')(match.ersatzCounted)}</span>`+
-      (who.length?`<span style="font-size:11px;color:var(--muted)">${who.join(' · ')}</span>`:'')+
-      (o.canEdit?`<button class="auto-btn" style="background:transparent;border-color:var(--danger)55;color:var(--danger)" onclick="${o.undo}()">${ct('undo')}</button>`:'');
+    return`<span class="match-status status-ready big">✔ ${ct('countedLabel')(match.ersatzCounted)}</span>`+
+      (who.length?`<span class="mx-note">${who.join(' · ')}</span>`:'')+
+      (o.canEdit?`<button class="auto-btn undo" onclick="${o.undo}()">${ct('undo')}</button>`:'');
   }
   if(!o.canEdit)return'';
-  if(match.date>todayISO())return`<span style="font-size:11px;color:var(--muted)">${ct('countAfterMatch')}</span>`;
-  if(filled<size)return`<span style="font-size:11px;color:var(--muted)">${ct('countNeedLineup')}</span>`;
+  if(match.date>todayISO())return`<span class="mx-note">${ct('countAfterMatch')}</span>`;
+  if(filled<size)return`<span class="mx-note">${ct('countNeedLineup')}</span>`;
   // lineup ticked, Ersatz not; if the Ersatz came in, untick the player he replaced
   const cand=[...lineup.slice(0,size).map((pid,i)=>({pid,pos:String(i+1),on:true})),...(lineup[size]?[{pid:lineup[size],pos:'E',on:false}]:[])].filter(c=>c.pid);
-  return`<div style="width:100%" id="mx-count" data-mid="${match.id}">
+  return`<div class="mx-count" id="mx-count" data-mid="${match.id}">
       <div class="mx-label">${ct('whoPlayed')} <span id="mx-played-count"></span></div>
-      <div id="mx-played-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${cand.map(c=>mvPlayedChip(c.pid,c.pos,c.on)).join('')}</div>
-      <select id="mx-played-add" onchange="mvAddPlayedChip(this.value)" style="width:auto;max-width:100%;font-size:12px;padding:5px 8px;margin-bottom:10px">
+      <div id="mx-played-list" class="mx-played-list">${cand.map(c=>mvPlayedChip(c.pid,c.pos,c.on)).join('')}</div>
+      <select id="mx-played-add" class="mx-add" onchange="mvAddPlayedChip(this.value)">
         <option value="">＋ ${ct('addDoublesPlayer')}</option>
         ${state.players.filter(p=>p.teamIds.includes(match.teamId)&&!cand.some(c=>c.pid===p.id))
           .sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId))
           .map(p=>`<option value="${p.id}">${p.name} (${p.lkStr||'–'})</option>`).join('')}
       </select>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div class="mx-confirm-row">
         <button class="auto-btn" id="mx-confirm-btn" onclick="${o.confirm}()">${ct('countBtn')}</button>
-        <span id="mx-confirm-status" style="font-size:11px;color:var(--muted)"></span>
+        <span id="mx-confirm-status" class="mx-note"></span>
       </div></div>`;
 }
 function mvPlayedChip(pid,pos,on){
   return`<label class="mx-chip"><input type="checkbox" class="mx-played" value="${pid}" ${on?'checked':''} onchange="mvUpdatePlayedCount()">
-    <span style="color:var(--muted);font-size:11px">${pos}</span> ${playerById(pid)?.name||'?'}</label>`;
+    <span class="mx-note">${pos}</span> ${playerById(pid)?.name||'?'}</label>`;
 }
 function mvAddPlayedChip(pid){ // a player who only played Doppel
   if(!pid)return;
@@ -553,7 +551,7 @@ function mvMatchCardsHtml(team,matches,o){
         <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)}</div>
       </div><span class="match-status ${hasLineup||m.counted?'status-ready':'status-open'}">${m.counted?'✔ '+ct('countedShort'):hasLineup?ct('lineupOk'):ct('open')}</span></div>
       <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">${yes}/${tp.length} ${ct('available')}</div>
+      <div class="mc-avail">${yes}/${tp.length} ${ct('available')}</div>
     </div>`;
   }).join('');
 }
@@ -587,7 +585,7 @@ function mvOpenMove(matchId){
   const modal=_mvModal('move-modal');
   document.getElementById('move-modal-box').innerHTML=`
     <h2>⇄ ${ct('moveTitle')}</h2>
-    <div style="font-size:12px;color:var(--muted)">${ct('moveSub')}</div>
+    <div class="mv-sub">${ct('moveSub')}</div>
     <div class="orig"><b>${_mvEsc(team?.name)} vs ${_mvEsc(m.opponent)}</b>${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)}</div>
     <div class="row2">
       <div class="field"><label>${ct('moveDate')}</label><input type="date" id="mv-date" value="${m.date}"></div>
@@ -600,7 +598,7 @@ function mvOpenMove(matchId){
     <label class="check"><input type="checkbox" id="mv-amtlich"><span>${ct('moveAmtlich')}<small>${ct('moveAmtlichSub')(fmtDate(spieltagOf(m)))}</small></span></label>
     <label class="check"><input type="checkbox" id="mv-lineup" ${hasLineup?'checked':''}><span>${ct('moveKeepLineup')}<small>${ct('moveKeepLineupSub')}</small></span></label>
     <label class="check"><input type="checkbox" id="mv-avail"><span>${ct('moveKeepAvail')}<small>${ct('moveKeepAvailSub')}</small></span></label>
-    <div class="rule-box warn" id="mv-nuliga" style="margin:6px 0 0;${m.home==='Heim'?'':'display:none'}">${ct('moveNuliga')}</div>
+    <div class="rule-box warn mv-nuliga" id="mv-nuliga"${m.home==='Heim'?'':' style="display:none"'}>${ct('moveNuliga')}</div>
     <div class="mv-err" id="mv-err"></div>
     <div class="mv-actions">
       <button class="mv-ghost" onclick="mvCloseMove()">${ct('moveCancel')}</button>
@@ -664,11 +662,11 @@ function mvOpenShare(matchId){
   const m=state.matches.find(x=>x.id===matchId);if(!m)return;
   const modal=_mvModal('share-modal');
   document.getElementById('share-modal-box').innerHTML=`
-    <h2 style="color:var(--whatsapp)">📤 ${ct('shareTitle')}</h2>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">${ct('shareSub')}</div>
+    <h2 class="share">📤 ${ct('shareTitle')}</h2>
+    <div class="mv-sub spaced">${ct('shareSub')}</div>
     <textarea class="share-text" id="share-text"></textarea>
-    <div class="mv-err" id="share-msg" style="color:var(--court)"></div>
-    <div class="mv-actions" style="flex-wrap:wrap">
+    <div class="mv-err ok" id="share-msg"></div>
+    <div class="mv-actions wrap">
       <button class="mv-ghost" onclick="mvCloseShare()">${ct('shareClose')}</button>
       <button class="mv-ghost" onclick="mvShareCopy()">${ct('shareCopy')}</button>
       ${navigator.share?`<button class="mv-ghost" onclick="mvShareNative()">${ct('shareNative')}</button>`:''}
