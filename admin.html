@@ -251,7 +251,7 @@ details.squad summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--
 .stats-modes .mode-btn{border-bottom-color:transparent}
 .stats-modes .mode-btn.under{color:var(--court);border-bottom-color:var(--court)}
 </style>
-<script src="common.js?v=6"></script>
+<script src="common.js?v=7"></script>
 </head>
 <body>
 <div id="login-overlay">
@@ -291,8 +291,8 @@ details.squad summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--
     window._sbAuth=_sb;
 
     // Check existing session
-    _sb.auth.getSession().then(({data:{session}})=>{
-      if(session&&isAdminUser(session)){
+    _sb.auth.getSession().then(async({data:{session}})=>{
+      if(session&&await isAdminUser(session)){
         window._sbAuth._session=session;
         document.getElementById('login-overlay').style.display='none';
         if(typeof loadAll==='function')loadAll();
@@ -330,9 +330,8 @@ const LOGIN_DOMAIN='login.fuechse-berlin-reinickendorf.de';
 function usernameToEmail(u){u=(u||'').trim().toLowerCase();if(!u.includes('@'))u=u.replace(/\s+/g,''); // "Herren 30 II" → herren30ii
   return u.includes('@')?u:`${u}@${LOGIN_DOMAIN}`;}
 function emailToUsername(e){e=(e||'').toLowerCase();return e.endsWith('@'+LOGIN_DOMAIN)?e.slice(0,-(LOGIN_DOMAIN.length+1)):e;}
-// ── ADMIN ACCESS ── only these usernames may open admin.html (visual check, like the Kapitän blocks)
-const ADMIN_USERS=['admin','christian','svenja'];
-function isAdminUser(session){return ADMIN_USERS.includes(emailToUsername(session?.user?.email));}
+// ── ADMIN ACCESS ── only superusers may open admin.html; the database says who they are (common.js sbIsAdmin)
+function isAdminUser(session){return sbIsAdmin(session);}
 window.doLogin=async function(){
       const email=usernameToEmail(document.getElementById('login-user').value);
       const pass=document.getElementById('login-pass').value;
@@ -346,7 +345,7 @@ window.doLogin=async function(){
       if(error){
         _rlFail(err);
         document.getElementById('login-pass').value='';
-      } else if(!isAdminUser(data.session)){
+      } else if(!(await isAdminUser(data.session))){
         // Valid captain login, but no admin access (session is kept so kapitaen.html still works)
         window._sbAuth._session=null;
         document.getElementById('login-pass').value='';
@@ -942,7 +941,7 @@ async function loadAll(){
     state.matches=_seasonMatches.filter(m=>m.status!=='verlegt');
     state.movedMatches=_seasonMatches.filter(m=>m.status==='verlegt');
     state.availability={};
-    for(const r of avRows){if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
+    for(const r of avRows){if(!AVAIL_STATES.includes(r.status))continue;if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
     state.lineups={};
     for(const r of lineupRows)state.lineups[r.match_id]=r.slots;
     state.matchCounts={};
@@ -1091,13 +1090,13 @@ function showPreview(data){
   for(const[team,ps]of Object.entries(byTeam)){
     const g=ps[0]?.gender||'M';
     html+=`<div class="card flush">
-      <div class="team-section-header">${team} ${genderBadge(g)} · ${ps.length} ${tr('players')}</div>
+      <div class="team-section-header">${esc(team)} ${genderBadge(g)} · ${ps.length} ${tr('players')}</div>
       ${ps.slice(0,5).map(p=>`<div class="player-row flat">
         <span class="prev-rank">${p.rank}</span>
-        <div class="player-avatar">${initials(p.name.includes(',')?p.name.split(',')[1].trim()+' '+p.name.split(',')[0]:p.name)}</div>
-        <span class="player-name">${p.name}</span>
-        <span class="year-badge">${p.year}</span>
-        <span class="lk-badge">${p.lkStr}</span>
+        <div class="player-avatar">${esc(initials(p.name.includes(',')?p.name.split(',')[1].trim()+' '+p.name.split(',')[0]:p.name))}</div>
+        <span class="player-name">${esc(p.name)}</span>
+        <span class="year-badge">${esc(p.year)}</span>
+        <span class="lk-badge">${esc(p.lkStr)}</span>
       </div>`).join('')}
       ${ps.length>5?`<div class="prev-more">${T[lang].addedPlayers(ps.length-5)}</div>`:''}
     </div>`;
@@ -1186,7 +1185,7 @@ function _playerBlockInfo(p){
 function renderPlayers(){
   const ftSel=document.getElementById('filter-team');if(!ftSel)return;
   const cur=ftSel.value;
-  ftSel.innerHTML=`<option value="">${tr('allTeams')}</option>`+state.teams.map(t=>`<option value="${t.id}" ${cur===t.id?'selected':''}>${t.name}</option>`).join('');
+  ftSel.innerHTML=`<option value="">${tr('allTeams')}</option>`+state.teams.map(t=>`<option value="${t.id}" ${cur===t.id?'selected':''}>${esc(t.name)}</option>`).join('');
   ftSel.value=cur;
   const filterTeam=ftSel.value;
   const filterGender=document.getElementById('filter-gender')?.value||'';
@@ -1208,14 +1207,14 @@ function renderPlayers(){
   el.innerHTML=players.map(p=>{
     const teams=p.teamIds.map(tid=>teamById(tid)).filter(Boolean).sort(_teamsByCatNum); // Herren, Herren II, Herren 30, …
     const{blocked,warned}=_playerBlockInfo(p);
-    const blockedChips=blocked.map(b=>`<span class="blocked-badge">⛔ ${b.name}</span>`).join('');
-    const warnChips=warned.map(w=>`<span class="warn-badge">⚠️ ${w.name}</span>`).join('');
-    const teamChips=teams.map(t=>{const isMT=!!(state.mainTeam[p.id]?.[t.id]);return isMT?`<span class="sm-chip">★ ${t.name}</span>`:`<span class="team-chip ${t.gender==='F'?'f':'m'}">${t.name}</span>`;}).join('');
+    const blockedChips=blocked.map(b=>`<span class="blocked-badge">⛔ ${esc(b.name)}</span>`).join('');
+    const warnChips=warned.map(w=>`<span class="warn-badge">⚠️ ${esc(w.name)}</span>`).join('');
+    const teamChips=teams.map(t=>{const isMT=!!(state.mainTeam[p.id]?.[t.id]);return isMT?`<span class="sm-chip">★ ${esc(t.name)}</span>`:`<span class="team-chip ${t.gender==='F'?'f':'m'}">${esc(t.name)}</span>`;}).join('');
     return`<div class="player-row">
-      <div class="player-avatar">${initials(p.name)}</div>
-      <div class="p-info"><div class="player-name">${p.name}</div><div class="p-chips">${teamChips}</div></div>
-      <span class="year-badge">${p.year||'—'}</span>
-      <span class="lk-badge">${p.lkStr||'LK?'}</span>
+      <div class="player-avatar">${esc(initials(p.name))}</div>
+      <div class="p-info"><div class="player-name">${esc(p.name)}</div><div class="p-chips">${teamChips}</div></div>
+      <span class="year-badge">${esc(p.year||'—')}</span>
+      <span class="lk-badge">${esc(p.lkStr||'LK?')}</span>
       ${genderBadge(p.gender)}
       ${blockedChips}${warnChips}
       <button class="btn btn-outline btn-sm" onclick="openAssignModal('${p.id}')">${tr('assignTeam')}</button>
@@ -1251,7 +1250,7 @@ function _teamsByCatNum(a,b){
 function _fillTeamsFilter(sel){
   const cur=sel.value;
   sel.innerHTML=`<option value="">${tr('allTeams')}</option>`+
-    [...state.teams].sort(_teamsByCatNum).map(t=>`<option value="${t.id}"${cur===t.id?' selected':''}>${t.name}</option>`).join('');
+    [...state.teams].sort(_teamsByCatNum).map(t=>`<option value="${t.id}"${cur===t.id?' selected':''}>${esc(t.name)}</option>`).join('');
   sel.value=cur;
 }
 // the team's players from its first rank on (players ranked for a higher team of the category are left out)
@@ -1278,10 +1277,10 @@ function _squadRow(p,i,t){
   const rank=playerRankInTeam(p.id,t.id);
   return `<div class="player-row squad-row">
           <span class="squad-rank">${rank<999?rank:i+1}</span>
-          <div class="player-avatar sm">${initials(p.name)}</div>
-          <span class="player-name sm">${p.name}</span>
-          <span class="year-badge">${p.year||'—'}</span>
-          <span class="lk-badge">${p.lkStr}</span>
+          <div class="player-avatar sm">${esc(initials(p.name))}</div>
+          <span class="player-name sm">${esc(p.name)}</span>
+          <span class="year-badge">${esc(p.year||'—')}</span>
+          <span class="lk-badge">${esc(p.lkStr)}</span>
           ${isPlayerBlockedForTeam(p.id,t.id)?`<span class="blocked-badge">⛔</span>`:''}
           ${_smButton(p,t)}
         </div>`;
@@ -1299,10 +1298,10 @@ function _teamCard(t,filterTeamId){
         <div class="team-card-head">
           <div>
             <div class="team-card-title">
-              <span class="team-card-name">${t.name}</span>
+              <span class="team-card-name">${esc(t.name)}</span>
               ${genderBadge(t.gender)}
             </div>
-            <div class="note">${t.liga} · ${seasonKindLabel(t.season)} · #${teamNumber(t)}</div>
+            <div class="note">${esc(t.liga)} · ${esc(seasonKindLabel(t.season))} · #${teamNumber(t)}</div>
           </div>
           <div class="team-card-btns">
               <button class="btn btn-outline btn-sm size-btn" onclick="editTeamSize('${t.id}')" title="Toggle group size">${t.season==='Winter'?'Winter (4)':(t.is_4er?'Sommer 4er':'Sommer (6)')}</button>
@@ -1323,7 +1322,7 @@ function renderTeams(){
   if(!Object.keys(byCat).length){el.innerHTML=`<div class="empty">${tr('noTeam')}</div>`;return;}
   let html='';
   for(const[cat,teams]of Object.entries(byCat).sort(([a],[b])=>catCmp(a,b))){
-    html+=`<div class="teams-cat">${cat}</div>`;
+    html+=`<div class="teams-cat">${esc(cat)}</div>`;
     html+=teams.sort((a,b)=>teamNumber(a)-teamNumber(b)).map(t=>_teamCard(t,filterTeamId)).join('');
     html+='<div class="teams-gap"></div>';
   }
@@ -1381,7 +1380,7 @@ function openAssignModal(playerId){
   for(const t of compatible){const c=t.category||'?';if(!byCat[c])byCat[c]=[];byCat[c].push(t);}
   let html=`<div class="assign-hint">Mannschaften auswählen:</div>`;
   for(const[cat,teams]of Object.entries(byCat)){
-    html+=`<div class="assign-cat">${cat}</div>`;
+    html+=`<div class="assign-cat">${esc(cat)}</div>`;
     for(const t of teams.sort((a,b)=>teamNumber(a)-teamNumber(b))){
       const checked=p.teamIds.includes(t.id);
       const counts=state.matchCounts[p.id]?.[t.id]||0;
@@ -1389,9 +1388,9 @@ function openAssignModal(playerId){
       const reason=blocked?blockReasonForTeam(p.id,t.id):'';
       html+=`<label class="assign-team${blocked?' is-blocked':''}">
         <input type="checkbox" class="cb" data-tid="${t.id}" ${checked?'checked':''}>
-        <span class="assign-name">${t.name}</span>
+        <span class="assign-name">${esc(t.name)}</span>
         <span class="note">${counts} Sp.</span>
-        ${blocked?`<span class="blocked-badge" title="${reason}">⛔ ${reason}</span>`:''}
+        ${blocked?`<span class="blocked-badge" title="${esc(reason)}">⛔ ${esc(reason)}</span>`:''}
       </label>`;
     }
     html+='<div class="assign-gap"></div>';
@@ -1405,7 +1404,7 @@ function openAssignModal(playerId){
     ${state.teams.filter(t=>compatible.some(x=>x.id===t.id)).map(t=>{
       const c=state.matchCounts[p.id]?.[t.id]||0;
       return`<div class="count-row">
-        <span class="grow">${t.name}</span>
+        <span class="grow">${esc(t.name)}</span>
         <button class="count-btn" onclick="adjustCount('${p.id}','${t.id}',-1)">−</button>
         <span class="count-num" id="cnt-${p.id}-${t.id}">${c}</span>
         <button class="count-btn" onclick="adjustCount('${p.id}','${t.id}',1)">+</button>
@@ -1455,7 +1454,7 @@ async function saveAssign(playerId){
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 
 // ── MATCHES ──
-function populateTeamSel(selId){const sel=document.getElementById(selId);if(!sel)return;const cur=sel.value;sel.innerHTML=state.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');if(cur)sel.value=cur;}
+function populateTeamSel(selId){const sel=document.getElementById(selId);if(!sel)return;const cur=sel.value;sel.innerHTML=state.teams.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');if(cur)sel.value=cur;}
 
 // ── AVAILABILITY ──
 function populateAvailMatchSel(){
@@ -1474,7 +1473,7 @@ function populateAvailMatchSel(){
     const catTeamIds=state.teams.filter(t=>t.category===catFilter).map(t=>t.id);
     matches=matches.filter(m=>catTeamIds.includes(m.teamId));
   }
-  sel.innerHTML=matches.map(m=>{const t=teamById(m.teamId);return`<option value="${m.id}">${fmtDate(m.date)} · ${t?.name||'?'} vs ${m.opponent}</option>`;}).join('');
+  sel.innerHTML=matches.map(m=>{const t=teamById(m.teamId);return`<option value="${m.id}">${fmtDate(m.date)} · ${esc(t?.name||'?')} vs ${esc(m.opponent)}</option>`;}).join('');
   if(cur&&matches.find(m=>m.id===cur))sel.value=cur;
   else if(matches.length)sel.value=matches[0].id;
 }
@@ -1544,12 +1543,12 @@ function renderSATeamSidebar(){
   for(const t of state.teams){const c=t.category||'Herren';if(!byCat[c])byCat[c]=[];byCat[c].push(t);}
   let html='';
   for(const[cat,teams] of Object.entries(byCat).sort(([a],[b])=>catCmp(a,b))){
-    html+=`<div class="sidebar-title cat-head">${cat}</div>`;
+    html+=`<div class="sidebar-title cat-head">${esc(cat)}</div>`;
     for(const t of teams.sort((a,b)=>teamNumber(a)-teamNumber(b))){
       const active=_saTeamId===t.id;
       html+=`<button class="team-btn ${active?'active':''}" onclick="saSelectTeam('${t.id}')">
         <span class="team-dot"></span>
-        <span class="name">${t.name}</span>
+        <span class="name">${esc(t.name)}</span>
         <span class="count">${state.matches.filter(m=>m.teamId===t.id).length}</span>
       </button>`;
     }
@@ -1702,7 +1701,7 @@ function renderSAAvail(){
     const yesMatch=s==='conditional'?state.matches.find(om=>om.id!==match.id&&spieltagOf(om)===spieltagOf(match)&&state.availability[om.id]?.[p.id]==='yes'):null;
     const yesTeam=yesMatch?teamById(yesMatch.teamId):null;
     return`<div class="mx-actions">
-      <button class="avail-btn yes ${s==='yes'||s==='conditional'?'active':''}${s==='conditional'?' is-cond':''}" onclick="saSetAvail('${p.id}','yes')">${s==='conditional'?(yesTeam?ct('condTo')(yesTeam.name):'('+ct('stYes')+')'):tr('yesBtn')}</button>
+      <button class="avail-btn yes ${s==='yes'||s==='conditional'?'active':''}${s==='conditional'?' is-cond':''}" onclick="saSetAvail('${p.id}','yes')">${s==='conditional'?(yesTeam?ct('condTo')(esc(yesTeam.name)):'('+ct('stYes')+')'):tr('yesBtn')}</button>
       <button class="avail-btn maybe ${s==='notfall'?'active':''}" onclick="saSetAvail('${p.id}','notfall')">${tr('notfallBtn')}</button>
       <button class="avail-btn no ${s==='no'?'active':''}" onclick="saSetAvail('${p.id}','no')">${tr('noBtn')}</button>
     </div>`;
@@ -1967,11 +1966,11 @@ function showTeamsPreview(teams){
   let html='';
   for(const[cat,ts]of Object.entries(byCat)){
     html+=`<div class="card flush">
-      <div class="team-section-header">${cat} ${genderBadge(catGender(cat))} · ${ts.length}</div>
+      <div class="team-section-header">${esc(cat)} ${genderBadge(catGender(cat))} · ${ts.length}</div>
       ${ts.map(t=>`<div class="player-row flat">
-        <span class="player-name">${t.name}</span>
-        <span class="note">${t.liga}</span>
-        <span class="team-chip ${t.gender==='F'?'f':'m'}">${t.season}</span>
+        <span class="player-name">${esc(t.name)}</span>
+        <span class="note">${esc(t.liga)}</span>
+        <span class="team-chip ${t.gender==='F'?'f':'m'}">${esc(t.season)}</span>
       </div>`).join('')}
     </div>`;
   }
@@ -2094,11 +2093,11 @@ function showMatchesPreview(matches){
   if(unmatched>0)html+=`<div class="rule-box warn prev-warn">⚠️ ${unmatched} ${tr('noTeamMatch')}</div>`;
   for(const[cat,ms]of Object.entries(byCat)){
     html+=`<div class="card flush">
-      <div class="team-section-header">${cat} · ${ms.length} Spiele</div>
+      <div class="team-section-header">${esc(cat)} · ${ms.length} Spiele</div>
       ${ms.slice(0,5).map(m=>`<div class="player-row flat">
         <span class="note prev-date">${fmtDate(m.date)}</span>
-        <span class="note prev-time">${m.time}</span>
-        <span class="player-name sm">${m.opponent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
+        <span class="note prev-time">${esc(m.time)}</span>
+        <span class="player-name sm">${esc(m.opponent)}</span>
         <span class="team-chip ${m.home==='Heim'?'m':'f'}">${homeAwayLabel(m.home)}</span>
         ${!m._teamFound?`<span class="warn-badge">⚠️ kein Team</span>`:''}
       </div>`).join('')}
@@ -2245,7 +2244,7 @@ function _statsMatchRow(m,team,c,lk){
   const share=(n,color)=>`<td class="st-c ${color}">${n} (${_pctOf(n,c.responded)}%)</td>`;
   return `<tr class="st-row">
       <td class="st-date">${fmtDate(m.date)}</td>
-      <td class="st-match">${team.name} vs ${(m.opponent||'').substring(0,20)}</td>
+      <td class="st-match">${esc(team.name)} vs ${esc((m.opponent||'').substring(0,20))}</td>
       <td class="st-c">${c.responded}/${c.players}</td>
       ${share(c.yes,'c-yes')}
       ${share(c.conditional,'c-yes-soft')}
@@ -2302,7 +2301,7 @@ function _statsPositionLKs(team){
 function _statsLKRow(team,{pos,games},has6){
   const td=(v,cls='')=>`<td class="st-c${cls}">${v}</td>`;
   let html=`<tr class="st-row">
-      <td class="st-team">${team.name}</td>`;
+      <td class="st-team">${esc(team.name)}</td>`;
   html+=pos.map(lks=>td(_round1Avg(lks))).join('');
   // a 4er team in a table with 6 positions: empty Pos 5 and 6
   if(pos.length===4&&has6)html+=td('—',' c-muted')+td('—',' c-muted');
@@ -2371,7 +2370,6 @@ const UM_T={
 };
 let _umRows=null,_umErr=false;
 function umT(k){return UM_T[lang]?.[k]??UM_T.de[k];}
-function umEsc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function umKey(r){return r.season_id+'|'+r.competition;}
 function umLabel(k){const[sid,c]=k.split('|');return `${sid} · ${umT('comp')[c]||c}`;}
 
@@ -2392,7 +2390,7 @@ function _umFillSurveySelect(){
   const sel=document.getElementById('um-survey');
   const keys=[...new Set(_umRows.map(umKey))];
   const cur=keys.includes(sel.value)?sel.value:keys[0];
-  sel.innerHTML=keys.map(k=>`<option value="${umEsc(k)}"${k===cur?' selected':''}>${umEsc(umLabel(k))}</option>`).join('');
+  sel.innerHTML=keys.map(k=>`<option value="${esc(k)}"${k===cur?' selected':''}>${esc(umLabel(k))}</option>`).join('');
   sel.style.display=keys.length?'':'none';
   return {keys,cur};
 }
@@ -2418,21 +2416,21 @@ function _umCatTable(cats){
   const names=Object.keys(cats).sort(_umCatOrder);
   if(!names.length)return `<div class="note big">—</div>`;
   return `<table class="avail-table">${_umHeadRow(['cat','total','first','all','half','ersatz'])}<tbody>
-        ${names.map(c=>`<tr><td class="b">${umEsc(c)}</td><td class="um-total">${cats[c].total}</td><td>${cats[c].first}</td><td>${cats[c].all}</td><td>${cats[c].half}</td><td>${cats[c].ersatz}</td></tr>`).join('')}
+        ${names.map(c=>`<tr><td class="b">${esc(c)}</td><td class="um-total">${cats[c].total}</td><td>${cats[c].first}</td><td>${cats[c].all}</td><td>${cats[c].half}</td><td>${cats[c].ersatz}</td></tr>`).join('')}
       </tbody></table>`;
 }
 function _umDate(d){return d?new Date(d).toLocaleDateString(lang==='en'?'en-GB':lang==='es'?'es-AR':'de-DE'):'';}
 function _umAnswerRow(r){
   return `<tr>
-        <td class="b nowrap">${umEsc(r.name)}${r.player_id?'':` <span class="um-new">${umT('newP')}</span>`}</td>
-        <td>${umEsc(r.lk||'—')}</td><td>${umEsc(r.birth_year||'')}</td>
+        <td class="b nowrap">${esc(r.name)}${r.player_id?'':` <span class="um-new">${umT('newP')}</span>`}</td>
+        <td>${esc(r.lk||'—')}</td><td>${esc(r.birth_year||'')}</td>
         <td class="um-part${r.participates?'':' is-no'}">${r.participates?'✓ '+umT('yes'):'✗ '+umT('no')}</td>
-        <td>${(r.categories||[]).map((c,i)=>`<span class="nowrap"><b class="c-court">${i+1}.</b> ${umEsc(c)}</span>`).join(' &nbsp;')}</td>
-        <td>${r.commitment?umEsc(umT('freqL')[r.commitment]):''}</td>
+        <td>${(r.categories||[]).map((c,i)=>`<span class="nowrap"><b class="c-court">${i+1}.</b> ${esc(c)}</span>`).join(' &nbsp;')}</td>
+        <td>${r.commitment?esc(umT('freqL')[r.commitment]):''}</td>
         <td>${r.captain?'✓':''}</td>
-        <td class="um-comment">${umEsc(r.comment||'')}</td>
+        <td class="um-comment">${esc(r.comment||'')}</td>
         <td class="nowrap c-muted">${_umDate(r.updated_at||r.created_at)}</td>
-        <td><button class="btn btn-danger" onclick="deleteUmfrage('${umEsc(r.id)}')">✕</button></td>
+        <td><button class="btn btn-danger" onclick="deleteUmfrage('${esc(r.id)}')">✕</button></td>
       </tr>`;
 }
 // all answers: who plays first, then by name
@@ -2540,7 +2538,7 @@ async function renderSeasonSwitch(){
   }
   const ids=[...new Set([..._knownSeasons,ACTIVE_SEASON,PUBLISHED_SEASON])].filter(x=>/^[SW]\d{4}$/.test(x))
     .sort((a,b)=>a.slice(1).localeCompare(b.slice(1))||(a[0]==='S'?-1:1)); // chronological: S2026, W2026, S2027…
-  sel.innerHTML=ids.map(id=>`<option value="${id}"${id===ACTIVE_SEASON?' selected':''}>${id===PUBLISHED_SEASON?'● ':'○ '}${seasonLabel(id)}${id===PUBLISHED_SEASON?' · '+sT('live'):''}${_knownSeasons.includes(id)?'':' '+sT('empty')}</option>`).join('')
+  sel.innerHTML=ids.map(id=>`<option value="${esc(id)}"${id===ACTIVE_SEASON?' selected':''}>${id===PUBLISHED_SEASON?'● ':'○ '}${esc(seasonLabel(id))}${id===PUBLISHED_SEASON?' · '+sT('live'):''}${_knownSeasons.includes(id)?'':' '+sT('empty')}</option>`).join('')
     +`<option value="__new">${sT('newOpt')}</option>`;
   const prep=ACTIVE_SEASON!==PUBLISHED_SEASON;
   const pb=document.getElementById('season-publish');

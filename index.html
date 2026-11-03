@@ -98,7 +98,7 @@ input::placeholder{color:var(--muted)}
 .back-btn:hover{border-color:var(--court);color:var(--court)}
 
 </style>
-<script src="common.js?v=6"></script>
+<script src="common.js?v=7"></script>
 </head>
 <body>
 <div id="sp-login" style="position:fixed;inset:0;background:#0d2015;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Sans',sans-serif;">
@@ -292,7 +292,7 @@ async function loadAll(){
     state.matches=_seasonMatches.filter(m=>m.status!=='verlegt');
     state.movedMatches=_seasonMatches.filter(m=>m.status==='verlegt');
     state.availability={};
-    for(const r of avRows){if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
+    for(const r of avRows){if(!AVAIL_STATES.includes(r.status))continue;if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
     state.matchCounts={};
     for(const r of countRows){if(!state.matchCounts[r.player_id])state.matchCounts[r.player_id]={};state.matchCounts[r.player_id][r.team_id]=r.matches_played;}
     let ptRows=ptAll;
@@ -321,9 +321,9 @@ function onAcInput(){
   const filtered=state.players.filter(p=>p.name.toLowerCase().includes(val)||(p.raw_name||p.rawName||'').toLowerCase().includes(val)).slice(0,10);
   if(!filtered.length){list.style.display='none';return;}
   list.innerHTML=filtered.map(p=>`<div class="ac-item" onclick="selectPlayer('${p.id}')">
-    <div class="avatar">${initials(p.name)}</div>
-    <div style="flex:1"><div style="font-weight:600">${p.name}</div><div style="font-size:11px;color:var(--muted)">${p.year||''}</div></div>
-    <span class="lk-badge">${p.lk_str||p.lkStr||'?'}</span>
+    <div class="avatar">${esc(initials(p.name))}</div>
+    <div style="flex:1"><div style="font-weight:600">${esc(p.name)}</div><div style="font-size:11px;color:var(--muted)">${esc(p.year||'')}</div></div>
+    <span class="lk-badge">${esc(p.lk_str||p.lkStr||'?')}</span>
   </div>`).join('');
   list.style.display='block';
 }
@@ -414,7 +414,7 @@ function showPriorityModal(newMatchId, existingMatches, pid){
   btns.innerHTML=allMatches.map(mid=>{
     const m=state.matches.find(x=>x.id===mid);
     const team=teamById(m.team_id);
-    const label=`${team?.name||'?'} vs ${m.opponent} · ${m.time}`;
+    const label=`${esc(team?.name||'?')} vs ${esc(m.opponent)} · ${esc(m.time)}`;
     return`<button onclick="applyPriority('${mid}',[${allMatches.map(x=>`'${x}'`).join(',')}],'${pid}')"
       style="padding:11px 14px;border-radius:10px;border:1px solid var(--court);background:#1a2e26;color:var(--court);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:left">
       ✓ ${label}
@@ -451,7 +451,6 @@ function toggleTeamFilter(teamId){
 
 let showPast=false; // past matches folded away (E8)
 // ── Match list: small pieces ──
-function escText(t){return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');}
 // the player's teams: Herren → Damen → Jugend, then age group, then team number (1,2,3...)
 function matchListTeams(teamIds){
   return teamIds.map(tid=>teamById(tid)).filter(Boolean).sort((a,b)=>{
@@ -466,13 +465,13 @@ function teamChipHtml(p,t){
   return`<span onclick="toggleTeamFilter('${t.id}')" style="font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;
             background:${isMT?'rgba(212,160,23,.15)':isActive?'rgba(116,198,157,.2)':'#1a1a1a'};
             border:${isMT?'1.5px solid #d4a017':isActive?'1px solid var(--court)':'1px solid #333'};
-            color:${isMT?'#d4a017':isActive?'#74c69d':'#8a9a92'}">${isMT?'★ ':''} ${t.name}</span>`;
+            color:${isMT?'#d4a017':isActive?'#74c69d':'#8a9a92'}">${isMT?'★ ':''} ${esc(t.name)}</span>`;
 }
 function playerInfoHtml(p,teams){
   return `<div class="player-card">
-    <div class="avatar" style="width:44px;height:44px;font-size:15px">${initials(p.name)}</div>
+    <div class="avatar" style="width:44px;height:44px;font-size:15px">${esc(initials(p.name))}</div>
     <div style="flex:1">
-      <div style="font-size:13px;color:var(--muted)">${p.lk_str||p.lkStr||''} · Jg. ${p.year||'—'}</div>
+      <div style="font-size:13px;color:var(--muted)">${esc(p.lk_str||p.lkStr||'')} · Jg. ${esc(p.year||'—')}</div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
         ${teams.map(t=>teamChipHtml(p,t)).join('')}
         ${activeTeamFilters.size>0?`<span onclick="toggleTeamFilter(null)" style="font-size:11px;padding:3px 10px;border-radius:10px;cursor:pointer;background:#1a1a1a;border:1px solid #333;color:#8a9a92">✕ Alle</span>`:''}
@@ -496,8 +495,8 @@ function movedAwayCard(m,team){
             <div class="match-date">${d0.day}</div><div class="match-month">${d0.month}</div>
           </div>
           <div class="match-info" style="flex:1">
-            <div class="match-teams" style="text-decoration:line-through">${team?.name||'?'} vs ${escText(m.opponent)}</div>
-            <div class="match-meta" style="color:var(--warn)">⇄ ${tr('movedBadge')}${nd?` → ${nd.day}. ${nd.month} · ${nm.time}`:''}</div>
+            <div class="match-teams" style="text-decoration:line-through">${esc(team?.name||'?')} vs ${esc(m.opponent)}</div>
+            <div class="match-meta" style="color:var(--warn)">⇄ ${tr('movedBadge')}${nd?` → ${nd.day}. ${nd.month} · ${esc(nm.time)}`:''}</div>
           </div>
         </div>
       </div>`;
@@ -517,8 +516,8 @@ function matchHeadHtml(m,team,withCal){
           <div class="match-month">${ct('wd')[new Date(m.date+'T12:00:00').getDay()]}</div>
         </div>
         <div class="match-info" style="flex:1">
-          <div class="match-teams">${team?.name||'?'} vs ${escText(m.opponent)}</div>
-          <div class="match-meta">${m.time} · ${homeAwayLabel(m.home)}${movedFromNote(m)}</div>
+          <div class="match-teams">${esc(team?.name||'?')} vs ${esc(m.opponent)}</div>
+          <div class="match-meta">${esc(m.time)} · ${homeAwayLabel(m.home)}${movedFromNote(m)}</div>
         </div>
         ${withCal?`<button onclick="makeICS(state.matches.find(x=>x.id==='${m.id}'),teamById('${m.team_id}'))" title="${tr('addCal')}" aria-label="${tr('addCal')}"
           style="background:none;border:1px solid #333;border-radius:8px;color:var(--muted);padding:4px 8px;font-size:15px;line-height:1;cursor:pointer">📅</button>`:''}
@@ -533,7 +532,7 @@ function pastMatchCard(head,avail){
 function blockReasons(p,team){
   const st=getPlayerBlockStatus(p.id,team.category),counts=state.matchCounts[p.id]||{};
   const catTeams=state.teams.filter(t=>t.category===team.category);
-  const nm=t=>t.name+(teamNumber(t)===1&&catTeams.length>1&&!/\b[IV]+$/.test(t.name)?' I':''); // "Herren" → "Herren I" when there is a Herren II
+  const nm=t=>esc(t.name+(teamNumber(t)===1&&catTeams.length>1&&!/\b[IV]+$/.test(t.name)?' I':'')); // "Herren" → "Herren I" when there is a Herren II
   const why=[];
   if(st.stammkaderBlocked.some(t=>t.id===team.id)&&st.stammkaderTeam)why.push(tr('reasonSK')(nm(st.stammkaderTeam)));
   if(st.stammmannschaftBlocked.some(t=>t.id===team.id)){

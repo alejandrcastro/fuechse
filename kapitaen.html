@@ -72,7 +72,7 @@ input:focus,select:focus{border-color:var(--court)}
 /* Drag & drop lineup slots */
 /* ── VERLEGT ── */
 </style>
-<script src="common.js?v=6"></script>
+<script src="common.js?v=7"></script>
 </head>
 <body>
 
@@ -249,6 +249,7 @@ let _session=null;
     const {data:{session}}=await _sbClient.auth.getSession();
     if(session){
       _session=session;
+      _isSuper=await sbIsAdmin(session);
       document.getElementById('login-overlay').style.display='none';
       loadAll();
     }
@@ -292,28 +293,28 @@ function usernameToEmail(u){u=(u||'').trim().toLowerCase();if(!u.includes('@'))u
   return u.includes('@')?u:`${u}@${LOGIN_DOMAIN}`;}
 function emailToUsername(e){e=(e||'').toLowerCase();return e.endsWith('@'+LOGIN_DOMAIN)?e.slice(0,-(LOGIN_DOMAIN.length+1)):e;}
 // ── EDIT RIGHTS ── team logins (username = team name without spaces, e.g. "herrenii" = Herren II)
-// may only edit their own team's Aufstellung. SUPER_USERS may edit everything. Visual check only.
-const SUPER_USERS=['admin','christian','svenja'];
+// may only edit their own team's Aufstellung. Superusers may edit everything; the database says who they are
+// (common.js sbIsAdmin), so no login names are in the code. Visual check only — Supabase enforces the same rule.
+let _isSuper=false;
 function currentUsername(){return emailToUsername(_session?.user?.email);}
 function teamLogin(team){return (team?.name||'').toLowerCase().replace(/\s+/g,'');}
-function canEditTeam(teamId){const u=currentUsername();return SUPER_USERS.includes(u)||teamLogin(teamById(teamId))===u;}
+function canEditTeam(teamId){return _isSuper||teamLogin(teamById(teamId))===currentUsername();}
 // Jugend team logins ("u18m", "u12iii", …) only see the Jugend block (teams still loaded for same-day conflicts)
 function isJugendLogin(){return /^u\d+/.test(currentUsername());}
-const SUPER_LABELS={admin:'Admin',christian:'Christian',svenja:'Svenja'};
 function renderWhoBadge(){
   const el=document.getElementById('who-badge');if(!el)return;
   const u=currentUsername();
   const own=(state.allTeams||[]).find(t=>teamLogin(t)===u);
-  const label=SUPER_LABELS[u]||own?.name||u;
+  const label=_isSuper?u.charAt(0).toUpperCase()+u.slice(1):(own?.name||u); // superuser: "admin" → "Admin"
   if(!label){el.style.display='none';return;}
   el.textContent=`👤 ${label}`;
-  el.title=SUPER_USERS.includes(u)?tr('whoAll'):tr('whoOwn');
+  el.title=_isSuper?tr('whoAll'):tr('whoOwn');
   el.style.display='';
 }
-// Sperren + Overview scope: team logins only see their own block (Herren / Damen / Jugend); SUPER_USERS see all
+// Sperren + Overview scope: team logins only see their own block (Herren / Damen / Jugend); superusers see all
 function scopeGroup(){
   const u=currentUsername();
-  if(SUPER_USERS.includes(u))return null;
+  if(_isSuper)return null;
   const own=(state.allTeams||[]).find(t=>teamLogin(t)===u);
   if(own)return catGroup(own.category);
   if(/^u\d+/.test(u))return 2;
@@ -375,6 +376,7 @@ async function doLogin(){
   } else {
     _rlSuccess();
     _session=data.session;
+    _isSuper=await sbIsAdmin(data.session);
     document.getElementById('login-overlay').style.display='none';
     loadAll();
   }
@@ -575,7 +577,7 @@ async function loadAll(){
     state.matches=_seasonMatches.filter(m=>m.status!=='verlegt');
     state.movedMatches=_seasonMatches.filter(m=>m.status==='verlegt');
     state.availability={};
-    for(const r of avRows){if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
+    for(const r of avRows){if(!AVAIL_STATES.includes(r.status))continue;if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
     state.lineups={};
     for(const r of lineupRows)state.lineups[r.match_id]=r.slots;
     state.matchCounts={};
@@ -612,13 +614,13 @@ function renderTeamSidebar(){
     const cc=catCmp(a[0],b[0]);if(cc)return cc;
     return a[0].localeCompare(b[0]);
   })){
-    html+=`<div class="sidebar-title cat-head">${cat}</div>`;
+    html+=`<div class="sidebar-title cat-head">${esc(cat)}</div>`;
     for(const t of teams.sort((a,b)=>teamNumber(a)-teamNumber(b))){
       const matches=state.matches.filter(m=>m.teamId===t.id);
       const active=selectedTeamId===t.id?'active':'';
       html+=`<button class="team-btn ${active}" onclick="selectTeam('${t.id}')">
         <span class="team-dot"></span>
-        <span class="name">${t.name}</span>
+        <span class="name">${esc(t.name)}</span>
         <span class="count">${matches.length}</span>
       </button>`;
     }
@@ -628,8 +630,8 @@ function renderTeamSidebar(){
   const sel=document.getElementById('team-select');
   if(sel){
     const cats=Object.entries(byCat).sort((a,b)=>catCmp(a[0],b[0])||a[0].localeCompare(b[0]));
-    sel.innerHTML=`<option value="">${tr('pickTeam')}</option>`+cats.map(([cat,teams])=>`<optgroup label="${cat}">${
-      teams.slice().sort((a,b)=>teamNumber(a)-teamNumber(b)).map(t=>`<option value="${t.id}"${selectedTeamId===t.id?' selected':''}>${t.name}${t.liga?' · '+t.liga:''}</option>`).join('')}</optgroup>`).join('');
+    sel.innerHTML=`<option value="">${tr('pickTeam')}</option>`+cats.map(([cat,teams])=>`<optgroup label="${esc(cat)}">${
+      teams.slice().sort((a,b)=>teamNumber(a)-teamNumber(b)).map(t=>`<option value="${t.id}"${selectedTeamId===t.id?' selected':''}>${esc(t.name)}${t.liga?' · '+esc(t.liga):''}</option>`).join('')}</optgroup>`).join('');
   }
 }
 

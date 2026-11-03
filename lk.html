@@ -58,7 +58,7 @@ input::placeholder{color:var(--muted)}
 .fine a{color:var(--court)}
 .hidden{display:none!important}
 </style>
-<script src="common.js?v=6"></script>
+<script src="common.js?v=7"></script>
 </head>
 <body>
 <div id="sp-login" style="position:fixed;inset:0;background:#0d2015;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Sans',sans-serif;">
@@ -229,7 +229,6 @@ const T={
 };
 let lang=savedLang(),players=[],format='single',meFromList=null;
 function tr(k){return T[lang][k]??T.de[k];}
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function $(id){return document.getElementById(id);}
 function num(v){v=String(v??'').replace(/^LK/i,'').replace(',','.').trim();const n=parseFloat(v);return isFinite(n)?n:null;}
 function fmt(n,dec){return n.toFixed(dec).replace('.',lang==='en'?'.':',');}

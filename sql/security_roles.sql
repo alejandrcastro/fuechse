@@ -3,7 +3,7 @@
 -- Run AFTER security.sql. Undo: security_roles_rollback.sql
 --
 -- Same rule as kapitaen.html canEditTeam():
---   • admin / christian / svenja  → everything
+--   • superusers (fcb_is_admin)  → everything
 --   • a team login (e.g. "herrenii" = team "Herren II") → only that team:
 --       lineups, matches (count, verlegen), player_match_counts, availability
 --   • players, teams, player_teams, survey answers → only admins
