@@ -66,7 +66,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 .done .big{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;color:var(--court);margin-bottom:8px}
 .hidden{display:none!important}
 </style>
-<script src="common.js?v=6"></script>
+<script src="common.js?v=7"></script>
 </head>
 <body>
 <div id="sp-login" style="position:fixed;inset:0;background:#0d2015;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Sans',sans-serif;">
@@ -280,7 +280,6 @@ const form={gender:null,participates:null,categories:new Set(),commitment:null,c
 
 function tr(k){return T[lang][k]??T.de[k]??k}
 function setText(id,t){const e=document.getElementById(id);if(e)e.textContent=t;}
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function initials(n){return n.split(/\s+/).filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,2)}
 function nameKey(n){return n.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().split(' ').sort().join(' ');}
 function compName(){return COMP_NAME[lang][SURVEY.competition]+' '+SURVEY.year;}

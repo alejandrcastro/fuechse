@@ -5,6 +5,11 @@
 // ── SUPABASE ── REST helpers. sbGet/sbUpsert stay in each page because the login differs (club account vs. captain/admin).
 const SB_URL='https://kepbpcttbvkbcckqoecv.supabase.co';
 const SB_KEY='sb_publishable_wDzLASMHgyEcQh8RPmfPRA_HfJotf-n';
+// Text from the database (names, opponents, venues, notes, …) goes through esc() before it becomes HTML,
+// so a "<" or a quote in a name can never break a page or run code.
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+// the availability answers the pages know; any other value in the database is ignored when loading
+const AVAIL_STATES=['yes','conditional','notfall','no'];
 // Supabase returns max. 1000 rows per request → always page through big tables (stable order required)
 async function sbGetAll(t,p=''){let out=[],off=0;while(true){const b=await sbGet(t,`${p}${p?'&':''}limit=1000&offset=${off}`);out=out.concat(b);if(b.length<1000)break;off+=1000;}return out;}
 // Rows whose <col> is one of <ids>, fetched in chunks so the URL stays short (R1: load only the active season)
@@ -15,6 +20,14 @@ async function sbGetIn(t,col,ids,p=''){
     out.push(...await sbGetAll(t,`${col}=in.(${chunk})${p?'&'+p:''}`));
   }
   return out;
+}
+// Superusers (all teams, admin.html) are decided by the database (fcb_is_admin), so no login names are in the code
+async function sbIsAdmin(session){
+  if(!session?.access_token)return false;
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/rpc/fcb_is_admin`,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+session.access_token,'Content-Type':'application/json'},body:'{}'});
+    return r.ok&&(await r.json())===true;
+  }catch(e){console.warn('fcb_is_admin',e);return false;}
 }
 async function _readSetting(key){
   try{
@@ -332,11 +345,11 @@ function weekendBadges(pid,match){
     const inMain=slots.slice(0,sz).includes(pid),inErsatz=slots[sz]===pid;
     if(inMain||inErsatz){
       const lbl=inMain?ct('wkPlay'):ct('wkErsatz');
-      play.push(`<span class="wk-badge play" title="${ct('wkPlayTitle')(day,fmtDate(om.date),ot?.name||'?',om.time||'')}">${day}: ${lbl} ${_teamShort(ot)}</span>`);
+      play.push(`<span class="wk-badge play" title="${esc(ct('wkPlayTitle')(day,fmtDate(om.date),ot?.name||'?',om.time||''))}">${day}: ${lbl} ${esc(_teamShort(ot))}</span>`);
     }else{
       const st=state.availability[om.id]?.[pid];
       if(st==='yes'||st==='conditional')
-        ans.push(`<span class="wk-badge ans" title="${ct('wkAnsTitle')(day,fmtDate(om.date),ot?.name||'?')}">${day}: ${st==='yes'?ct('stYes'):'('+ct('stYes')+')'} ${_teamShort(ot)}</span>`);
+        ans.push(`<span class="wk-badge ans" title="${esc(ct('wkAnsTitle')(day,fmtDate(om.date),ot?.name||'?'))}">${day}: ${st==='yes'?ct('stYes'):'('+ct('stYes')+')'} ${esc(_teamShort(ot))}</span>`);
     }
   }
   return play[0]||ans[0]||''; // only one badge: aufgestellt beats zugesagt
@@ -370,14 +383,14 @@ function mvWarningsHtml(match){
   const blocked=lineup.filter(Boolean).map(pid=>{
     const p=playerById(pid);if(!p)return null;
     const sp=playedOnSpieltag(pid,match);
-    if(sp)return ct('playedOnSpieltag')(p.name,fmtDate(spieltagOf(match)),teamById(sp.teamId)?.name||'?');
-    if(isPlayerBlockedForLineup(pid,match.teamId,match.id))return ct('isBlocked')(p.name,team?.name||'?');
+    if(sp)return ct('playedOnSpieltag')(esc(p.name),fmtDate(spieltagOf(match)),esc(teamById(sp.teamId)?.name||'?'));
+    if(isPlayerBlockedForLineup(pid,match.teamId,match.id))return ct('isBlocked')(esc(p.name),esc(team?.name||'?'));
     return null;
   }).filter(Boolean);
   for(const pid of lineup.slice(0,size).filter(Boolean)){
     const p=playerById(pid);if(!p||playedOnSpieltag(pid,match))continue; // a Spieltag block is already listed
     const om=mvOtherLineup(pid,match,false);
-    if(om)hints.push(ct('alsoPlays')(p.name,teamById(om.teamId)?.name||'?'));
+    if(om)hints.push(ct('alsoPlays')(esc(p.name),esc(teamById(om.teamId)?.name||'?')));
   }
   const filled=lineup.slice(0,size).filter(Boolean).length;
   const li=arr=>arr.map(w=>`<li>${w.replace(/^⛔\s*/,'')}</li>`).join('');
@@ -400,7 +413,7 @@ function mvSlotsHtml(match,o){
     for(const tp of sorted){
       const bl=isPlayerBlockedForLineup(tp.id,match.teamId,match.id),grp=avail[tp.id]||'';
       if(grp!==last){last=grp;h+=`<option disabled class="opt-group">${gl[grp]}</option>`;}
-      h+=`<option value="${tp.id}" ${sel===tp.id?'selected':''}>${bl?'⛔ ':''}${tp.name} (${tp.lkStr}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${tp.year||''}</option>`;
+      h+=`<option value="${tp.id}" ${sel===tp.id?'selected':''}>${bl?'⛔ ':''}${esc(tp.name)} (${esc(tp.lkStr)}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${esc(tp.year||'')}</option>`;
     }
     return h;
   };
@@ -423,8 +436,8 @@ function mvSlotsHtml(match,o){
   let eWarn='';
   if(ePid){
     const oL=mvOtherLineup(ePid,match,false),oE=oL?null:mvOtherLineup(ePid,match,true);
-    if(oL)eWarn=`${ct('alreadyLineup')} <strong>${teamById(oL.teamId)?.name||'?'}</strong>`;
-    else if(oE)eWarn=`${ct('alreadyErsatz')} <strong>${teamById(oE.teamId)?.name||'?'}</strong>`;
+    if(oL)eWarn=`${ct('alreadyLineup')} <strong>${esc(teamById(oL.teamId)?.name||'?')}</strong>`;
+    else if(oE)eWarn=`${ct('alreadyErsatz')} <strong>${esc(teamById(oE.teamId)?.name||'?')}</strong>`;
   }
   html+=`<div class="mx-ersatz">
     <div class="mx-label">Ersatz</div>
@@ -440,7 +453,7 @@ function mvSlotsHtml(match,o){
 function mvAvailHtml(match,o={}){
   const avail=state.availability[match.id]||{};
   const label={yes:ct('groupYes'),conditional:ct('groupConditional'),notfall:ct('groupNotfall'),no:ct('groupNo'),'':ct('noAnswer')};
-  const tag=(title,text,extra='')=>`<span title="${title}" class="mx-tag${extra}">${text}</span>`;
+  const tag=(title,text,extra='')=>`<span title="${esc(title)}" class="mx-tag${extra}">${text}</span>`;
   let last,html='';
   for(const p of mvTeamPlayers(match)){
     const s=avail[p.id]||'';
@@ -452,10 +465,10 @@ function mvAvailHtml(match,o={}){
     if(s==='conditional'||s==='notfall'){
       const yesMatch=s==='conditional'?state.matches.find(om=>om.id!==match.id&&spieltagOf(om)===spieltagOf(match)&&state.availability[om.id]?.[p.id]==='yes'):null;
       const yesTeam=yesMatch?teamById(yesMatch.teamId):null;
-      if(s==='conditional')badge=yesTeam?ct('condTo')(yesTeam.name):'('+ct('stYes')+')';
+      if(s==='conditional')badge=yesTeam?ct('condTo')(esc(yesTeam.name)):'('+ct('stYes')+')';
       const inL=mvOtherLineup(p.id,match,false),inE=inL?null:mvOtherLineup(p.id,match,true);
-      if(inL){const t=teamById(inL.teamId);extra=tag(ct('inLineupTitle')(t.name),ct('inLineupShort')(_teamShort(t)));}
-      else if(inE){const t=teamById(inE.teamId);extra=tag(ct('ersatzTitle')(t.name),`Ersatz (${_teamShort(t)})`,' dashed');}
+      if(inL){const t=teamById(inL.teamId);extra=tag(ct('inLineupTitle')(t.name),ct('inLineupShort')(esc(_teamShort(t))));}
+      else if(inE){const t=teamById(inE.teamId);extra=tag(ct('ersatzTitle')(t.name),`Ersatz (${esc(_teamShort(t))})`,' dashed');}
       else if(yesTeam){ // the other team's lineup is full without him → free for this match
         const sz=teamSize(yesTeam),sl=state.lineups[yesMatch.id]||[];
         if(sl.slice(0,sz).filter(Boolean).length>=sz&&!sl.slice(0,sz).includes(p.id)&&sl[sz]!==p.id)extra=tag(ct('freiTitle')(yesTeam.name),ct('frei'),' frei');
@@ -464,10 +477,10 @@ function mvAvailHtml(match,o={}){
     if(!extra)extra=weekendBadges(p.id,match); // max. one extra badge: same-day beats the weekend hint
     const right=o.actions?o.actions(p,s):`<span class="avail-badge mx-badge is-${s||'none'}">${badge}</span>`;
     html+=`<div class="avail-row">
-      <div class="avail-avatar${sm?' sm':''}">${initials(p.name)}</div>
+      <div class="avail-avatar${sm?' sm':''}">${esc(initials(p.name))}</div>
       <div class="avail-info">
-        <div class="avail-name">${p.name}${sm?' <span class="sm-badge">★ SM</span>':''}${blocked?' <span class="blocked-badge">⛔</span>':''}</div>
-        <div class="avail-meta">${p.lkStr||''} · Jg. ${p.year||'—'} · ${ct('rank')} ${r<999?r:'—'}</div>
+        <div class="avail-name">${esc(p.name)}${sm?' <span class="sm-badge">★ SM</span>':''}${blocked?' <span class="blocked-badge">⛔</span>':''}</div>
+        <div class="avail-meta">${esc(p.lkStr||'')} · Jg. ${esc(p.year||'—')} · ${ct('rank')} ${r<999?r:'—'}</div>
       </div>
       <span class="avail-tags">${extra}</span>${right}
     </div>`;
@@ -480,7 +493,7 @@ function mvCountHtml(match,o){
   if(match.counted){
     const who=(match.countedPlayers||[]).map(pid=>playerById(pid)?.name).filter(Boolean);
     return`<span class="match-status status-ready big">✔ ${ct('countedLabel')(match.ersatzCounted)}</span>`+
-      (who.length?`<span class="mx-note">${who.join(' · ')}</span>`:'')+
+      (who.length?`<span class="mx-note">${who.map(esc).join(' · ')}</span>`:'')+
       (o.canEdit?`<button class="auto-btn undo" onclick="${o.undo}()">${ct('undo')}</button>`:'');
   }
   if(!o.canEdit)return'';
@@ -495,7 +508,7 @@ function mvCountHtml(match,o){
         <option value="">＋ ${ct('addDoublesPlayer')}</option>
         ${state.players.filter(p=>p.teamIds.includes(match.teamId)&&!cand.some(c=>c.pid===p.id))
           .sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId))
-          .map(p=>`<option value="${p.id}">${p.name} (${p.lkStr||'–'})</option>`).join('')}
+          .map(p=>`<option value="${p.id}">${esc(p.name)} (${esc(p.lkStr||'–')})</option>`).join('')}
       </select>
       <div class="mx-confirm-row">
         <button class="auto-btn" id="mx-confirm-btn" onclick="${o.confirm}()">${ct('countBtn')}</button>
@@ -504,7 +517,7 @@ function mvCountHtml(match,o){
 }
 function mvPlayedChip(pid,pos,on){
   return`<label class="mx-chip"><input type="checkbox" class="mx-played" value="${pid}" ${on?'checked':''} onchange="mvUpdatePlayedCount()">
-    <span class="mx-note">${pos}</span> ${playerById(pid)?.name||'?'}</label>`;
+    <span class="mx-note">${pos}</span> ${esc(playerById(pid)?.name||'?')}</label>`;
 }
 function mvAddPlayedChip(pid){ // a player who only played Doppel
   if(!pid)return;
@@ -530,15 +543,15 @@ function mvUpdatePlayedCount(){
 function mvMatchCardsHtml(team,matches,o){
   if(!matches.length)return`<div class="empty">—</div>`;
   return matches.map(m=>{
-    const opp=(m.opponent||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const opp=esc(m.opponent);
     if(m.status==='verlegt'){
       const nm=state.matches.find(x=>x.id===m.movedTo);
       return`<div class="match-card moved">
         <div class="match-header"><div>
-          <div class="match-title">${team.name} vs ${opp}</div>
-          <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)}</div>
+          <div class="match-title">${esc(team.name)} vs ${opp}</div>
+          <div class="match-meta">📅 ${fmtDate(m.date)} · ${esc(m.time)} · ${homeAwayLabel(m.home)}</div>
         </div><span class="match-status status-moved">⇄ ${ct('movedBadge')}</span></div>
-        ${nm?`<div class="moved-link">→ ${ct('movedNewDate')}: <b>${fmtDate(nm.date)} · ${nm.time}</b>${m.movedAt?` · ${ct('movedOn')(fmtDate(m.movedAt.slice(0,10)),m.movedBy)}`:''}</div>`:''}
+        ${nm?`<div class="moved-link">→ ${ct('movedNewDate')}: <b>${fmtDate(nm.date)} · ${esc(nm.time)}</b>${m.movedAt?` · ${ct('movedOn')(fmtDate(m.movedAt.slice(0,10)),esc(m.movedBy))}`:''}</div>`:''}
       </div>`;
     }
     const avail=state.availability[m.id]||{},tp=state.players.filter(p=>p.teamIds.includes(m.teamId));
@@ -546,8 +559,8 @@ function mvMatchCardsHtml(team,matches,o){
     const sz=teamSize(teamById(m.teamId)),hasLineup=(state.lineups[m.id]||[]).slice(0,sz).filter(Boolean).length>=sz;
     return`<div class="match-card ${o.selected===m.id?'active':''}" onclick="${o.open}('${m.id}')">
       <div class="match-header"><div>
-        <div class="match-title">${team.name} vs ${opp}${m.movedFrom?`<span class="status-new">${ct('newBadge')}</span>`:''}</div>
-        <div class="match-meta">📅 ${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)}</div>
+        <div class="match-title">${esc(team.name)} vs ${opp}${m.movedFrom?`<span class="status-new">${ct('newBadge')}</span>`:''}</div>
+        <div class="match-meta">📅 ${fmtDate(m.date)} · ${esc(m.time)} · ${homeAwayLabel(m.home)}</div>
       </div><span class="match-status ${hasLineup||m.counted?'status-ready':'status-open'}">${m.counted?'✔ '+ct('countedShort'):hasLineup?ct('lineupOk'):ct('open')}</span></div>
       <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
       <div class="mc-avail">${yes}/${tp.length} ${ct('available')}</div>
@@ -561,7 +574,6 @@ function _mvModal(id){
   if(!el){document.body.insertAdjacentHTML('beforeend',`<div class="mv-bg" id="${id}" onclick="if(event.target===this)this.classList.remove('open')"><div class="mv" id="${id}-box"></div></div>`);el=document.getElementById(id);}
   return el;
 }
-function _mvEsc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
 function mvUser(){
   if(typeof currentUsername==='function')return currentUsername();
   return((window._sbAuth?._session?.user?.email)||'').split('@')[0];
@@ -572,9 +584,9 @@ function mvMoveInfoHtml(match){
   if(!orig)return'';
   const tp=state.players.filter(p=>p.teamIds.includes(match.teamId));
   const answered=tp.filter(p=>(state.availability[match.id]||{})[p.id]).length;
-  const note=orig.moveNote?` — <i>${_mvEsc(orig.moveNote)}</i>`:'';
+  const note=orig.moveNote?` — <i>${esc(orig.moveNote)}</i>`:'';
   const st=spieltagOf(match)!==match.date?`<br>${ct('spieltagInfo')(fmtDate(spieltagOf(match)))}`:'';
-  return`<div class="info-banner">⇄ ${ct('movedFromInfo')(fmtDate(orig.date),orig.time)}${note}${st}<br>${ct('movedAnswers')(answered,tp.length)}</div>`;
+  return`<div class="info-banner">⇄ ${ct('movedFromInfo')(fmtDate(orig.date),esc(orig.time))}${note}${st}<br>${ct('movedAnswers')(answered,tp.length)}</div>`;
 }
 let _mvMoveId=null;
 function mvOpenMove(matchId){
@@ -585,15 +597,15 @@ function mvOpenMove(matchId){
   document.getElementById('move-modal-box').innerHTML=`
     <h2>⇄ ${ct('moveTitle')}</h2>
     <div class="mv-sub">${ct('moveSub')}</div>
-    <div class="orig"><b>${_mvEsc(team?.name)} vs ${_mvEsc(m.opponent)}</b>${fmtDate(m.date)} · ${m.time} · ${homeAwayLabel(m.home)}</div>
+    <div class="orig"><b>${esc(team?.name)} vs ${esc(m.opponent)}</b>${fmtDate(m.date)} · ${esc(m.time)} · ${homeAwayLabel(m.home)}</div>
     <div class="row2">
       <div class="field"><label>${ct('moveDate')}</label><input type="date" id="mv-date" value="${m.date}"></div>
-      <div class="field"><label>${ct('moveTime')}</label><input type="time" id="mv-time" value="${m.time||''}"></div>
+      <div class="field"><label>${ct('moveTime')}</label><input type="time" id="mv-time" value="${esc(m.time||'')}"></div>
     </div>
     <div class="field"><label>${ct('movePlace')}</label>
       <select id="mv-home" onchange="document.getElementById('mv-nuliga').style.display=this.value==='Heim'?'':'none'"><option value="Heim" ${m.home==='Heim'?'selected':''}>${ct('home')}</option><option value="Auswärts" ${m.home!=='Heim'?'selected':''}>${ct('away')}</option></select>
     </div>
-    <div class="field"><label>${ct('moveNote')}</label><input type="text" id="mv-note" maxlength="140" placeholder="${_mvEsc(ct('moveNotePh'))}"></div>
+    <div class="field"><label>${ct('moveNote')}</label><input type="text" id="mv-note" maxlength="140" placeholder="${esc(ct('moveNotePh'))}"></div>
     <label class="check"><input type="checkbox" id="mv-amtlich"><span>${ct('moveAmtlich')}<small>${ct('moveAmtlichSub')(fmtDate(spieltagOf(m)))}</small></span></label>
     <label class="check"><input type="checkbox" id="mv-lineup" ${hasLineup?'checked':''}><span>${ct('moveKeepLineup')}<small>${ct('moveKeepLineupSub')}</small></span></label>
     <label class="check"><input type="checkbox" id="mv-avail"><span>${ct('moveKeepAvail')}<small>${ct('moveKeepAvailSub')}</small></span></label>
@@ -748,11 +760,11 @@ function ovPlayerLine(label,p,name,ersatz){
   return ersatz
     ?`<div class="ov-line is-ersatz">
           <span class="ov-pos">${label}</span>
-          <span title="${p.name}">${name(p)}</span>
+          <span title="${esc(p.name)}">${esc(name(p))}</span>
         </div>`
     :`<div class="ov-line${p?'':' is-none'}">
           <span class="ov-pos">${label}</span>
-          <span title="${p?p.name:''}">${name(p)}</span>
+          <span title="${esc(p?p.name:'')}">${esc(name(p))}</span>
         </div>`;
 }
 // one match: status colour, opponent, time · H/A · filled, then the lineup and the Ersatz
@@ -767,8 +779,8 @@ function ovMatchCell(m,team,name,open){
   if(ep)lines+=ovPlayerLine('E.',ep,name,true);
   return`<td class="ov-cell">
         <div onclick="${open}('${m.id}')" class="ov-match ${st}">
-          <div class="ov-opp" title="${(m.opponent||'').replace(/"/g,'&quot;')}">${icon} ${m.opponent||''}</div>
-          <div class="ov-meta">${m.time} · ${m.home==='Heim'?'H':'A'} · ${filled}/${sz}</div>
+          <div class="ov-opp" title="${esc(m.opponent)}">${icon} ${esc(m.opponent)}</div>
+          <div class="ov-meta">${esc(m.time)} · ${m.home==='Heim'?'H':'A'} · ${filled}/${sz}</div>
           <div class="ov-lines">${lines}</div>
         </div>
       </td>`;
@@ -791,7 +803,7 @@ function ovFreeCell(dayMatches,name){
     const mark=x.a==='yes'?'✓':x.a==='conditional'?'(✓)':'!';
     return`<div class="ov-free is-${x.a}">
         <span class="ov-mark">${mark}</span>
-        <span title="${x.p.name}">${name(x.p)}</span>
+        <span title="${esc(x.p.name)}">${esc(name(x.p))}</span>
       </div>`;}).join('')+'</td>';
 }
 // color = one of the c-… classes in ui.css
@@ -822,7 +834,7 @@ function ovMatchesHtml(teams,o){
     </tr></thead><tbody>`;
   for(const team of teams){
     html+=`<tr class="ov-row">
-      <td class="ov-team">${team.name}</td>`;
+      <td class="ov-team">${esc(team.name)}</td>`;
     for(const d of dates){const m=matches.find(x=>x.teamId===team.id&&x.date===d);html+=m?ovMatchCell(m,team,name,o.open):OV_EMPTY_TD;}
     html+='</tr>';
   }
@@ -842,7 +854,7 @@ function ovPlayerDayCell(p,dayMatches){
       :avail==='yes'?['yes',ct('ovYes')]:avail==='conditional'?['conditional','('+ct('ovYes')+')']
       :avail==='notfall'?['notfall',ct('ovNotfall')]:avail==='no'?['no','✗']:['none','?'];
     return`<div class="ov-chip is-${st}">
-            <span class="ov-chip-team">${ovTeamShort(team)}</span>
+            <span class="ov-chip-team">${esc(ovTeamShort(team))}</span>
             <span>${icon}</span>
           </div>`;}).join('')+'</div></td>';
 }
@@ -867,10 +879,10 @@ function ovPlayersHtml(teams){
     const sm=teams.filter(t=>state.mainTeam[p.id]?.[t.id]).map(t=>t.name).join(', ');
     html+=`<tr>
         <td class="td-name">
-          <span class="b">${p.name}</span>
-          ${sm?`<span class="ov-sm">★ ${sm}</span>`:''}
+          <span class="b">${esc(p.name)}</span>
+          ${sm?`<span class="ov-sm">★ ${esc(sm)}</span>`:''}
         </td>
-        <td class="td-lk"><span class="lk-badge sm">${p.lkStr||'?'}</span></td>`;
+        <td class="td-lk"><span class="lk-badge sm">${esc(p.lkStr||'?')}</span></td>`;
     for(const d of dates)html+=ovPlayerDayCell(p,matches.filter(m=>m.date===d&&p.teamIds.includes(m.teamId)).sort((a,b)=>teamNumber(teamById(a.teamId)||{})-teamNumber(teamById(b.teamId)||{})));
     html+='</tr>';
   }
@@ -1019,9 +1031,9 @@ function blockCell(p,t,catTeams,status,skTeam){
   // own Stammkader team that is also on warning → one line: the Stammkader pill + just the ⚠️ symbol (reason in the tooltip)
   const skWarn=kind==='warn'&&isSk;
   const inner=skWarn?`<span class="nowrap"><span class="blk-pill stamm">${bT('stamm')}</span> <span class="blk-hint">⚠️</span></span>`
-    :kind?`<span class="blk-pill ${kind}">${label}</span>`
+    :kind?`<span class="blk-pill ${kind}">${esc(label)}</span>`
     :`<span class="blk-dash${p.teamIds.includes(t.id)?'':' is-out'}">${p.teamIds.includes(t.id)?'—':'·'}</span>`;
-  return`<td class="blk-td" title="${title.replace(/"/g,'&quot;')}">${inner}</td>`;
+  return`<td class="blk-td" title="${esc(title)}">${inner}</td>`;
 }
 function blockLegend(){
   return`<div class="blk-legend">
@@ -1042,9 +1054,9 @@ function blockingRuleBoxes(){
 function blockingRow(p,cat,catTeams){
   const status=getPlayerBlockStatus(p.id,cat),skTeam=getStammkaderTeam(p.id,cat)||catTeams[catTeams.length-1];
   return`<tr class="blk-row${status.blocked.length>0?' is-blocked':''}">
-        <td class="td-name"><div class="blk-name">${p.name}</div></td>
-        <td class="td-lk"><span class="lk-badge sm">${p.lkStr||'?'}</span></td>
-        <td class="td-year">${p.year||'—'}</td>
+        <td class="td-name"><div class="blk-name">${esc(p.name)}</div></td>
+        <td class="td-lk"><span class="lk-badge sm">${esc(p.lkStr||'?')}</span></td>
+        <td class="td-year">${esc(p.year||'—')}</td>
         ${catTeams.map(t=>blockCell(p,t,catTeams,status,skTeam)).join('')}
       </tr>`;
 }
@@ -1052,14 +1064,14 @@ function blockingCategoryHtml(cat,catTeams){
   // sorted by the rank in THIS category's Meldung (p.rank is only the rank of the first list the player was imported from)
   const players=state.players.filter(p=>p.teamIds.some(tid=>catTeams.find(t=>t.id===tid))).sort((a,b)=>playerRankInTeam(a.id,catTeams[0].id)-playerRankInTeam(b.id,catTeams[0].id));
   if(!players.length)return'';
-  return`<div class="blk-cat">${cat}</div>`+
+  return`<div class="blk-cat">${esc(cat)}</div>`+
     `<div class="card blk-card">`+
     `<table class="blk-table">
       <thead><tr class="blk-head">
         <th class="blk-th-player">${ct('playerCol')}</th>
         <th class="th-small">LK</th>
         <th class="th-small">${ct('colYear')}</th>
-        ${catTeams.map(t=>`<th class="blk-th-team">${t.name}${t.is_4er?' <span class="blk-4er">(4er)</span>':''}</th>`).join('')}
+        ${catTeams.map(t=>`<th class="blk-th-team">${esc(t.name)}${t.is_4er?' <span class="blk-4er">(4er)</span>':''}</th>`).join('')}
       </tr></thead><tbody>`+players.map(p=>blockingRow(p,cat,catTeams)).join('')+`</tbody></table>
       ${blockLegend()}</div>`;
 }
@@ -1068,7 +1080,7 @@ function renderBlockingView(teams){
   const cats=[...new Set(teams.map(t=>t.category))].sort();
   const catSel=document.getElementById('block-cat-filter');
   const curCat=catSel?.value||(cats.includes('Herren')?'Herren':'');
-  if(catSel){catSel.innerHTML=`<option value="">${ct('allCategories')}</option>`+cats.map(c=>`<option value="${c}" ${curCat===c?'selected':''}>${c}</option>`).join('');catSel.value=curCat;}
+  if(catSel){catSel.innerHTML=`<option value="">${ct('allCategories')}</option>`+cats.map(c=>`<option value="${esc(c)}" ${curCat===c?'selected':''}>${esc(c)}</option>`).join('');catSel.value=curCat;}
   const filterCat=catSel?.value||'';
   let body='';
   for(const cat of filterCat?[filterCat]:cats){
