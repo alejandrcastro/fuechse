@@ -64,7 +64,7 @@ The rules have tests: `node tests/rules.test.js` (no install needed). They also 
 - `players.raw_name` — `"Lastname, Firstname"` format used to generate smart short names
 - `player_teams.is_mainteam` — boolean flag marking the Stammmannschaft assigned by the admin
 - `player_teams.rank` — player rank within a specific team/category (source of truth for category-specific calculations)
-- `teams.season` — `'Sommer'` (6 players) or `'Winter'` (4 players)
+- `teams.season` — `'Sommer'` (6 players) or `'Winter'` (4 players); Ferienrunde teams are stored as `'Sommer'`, their size comes from the category
 - `teams.is_4er` — manual override for 4-player format regardless of season
 - `matches.counted` — boolean flag; true if the match counter has been applied (prevents duplicate counting)
 - `matches.ersatz_counted` — boolean flag; true if Ersatz was included in the count
@@ -146,6 +146,13 @@ Players answer whether they want to play in the next competition.
 ### Seasons
 
 The season selector in the **admin.html header** only changes what admin shows (this browser), so a new season can be prepared (`S2027` = Sommer 2027, `W2027` = Winter 2027/28). **⇪ … für alle aktivieren** then switches kapitaen, index and umfrage to it. Older seasons stay archived. Requires `sql/app_settings.sql` once.
+
+**Ferienrunde (Mixed & Doppel)** has its own season ID (`F2027`) and runs *next to* the published season instead of replacing it:
+- Teams: categories `Mixed` (6 = 3 Herren + 3 Damen; places 1–3 Herren, 4–6 Damen) and `Herren Doppel`, `Herren 35 Doppel`, …, `Damen … Doppel` (4 players for 4 doubles in 2 rounds). Each has one Ersatz place.
+- Players: **Spieler → ⇣ Spieler aus … übernehmen** copies the published season's players once (same ID-Nr.); assign them to the teams with **Mannschaften**.
+- **⇪ … für Spieler öffnen** (app_settings `ferien_season`): index then shows the Ferienrunde matches next to the published season, one entry per person; answers are saved on the Ferienrunde player row. Captains (kapitaen) stay on the published season; only admin makes the Ferienrunde lineups.
+- No Sperren and no counting until the Ferienrunde rules are added; the lineup still warns about the same day and about a wrong Herren/Damen place.
+- The survey for it is the Umfrage type `ferienrunde` (Mixed, Herren/Damen … Doppel).
 
 ## TVBB Berlin Rules
 
@@ -266,7 +273,7 @@ Consistent color usage across all files to differentiate states:
 - All Supabase calls go through `sbGet()`, `sbUpsert()` and `sbDelete()`.
 - Short player names are derived from `raw_name` (`"Lastname, Firstname"` format).
 - Short team names: `Herren` → `H`, `Damen` → `D`, `Senioren` → `Sen`, etc.
-- `teamSize(team)` returns 4 or 6 based on season and `is_4er` flag.
+- `teamSize(team)` returns 4 or 6 based on season and `is_4er` flag (Ferienrunde: Mixed 6, Doppel 4).
 - The Ersatz slot is always index `size` of the `lineup` array.
 - `playerRankInTeam(playerId, teamId)` returns category-specific rank from `rankByTeam`.
 - `isPlayerBlockedForLineup()` excludes the LK > 20 rule (for lineup warnings).

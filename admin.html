@@ -251,7 +251,7 @@ details.squad summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--
 .stats-modes .mode-btn{border-bottom-color:transparent}
 .stats-modes .mode-btn.under{color:var(--court);border-bottom-color:var(--court)}
 </style>
-<script src="common.js?v=7"></script>
+<script src="common.js?v=8"></script>
 </head>
 <body>
 <div id="login-overlay">
@@ -484,6 +484,7 @@ window.doLogin=async function(){
     <label class="check-label">
       <input type="checkbox" class="cb" id="filter-blocked" onchange="renderPlayers()"> <span data-i18n="showBlocked"></span>
     </label>
+    <button class="btn btn-outline btn-sm" id="copy-players-btn" onclick="copyPlayersFromPublished()" style="display:none"></button>
   </div>
   <div class="stats-row" id="stats-row"></div>
   <div id="player-list"></div>
@@ -519,6 +520,20 @@ window.doLogin=async function(){
           <option value="U15w">U15w</option>
           <option value="U12">U12</option>
           <option value="U10">U10</option>
+          <optgroup label="Ferienrunde (Mixed &amp; Doppel)">
+            <option value="Mixed">Mixed</option>
+            <option value="Herren Doppel">Herren Doppel</option>
+            <option value="Herren 35 Doppel">Herren 35 Doppel</option>
+            <option value="Herren 45 Doppel">Herren 45 Doppel</option>
+            <option value="Herren 55 Doppel">Herren 55 Doppel</option>
+            <option value="Herren 65 Doppel">Herren 65 Doppel</option>
+            <option value="Herren 75 Doppel">Herren 75 Doppel</option>
+            <option value="Damen Doppel">Damen Doppel</option>
+            <option value="Damen 35 Doppel">Damen 35 Doppel</option>
+            <option value="Damen 45 Doppel">Damen 45 Doppel</option>
+            <option value="Damen 55 Doppel">Damen 55 Doppel</option>
+            <option value="Damen 65 Doppel">Damen 65 Doppel</option>
+          </optgroup>
         </select>
       </div>
       <div class="form-group"><label data-i18n="teamNumber"></label><input id="t-num" type="number" min="1" value="1"></div>
@@ -734,20 +749,25 @@ window.doLogin=async function(){
 pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.worker-3.11.174.min.js';
 
 // ── ACTIVE SEASON ── switched in admin.html (header). Stored in Supabase → app_settings.
-// Format: 'S2026' = Sommer 2026, 'W2026' = Winter 2026/27. The value below is only a fallback.
+// Format: 'S2026' = Sommer 2026, 'W2026' = Winter 2026/27, 'F2027' = Ferienrunde 2027 (Mixed & Doppel). The value below is only a fallback.
 let ACTIVE_SEASON='W2026';
 let ACTIVE_SEASON_KIND='Winter';
 // PUBLISHED_SEASON = what kapitaen / index / umfrage use (app_settings).
 // ACTIVE_SEASON in admin = the season the Sportwart is looking at / preparing (this browser only).
 let PUBLISHED_SEASON='W2026';
+// FERIEN_SEASON = a Ferienrunde open for players next to the published season (app_settings 'ferien_season'), or null.
+// It is never "published": captains stay on PUBLISHED_SEASON; only admin builds its lineups.
+let FERIEN_SEASON=null;
 const ADMIN_SEASON_KEY='fcb_admin_season';
 const _seasonReady=(async()=>{
-  const v=await _readSetting('active_season');
+  const[v,f]=await Promise.all([_readSetting('active_season'),_readSetting('ferien_season')]);
   if(typeof v==='string'&&/^[SW]\d{4}$/.test(v))PUBLISHED_SEASON=v;
+  if(typeof f==='string'&&/^F\d{4}$/.test(f))FERIEN_SEASON=f;
   let view=null;try{view=localStorage.getItem(ADMIN_SEASON_KEY);}catch(e){}
-  ACTIVE_SEASON=(view&&/^[SW]\d{4}$/.test(view))?view:PUBLISHED_SEASON;
-  ACTIVE_SEASON_KIND=ACTIVE_SEASON.startsWith('W')?'Winter':'Sommer';
+  ACTIVE_SEASON=(view&&/^[SWF]\d{4}$/.test(view))?view:PUBLISHED_SEASON;
+  ACTIVE_SEASON_KIND=ACTIVE_SEASON.startsWith('W')?'Winter':'Sommer'; // the Ferienrunde is played in summer
 })();
+function isFerienSeason(id){return /^F\d{4}$/.test(id||'');}
 const HDR={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 function getHDR(){
   // Use session JWT if available, otherwise fall back to publishable key
@@ -1191,6 +1211,8 @@ function renderPlayers(){
   const filterGender=document.getElementById('filter-gender')?.value||'';
   const search=(document.getElementById('search-players')?.value||'').toLowerCase();
   const onlyBlocked=document.getElementById('filter-blocked')?.checked||false;
+  const cpb=document.getElementById('copy-players-btn');
+  if(cpb&&typeof sT==='function'){cpb.style.display=isFerienSeason(ACTIVE_SEASON)?'':'none';cpb.textContent=sT('copyPlayers')(seasonLabel(PUBLISHED_SEASON));} // sT: season script, loaded last
   let players=[...state.players].sort((a,b)=>(a.lk??99)-(b.lk??99));
   if(filterTeam)players=players.filter(p=>p.teamIds.includes(filterTeam));
   if(filterGender)players=players.filter(p=>p.gender===filterGender);
@@ -1226,10 +1248,11 @@ function renderPlayers(){
 async function addTeam(){
   const name=document.getElementById('t-name').value.trim();
   const liga=document.getElementById('t-liga').value.trim();
-  const season=document.getElementById('t-season').value;
   const category=document.getElementById('t-cat').value;
+  const ferien=isFerienCat(category); // Mixed / Doppel: played in summer, size comes from the category
+  const season=ferien?'Sommer':document.getElementById('t-season').value;
   const teamNum=parseInt(document.getElementById('t-num').value)||1;
-  const is_4er=document.getElementById('t-is4er')?.checked||false;
+  const is_4er=ferien?false:(document.getElementById('t-is4er')?.checked||false);
   const gender=catGender(category);
   if(!name)return;
   const newTeam={id:uid(),name,liga,season,is_4er,category,team_number:teamNum,gender,season_id:ACTIVE_SEASON};
@@ -1301,10 +1324,11 @@ function _teamCard(t,filterTeamId){
               <span class="team-card-name">${esc(t.name)}</span>
               ${genderBadge(t.gender)}
             </div>
-            <div class="note">${esc(t.liga)} · ${esc(seasonKindLabel(t.season))} · #${teamNumber(t)}</div>
+            <div class="note">${esc(t.liga)} · ${esc(teamKindLabel(t))} · #${teamNumber(t)}</div>
           </div>
           <div class="team-card-btns">
-              <button class="btn btn-outline btn-sm size-btn" onclick="editTeamSize('${t.id}')" title="Toggle group size">${t.season==='Winter'?'Winter (4)':(t.is_4er?'Sommer 4er':'Sommer (6)')}</button>
+              ${isFerienCat(t.category)?`<span class="btn btn-outline btn-sm size-btn">${isMixedCat(t.category)?'Mixed (3 + 3)':'Doppel (4)'}</span>`
+                :`<button class="btn btn-outline btn-sm size-btn" onclick="editTeamSize('${t.id}')" title="Toggle group size">${t.season==='Winter'?'Winter (4)':(t.is_4er?'Sommer 4er':'Sommer (6)')}</button>`}
               <button class="btn btn-danger" onclick="removeTeam('${t.id}')">✕</button>
             </div>
         </div>
@@ -1494,7 +1518,7 @@ async function autoLineup(matchId){
   const avail=state.availability[matchId]||{};
   const size=teamSize(team);
   const available=[...state.players.filter(p=>p.teamIds.includes(match.teamId)&&avail[p.id]==='yes'&&!isPlayerBlockedForTeam(p.id,match.teamId)&&!playedOnSpieltag(p.id,match))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
-  const slots=available.slice(0,size).map(p=>p.id);
+  const slots=mvOrderedSlots(team,available.map(p=>p.id)); // Mixed: 3 Herren + 3 Damen
   state.lineups[matchId]=slots;
   try{await sbUpsert('lineups',[{match_id:matchId,slots}]);}catch(e){console.error(e);}
   goToLineup(matchId);
@@ -1503,7 +1527,7 @@ async function autoLineup(matchId){
 function goToLineup(matchId){
   const match=state.matches.find(m=>m.id===matchId);if(!match)return;
   showTab('spieleadmin',null);
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===4));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='spieleadmin'));
   saSelectTeam(match.teamId);
   saSelectMatch(matchId);
 }
@@ -1568,7 +1592,7 @@ function saSelectTeam(teamId){
 function renderSAMatchList(){
   const team=teamById(_saTeamId);if(!team)return;
   document.getElementById('sa-team-name').textContent=team.name;
-  document.getElementById('sa-team-meta').textContent=`${team.liga} · ${seasonKindLabel(team.season)} · ${ct('nPlayers')(teamSize(team))}`;
+  document.getElementById('sa-team-meta').textContent=`${team.liga} · ${teamKindLabel(team)} · ${ct('nPlayers')(teamSize(team))}`;
   const matches=[...state.matches,...(state.movedMatches||[])].filter(m=>m.teamId===_saTeamId).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
   document.getElementById('sa-match-list').innerHTML=matches.length?mvMatchCardsHtml(team,matches,{selected:_saMatchId,open:'saSelectMatch'}):'<div class="empty">Keine Spiele für diese Mannschaft</div>';
 }
@@ -1600,7 +1624,7 @@ let _saDragSrc=null;
 function renderSALineup(){
   const match=state.matches.find(m=>m.id===_saMatchId);if(!match)return;
   const ro=!!match.counted; // counted → change it only after "Rückgängig", so the Sperren counts stay right
-  document.getElementById('sa-lineup-label').textContent=ct('nSingles')(teamSize(teamById(match.teamId)));
+  document.getElementById('sa-lineup-label').textContent=lineupTitle(teamById(match.teamId));
   ['sa-auto-btn','sa-sort-btn'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display=ro?'none':'';});
   document.getElementById('sa-warnings').innerHTML=mvWarningsHtml(match);
   document.getElementById('sa-lineup-slots').innerHTML=mvSlotsHtml(match,{ro,lockMsg:ct('countedLocked'),set:'saSetSlot',drag:'sa'});
@@ -1650,7 +1674,7 @@ async function saAutoLineup(){
   const avail=state.availability[_saMatchId]||{};
   const size=teamSize(team);
   const available=[...state.players.filter(p=>p.teamIds.includes(match.teamId)&&avail[p.id]==='yes'&&!isPlayerBlockedForTeam(p.id,match.teamId)&&!playedOnSpieltag(p.id,match))].sort((a,b)=>playerRankInTeam(a.id,match.teamId)-playerRankInTeam(b.id,match.teamId));
-  const slots=available.slice(0,size).map(p=>p.id);
+  const slots=mvOrderedSlots(team,available.map(p=>p.id)); // Mixed: 3 Herren + 3 Damen
   state.lineups[_saMatchId]=slots;
   try{await sbUpsert('lineups',[{match_id:_saMatchId,slots}]);}catch(e){console.error(e);}
   renderSALineup();renderSAMatchList();
@@ -1659,8 +1683,17 @@ async function saAutoLineup(){
 async function saSortLineup(){
   const match=state.matches.find(m=>m.id===_saMatchId);if(!match)return;
   const lineup=state.lineups[_saMatchId]||[];
-  const sorted=lineup.filter(Boolean).sort((a,b)=>playerRankInTeam(a,match.teamId)-playerRankInTeam(b,match.teamId));
-  while(sorted.length<lineup.length)sorted.push(null);
+  const team=teamById(match.teamId);
+  let sorted;
+  if(isFerienCat(team?.category)){ // Ferienrunde: no ranks yet → rank, then LK; Mixed sorts each block (Herren / Damen) on its own; the Ersatz stays
+    const size=teamSize(team),byLk=(a,b)=>playerRankInTeam(a,match.teamId)-playerRankInTeam(b,match.teamId)||(playerById(a)?.lk??99)-(playerById(b)?.lk??99);
+    const block=(from,to)=>{const b=lineup.slice(from,to).filter(Boolean).sort(byLk);while(b.length<to-from)b.push(null);return b;};
+    sorted=isMixedCat(team.category)?[...block(0,3),...block(3,6)]:block(0,size);
+    if(lineup[size])sorted.push(lineup[size]);
+  }else{
+    sorted=lineup.filter(Boolean).sort((a,b)=>playerRankInTeam(a,match.teamId)-playerRankInTeam(b,match.teamId));
+    while(sorted.length<lineup.length)sorted.push(null);
+  }
   state.lineups[_saMatchId]=sorted;
   try{await sbUpsert('lineups',[{match_id:_saMatchId,slots:sorted}]);}catch(e){console.error(e);}
   renderSALineup();
@@ -2511,24 +2544,39 @@ async function saveActiveSurvey(){
 }
 // ── SEASON SWITCH (header) → app_settings 'active_season', read by all pages ──
 const SEASON_T={
-  de:{newOpt:'+ Neue Saison…',prompt:'Neue Saison-ID (S = Sommer, W = Winter), z.B. S2027:',bad:'Ungültig. Format: S2027 oder W2027.',
+  de:{newOpt:'+ Neue Saison…',prompt:'Neue Saison-ID (S = Sommer, W = Winter, F = Ferienrunde Mixed & Doppel), z.B. S2027 oder F2027:',bad:'Ungültig. Format: S2027, W2027 oder F2027.',
       live:'live',publish:id=>`⇪ ${id} für alle aktivieren`,
       banner:(v,p)=>`Vorbereitung: du siehst ${v}. Kapitäne und Spieler sehen weiter ${p}.`,
       confirm:(a,b)=>`${b} für alle aktivieren?\n\nKapitäne (kapitaen), Spieler (index) und die Umfrage-Namenssuche wechseln von ${a} auf ${b}. Die alte Saison bleibt archiviert.`,
+      ferienOn:f=>`⇪ ${f} für Spieler öffnen`,ferienOff:f=>`✕ ${f} für Spieler schließen`,ferienLive:'für Spieler',
+      ferienBanner:(f,p,open)=>open?`${f}: Spieler sehen die Spiele und antworten (neben ${p}). Kapitäne bleiben auf ${p}; die Aufstellungen machst du hier.`:`${f} in Vorbereitung: Spieler sehen sie noch nicht. Kapitäne und Spieler bleiben auf ${p}.`,
+      ferienConfirmOn:(f,p)=>`${f} für Spieler öffnen?\n\nAuf der Spieler-Seite erscheinen die Spiele von ${f} zusätzlich zu ${p}. Kapitäne und Umfrage bleiben, wie sie sind.`,
+      ferienConfirmOff:f=>`${f} für Spieler schließen?\n\nDie Spiele verschwinden von der Spieler-Seite; die Antworten bleiben gespeichert.`,
+      copyPlayers:p=>`⇣ Spieler aus ${p} übernehmen`,copyConfirm:(n,p)=>`${n} Spieler aus ${p} in diese Ferienrunde übernehmen? (Gleiche ID-Nr., ohne Mannschaft; danach unter „Mannschaften“ zuweisen.)`,copyNone:'Alle Spieler sind schon da.',copyDone:n=>`${n} Spieler übernommen.`,
       empty:'(leer)'},
-  es:{newOpt:'+ Nueva temporada…',prompt:'ID de la nueva temporada (S = verano, W = invierno), ej. S2027:',bad:'Inválido. Formato: S2027 o W2027.',
+  es:{newOpt:'+ Nueva temporada…',prompt:'ID de la nueva temporada (S = verano, W = invierno, F = Ferienrunde Mixed y Doppel), ej. S2027 o F2027:',bad:'Inválido. Formato: S2027, W2027 o F2027.',
       live:'activa',publish:id=>`⇪ Activar ${id} para todos`,
       banner:(v,p)=>`Preparación: estás viendo ${v}. Capitanes y jugadores siguen viendo ${p}.`,
       confirm:(a,b)=>`¿Activar ${b} para todos?\n\nCapitanes (kapitaen), jugadores (index) y la búsqueda de la encuesta pasan de ${a} a ${b}. La temporada vieja queda archivada.`,
+      ferienOn:f=>`⇪ Abrir ${f} para los jugadores`,ferienOff:f=>`✕ Cerrar ${f} para los jugadores`,ferienLive:'para jugadores',
+      ferienBanner:(f,p,open)=>open?`${f}: los jugadores ven los partidos y contestan (además de ${p}). Los capitanes siguen en ${p}; las alineaciones las hacés acá.`:`${f} en preparación: los jugadores todavía no la ven. Capitanes y jugadores siguen en ${p}.`,
+      ferienConfirmOn:(f,p)=>`¿Abrir ${f} para los jugadores?\n\nEn la página de jugadores aparecen los partidos de ${f} además de ${p}. Capitanes y encuesta no cambian.`,
+      ferienConfirmOff:f=>`¿Cerrar ${f} para los jugadores?\n\nLos partidos desaparecen de la página de jugadores; las respuestas quedan guardadas.`,
+      copyPlayers:p=>`⇣ Traer jugadores de ${p}`,copyConfirm:(n,p)=>`¿Traer ${n} jugadores de ${p} a esta Ferienrunde? (Mismo ID-Nr., sin equipo; después se asignan en „Mannschaften“.)`,copyNone:'Ya están todos los jugadores.',copyDone:n=>`${n} jugadores traídos.`,
       empty:'(vacía)'},
-  en:{newOpt:'+ New season…',prompt:'New season ID (S = summer, W = winter), e.g. S2027:',bad:'Invalid. Format: S2027 or W2027.',
+  en:{newOpt:'+ New season…',prompt:'New season ID (S = summer, W = winter, F = Ferienrunde mixed & doubles), e.g. S2027 or F2027:',bad:'Invalid. Format: S2027, W2027 or F2027.',
       live:'live',publish:id=>`⇪ Activate ${id} for everyone`,
       banner:(v,p)=>`Preparing: you are viewing ${v}. Captains and players still see ${p}.`,
       confirm:(a,b)=>`Activate ${b} for everyone?\n\nCaptains (kapitaen), players (index) and the survey name search switch from ${a} to ${b}. The old season stays archived.`,
+      ferienOn:f=>`⇪ Open ${f} for players`,ferienOff:f=>`✕ Close ${f} for players`,ferienLive:'for players',
+      ferienBanner:(f,p,open)=>open?`${f}: players see the matches and answer (next to ${p}). Captains stay on ${p}; you make the lineups here.`:`${f} being prepared: players don't see it yet. Captains and players stay on ${p}.`,
+      ferienConfirmOn:(f,p)=>`Open ${f} for players?\n\nThe player page shows the ${f} matches next to ${p}. Captains and the survey stay as they are.`,
+      ferienConfirmOff:f=>`Close ${f} for players?\n\nThe matches disappear from the player page; the answers stay saved.`,
+      copyPlayers:p=>`⇣ Take players from ${p}`,copyConfirm:(n,p)=>`Take ${n} players from ${p} into this Ferienrunde? (Same ID-Nr., no team; assign them under „Mannschaften“ afterwards.)`,copyNone:'All players are already here.',copyDone:n=>`${n} players taken over.`,
       empty:'(empty)'},
 };
 function sT(k){return SEASON_T[lang]?.[k]??SEASON_T.de[k];}
-function seasonLabel(id){return id.startsWith('W')?`Winter ${id.slice(1)}/${String(+id.slice(1)+1).slice(2)}`:`Sommer ${id.slice(1)}`;}
+function seasonLabel(id){return id.startsWith('W')?`Winter ${id.slice(1)}/${String(+id.slice(1)+1).slice(2)}`:id.startsWith('F')?`Ferienrunde ${id.slice(1)}`:`Sommer ${id.slice(1)}`;}
 let _knownSeasons=null;
 async function renderSeasonSwitch(){
   const sel=document.getElementById('season-switch');if(!sel)return;
@@ -2536,15 +2584,15 @@ async function renderSeasonSwitch(){
     try{const rows=await sbGetAll('teams','select=season_id&order=season_id');_knownSeasons=[...new Set(rows.map(r=>r.season_id).filter(Boolean))];}
     catch(e){console.error(e);_knownSeasons=[];}
   }
-  const ids=[...new Set([..._knownSeasons,ACTIVE_SEASON,PUBLISHED_SEASON])].filter(x=>/^[SW]\d{4}$/.test(x))
-    .sort((a,b)=>a.slice(1).localeCompare(b.slice(1))||(a[0]==='S'?-1:1)); // chronological: S2026, W2026, S2027…
-  sel.innerHTML=ids.map(id=>`<option value="${esc(id)}"${id===ACTIVE_SEASON?' selected':''}>${id===PUBLISHED_SEASON?'● ':'○ '}${esc(seasonLabel(id))}${id===PUBLISHED_SEASON?' · '+sT('live'):''}${_knownSeasons.includes(id)?'':' '+sT('empty')}</option>`).join('')
+  const ids=[...new Set([..._knownSeasons,ACTIVE_SEASON,PUBLISHED_SEASON])].filter(x=>/^[SWF]\d{4}$/.test(x))
+    .sort((a,b)=>a.slice(1).localeCompare(b.slice(1))||'SFW'.indexOf(a[0])-'SFW'.indexOf(b[0])); // chronological: S2026, F2026, W2026, S2027…
+  sel.innerHTML=ids.map(id=>`<option value="${esc(id)}"${id===ACTIVE_SEASON?' selected':''}>${id===PUBLISHED_SEASON||id===FERIEN_SEASON?'● ':'○ '}${esc(seasonLabel(id))}${id===PUBLISHED_SEASON?' · '+sT('live'):id===FERIEN_SEASON?' · '+sT('ferienLive'):''}${_knownSeasons.includes(id)?'':' '+sT('empty')}</option>`).join('')
     +`<option value="__new">${sT('newOpt')}</option>`;
-  const prep=ACTIVE_SEASON!==PUBLISHED_SEASON;
+  const prep=ACTIVE_SEASON!==PUBLISHED_SEASON,fer=isFerienSeason(ACTIVE_SEASON),open=fer&&FERIEN_SEASON===ACTIVE_SEASON;
   const pb=document.getElementById('season-publish');
-  if(pb){pb.style.display=prep?'':'none';pb.textContent=sT('publish')(ACTIVE_SEASON);}
+  if(pb){pb.style.display=prep?'':'none';pb.textContent=fer?sT(open?'ferienOff':'ferienOn')(seasonLabel(ACTIVE_SEASON)):sT('publish')(ACTIVE_SEASON);}
   const bn=document.getElementById('season-prep-banner');
-  if(bn){bn.style.display=prep?'':'none';bn.textContent=sT('banner')(seasonLabel(ACTIVE_SEASON),seasonLabel(PUBLISHED_SEASON));}
+  if(bn){bn.style.display=prep?'':'none';bn.textContent=fer?sT('ferienBanner')(seasonLabel(ACTIVE_SEASON),seasonLabel(PUBLISHED_SEASON),open):sT('banner')(seasonLabel(ACTIVE_SEASON),seasonLabel(PUBLISHED_SEASON));}
 }
 // Admin-only: changes what THIS browser's admin shows. Nobody else is affected.
 function onSeasonSwitch(sel){
@@ -2552,16 +2600,42 @@ function onSeasonSwitch(sel){
   if(v==='__new'){
     v=(prompt(sT('prompt'))||'').trim().toUpperCase();
     if(!v){sel.value=ACTIVE_SEASON;return;}
-    if(!/^[SW]\d{4}$/.test(v)){alert(sT('bad'));sel.value=ACTIVE_SEASON;return;}
+    if(!/^[SWF]\d{4}$/.test(v)){alert(sT('bad'));sel.value=ACTIVE_SEASON;return;}
   }
   if(v===ACTIVE_SEASON){sel.value=ACTIVE_SEASON;return;}
   try{if(v===PUBLISHED_SEASON)localStorage.removeItem(ADMIN_SEASON_KEY);else localStorage.setItem(ADMIN_SEASON_KEY,v);}
   catch(e){alert(ct('storageBlocked'));sel.value=ACTIVE_SEASON;return;}
   location.reload();
 }
+// Ferienrunde: open / close it for players (index), next to the published season. Captains are not affected.
+async function toggleFerienSeason(){
+  const open=FERIEN_SEASON===ACTIVE_SEASON,f=seasonLabel(ACTIVE_SEASON);
+  if(!confirm(open?sT('ferienConfirmOff')(f):sT('ferienConfirmOn')(f,seasonLabel(PUBLISHED_SEASON))))return;
+  try{
+    await sbUpsert('app_settings',[{key:'ferien_season',value:open?'':ACTIVE_SEASON,updated_at:new Date().toISOString()}]);
+    FERIEN_SEASON=open?null:ACTIVE_SEASON;
+    renderSeasonSwitch();
+  }catch(e){console.error(e);alert(e.message);}
+}
+// Ferienrunde: the players are the ones of the published season (same ID-Nr.), copied once; teams are assigned afterwards
+function _personKey(p){return p.idnr?'id:'+p.idnr:'n:'+String(p.name||'').trim().toLowerCase()+'|'+(p.year||'');}
+async function copyPlayersFromPublished(){
+  if(!isFerienSeason(ACTIVE_SEASON))return;
+  try{
+    const src=await sbGetAll('players',`season_id=eq.${PUBLISHED_SEASON}&order=lk,id`);
+    const have=new Set(state.players.map(_personKey));
+    const add=src.filter(p=>!have.has(_personKey(p)));
+    if(!add.length){alert(sT('copyNone'));return;}
+    if(!confirm(sT('copyConfirm')(add.length,seasonLabel(PUBLISHED_SEASON))))return;
+    await sbUpsert('players',add.map(p=>({id:uid(),name:p.name,raw_name:p.raw_name,idnr:p.idnr,lk:p.lk,lk_str:p.lk_str,year:p.year,gender:p.gender,rank:null,season_id:ACTIVE_SEASON})));
+    await loadAll();
+    alert(sT('copyDone')(add.length));
+  }catch(e){console.error(e);alert(e.message);}
+}
 // Propagate: make the season admin is viewing the one everybody uses.
 async function publishSeason(){
   if(ACTIVE_SEASON===PUBLISHED_SEASON)return;
+  if(isFerienSeason(ACTIVE_SEASON))return toggleFerienSeason();
   if(!confirm(sT('confirm')(PUBLISHED_SEASON,ACTIVE_SEASON)))return;
   try{
     await sbUpsert('app_settings',[{key:'active_season',value:ACTIVE_SEASON,updated_at:new Date().toISOString()}]);

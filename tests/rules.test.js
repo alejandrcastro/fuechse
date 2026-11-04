@@ -171,5 +171,34 @@ test('the cell speaks the page language', () => {
   eq(cell(e, 'b', 'h2'), '⚠️ 1× in H I');
 });
 
+console.log('\nFerienrunde (Mixed & Doppel)');
+const ferien = () => [team('mx', 'Mixed', 'Mixed', 1, 'Sommer'), team('mx2', 'Mixed II', 'Mixed', 2, 'Sommer'),
+  team('hd', 'Herren Doppel', 'Herren Doppel', 1, 'Sommer'), team('hd2', 'Herren Doppel II', 'Herren Doppel', 2, 'Sommer'),
+  team('dd', 'Damen 40 Doppel', 'Damen 40 Doppel', 1, 'Sommer')];
+test('sizes: Mixed 6, Doppel 4 (even in a Winter-like setup); Mixed is gender X', () => {
+  const c = load(club({ teams: ferien() }));
+  eq(c.state.teams.map(t => c.teamSize(t)), [6, 6, 4, 4, 4]);
+  eq(['Mixed', 'Herren Doppel', 'Damen 40 Doppel'].map(c.catGender), ['X', 'M', 'F']);
+  eq(c.teamSize(team('w', 'Herren', 'Herren', 1, 'Winter')), 4, 'Winter unchanged:');
+});
+test('no Sperren in the Ferienrunde, whatever the ranks and counts say', () => {
+  const t = ferien();
+  const c = load(club({ teams: t, rank: { a: 1 }, counts: { a: { mx: 3, hd: 3 } } }));
+  eq(c.getPlayerBlockStatus('a', 'Mixed').blocked, []);
+  eq(c.getPlayerBlockStatus('a', 'Herren Doppel').warned, []);
+  eq([c.isPlayerBlockedForTeam('a', 'mx2'), c.isPlayerBlockedForTeam('a', 'hd2'), c.isPlayerBlockedForLineup('a', 'hd2', null)], [false, false, false]);
+});
+test('Sommer rules still apply next to a Ferienrunde', () => {
+  const c = load(club({ teams: [...herren('Sommer'), ...ferien()], rank: { a: 7 }, counts: { a: { mx: 5 } } }));
+  eq(ids(c.getPlayerBlockStatus('a', 'Herren').blocked), 'h3,h4');
+});
+test('Mixed lineup order: 3 Herren, then 3 Damen', () => {
+  const st = club({ teams: ferien() });
+  st.players = ['m1', 'f1', 'm2', 'f2', 'm3', 'f3', 'm4'].map(id => ({ id, name: id, gender: id[0] === 'f' ? 'F' : 'M', teamIds: ['mx'] }));
+  const c = load(st);
+  eq(c.mvOrderedSlots(c.teamById('mx'), ['f1', 'm1', 'f2', 'm2', 'm3', 'm4']), ['m1', 'm2', 'm3', 'f1', 'f2', null]);
+  eq(c.mvOrderedSlots(c.teamById('hd'), ['m1', 'm2', 'm3', 'm4', 'f1']), ['m1', 'm2', 'm3', 'm4']);
+});
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

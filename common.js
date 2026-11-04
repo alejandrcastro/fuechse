@@ -83,7 +83,7 @@ window.spLogin=async function(){
 // ── COMMON TEXTS ── (DE → ES → EN) texts shared by several pages, plus a few that had no translation yet.
 // ct(key) uses the page's current language. Elements with data-ct="key" (or data-ct-ph for a placeholder) are filled by applyCT().
 const CT={
-  de:{fmAllCats:'Alle Altersklassen',fmAll:'Alle',fmNoneCats:'Keine',fmNoneTeams:'Keine',sortNumber:'Nach Mannschaftsnummer',sortAK:'Nach Altersklasse',sortDate:'Nach Datum',sortTeam:'Nach Mannschaft',noMatchesShort:'Keine Spiele',notInLineup:'Nicht aufgestellt',allTeamsShort:'Alle Teams',ovLegend:['Aufstellung','Ersatz','Verfügbar','Im Notfall','Nein','★ Stammmannschaft'],ovYes:'Ja',ovNotfall:'Notfall',allCategories:'Alle Kategorien',noBlockedShort:'Keine aktiven Sperren.',colYear:'Jg.',ovTitle:'Overview',statsTitle:'Statistiken',lkAnalysis:'📊 LK-Analyse',lkAnalysisNote:'<strong>LK-Analyse:</strong> Durchschnittliche Leistungsklassen pro Position, berechnet aus den tatsächlich gespielten Aufstellungen.',teamCol:'Team',stMatchesCol:'Spiele',autoLineup:'⚡ Auto-Aufstellung',spieltagInfo:d=>`Spieltag laut WSpO: <b>${d}</b> – wer an diesem Tag schon gespielt hat, ist gesperrt.`,moveAmtlich:'Verlegung von Amts wegen (Spielleiter)',moveAmtlichSub:d=>`Nur dann gilt der neue Termin als Spieltag. Sonst bleibt der Spieltag ${d} (WSpO § 11 Abs. 4).`,movedFromInfo:(d,t)=>`<b>Verlegt</b> vom ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} Spieler haben für den neuen Termin geantwortet.`,shareBtn:'Teilen',shareTitle:'Aufstellung teilen',shareSub:'Text vor dem Senden anpassen (z.B. Treffpunkt). Die Nachricht ist immer auf Deutsch.',shareWa:'WhatsApp',shareNative:'Teilen…',shareCopy:'Kopieren',shareCopied:'✓ Kopiert',shareClose:'Schließen',moveBtn:'Verlegen',moveTitle:'Spiel verlegen',moveSub:'Es wird ein neuer Termin angelegt. Der alte bleibt als „verlegt“ sichtbar.',moveDate:'Neues Datum',moveTime:'Uhrzeit',movePlace:'Ort',moveNote:'Hinweis (optional)',moveNotePh:'z. B. Halle belegt, mit Gegner abgesprochen',moveKeepLineup:'Aufstellung übernehmen',moveKeepLineupSub:'Die bisherige Aufstellung wird in den neuen Termin kopiert.',moveKeepAvail:'Verfügbarkeiten übernehmen',moveKeepAvailSub:'Aus: Die Spieler werden für den neuen Termin neu abgefragt (empfohlen, weil sich das Datum ändert).',moveNuliga:'Heimspiel: Die Verlegung muss zusätzlich in <strong>nuLiga</strong> eingetragen werden.',moveCancel:'Abbrechen',moveGo:'Verlegen',moveErrMissing:'Bitte Datum und Uhrzeit angeben.',moveErrSame:'Datum, Uhrzeit und Ort sind unverändert.',moveErrSave:'Fehler beim Speichern',
+  de:{nMixed:'Aufstellung (3 Herren + 3 Damen)',nDoppel:'Aufstellung (4 Spieler · 4 Doppel)',ferienLabel:'Mixed & Doppel',mixedMen:'Herren',mixedWomen:'Damen',mixedGender:(pos,want)=>`Pos. ${pos} ist ein ${want}-Platz`,noSperrenFerien:'Mixed & Doppel: keine Sperren (die Regeln der Ferienrunde fehlen noch).',fmAllCats:'Alle Altersklassen',fmAll:'Alle',fmNoneCats:'Keine',fmNoneTeams:'Keine',sortNumber:'Nach Mannschaftsnummer',sortAK:'Nach Altersklasse',sortDate:'Nach Datum',sortTeam:'Nach Mannschaft',noMatchesShort:'Keine Spiele',notInLineup:'Nicht aufgestellt',allTeamsShort:'Alle Teams',ovLegend:['Aufstellung','Ersatz','Verfügbar','Im Notfall','Nein','★ Stammmannschaft'],ovYes:'Ja',ovNotfall:'Notfall',allCategories:'Alle Kategorien',noBlockedShort:'Keine aktiven Sperren.',colYear:'Jg.',ovTitle:'Overview',statsTitle:'Statistiken',lkAnalysis:'📊 LK-Analyse',lkAnalysisNote:'<strong>LK-Analyse:</strong> Durchschnittliche Leistungsklassen pro Position, berechnet aus den tatsächlich gespielten Aufstellungen.',teamCol:'Team',stMatchesCol:'Spiele',autoLineup:'⚡ Auto-Aufstellung',spieltagInfo:d=>`Spieltag laut WSpO: <b>${d}</b> – wer an diesem Tag schon gespielt hat, ist gesperrt.`,moveAmtlich:'Verlegung von Amts wegen (Spielleiter)',moveAmtlichSub:d=>`Nur dann gilt der neue Termin als Spieltag. Sonst bleibt der Spieltag ${d} (WSpO § 11 Abs. 4).`,movedFromInfo:(d,t)=>`<b>Verlegt</b> vom ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} Spieler haben für den neuen Termin geantwortet.`,shareBtn:'Teilen',shareTitle:'Aufstellung teilen',shareSub:'Text vor dem Senden anpassen (z.B. Treffpunkt). Die Nachricht ist immer auf Deutsch.',shareWa:'WhatsApp',shareNative:'Teilen…',shareCopy:'Kopieren',shareCopied:'✓ Kopiert',shareClose:'Schließen',moveBtn:'Verlegen',moveTitle:'Spiel verlegen',moveSub:'Es wird ein neuer Termin angelegt. Der alte bleibt als „verlegt“ sichtbar.',moveDate:'Neues Datum',moveTime:'Uhrzeit',movePlace:'Ort',moveNote:'Hinweis (optional)',moveNotePh:'z. B. Halle belegt, mit Gegner abgesprochen',moveKeepLineup:'Aufstellung übernehmen',moveKeepLineupSub:'Die bisherige Aufstellung wird in den neuen Termin kopiert.',moveKeepAvail:'Verfügbarkeiten übernehmen',moveKeepAvailSub:'Aus: Die Spieler werden für den neuen Termin neu abgefragt (empfohlen, weil sich das Datum ändert).',moveNuliga:'Heimspiel: Die Verlegung muss zusätzlich in <strong>nuLiga</strong> eingetragen werden.',moveCancel:'Abbrechen',moveGo:'Verlegen',moveErrMissing:'Bitte Datum und Uhrzeit angeben.',moveErrSame:'Datum, Uhrzeit und Ort sind unverändert.',moveErrSave:'Fehler beim Speichern',
       countedShort:'Gezählt',movedBadge:'VERLEGT',newBadge:'NEU',movedNewDate:'Neuer Termin',movedOn:(d,u)=>`verlegt am ${d}${u?` von ${u}`:''}`,
       playedOnSpieltag:(n,d,t)=>`⛔ ${n} hat am Spieltag ${d} bereits für ${t} gespielt (WSpO § 10 Abs. 3).`,isBlocked:(n,t)=>`⛔ ${n} ist gesperrt für ${t}`,
       nBlocks:n=>n===1?'1 Sperre in der Aufstellung':`${n} Sperren in der Aufstellung`,nHints:n=>n===1?'1 Hinweis':`${n} Hinweise`,
@@ -116,7 +116,7 @@ const CT={
       wrongPw:'Falsches Passwort',wrongLogin:'Falscher Benutzer oder Passwort',
       tooManyWait:s=>`Zu viele Versuche. Bitte ${s}s warten.`,tooManyLocked:m=>`Zu viele Versuche. ${m} Minute${m>1?'n':''} gesperrt.`,
       capOnly:'Angemeldet · darf nur die eigene Mannschaft bearbeiten'},
-  es:{fmAllCats:'Todas las categorías',fmAll:'Todas',fmNoneCats:'Ninguna',fmNoneTeams:'Ninguno',sortNumber:'Por número de equipo',sortAK:'Por categoría (AK)',sortDate:'Por fecha',sortTeam:'Por equipo',noMatchesShort:'No hay partidos',notInLineup:'No alineados',allTeamsShort:'Todos los equipos',ovLegend:['Aufstellung','Ersatz','Disponible','Si es necesario','No','★ Stammmannschaft'],ovYes:'Sí',ovNotfall:'Si nec.',allCategories:'Todas las categorías',noBlockedShort:'Sin bloqueos activos.',colYear:'Año',ovTitle:'Resumen',statsTitle:'Estadísticas',lkAnalysis:'📊 Análisis de LK',lkAnalysisNote:'<strong>Análisis de LK:</strong> LK promedio por posición, calculada con las alineaciones que realmente jugaron.',teamCol:'Equipo',stMatchesCol:'Partidos',autoLineup:'⚡ Alineación automática',spieltagInfo:d=>`Spieltag según la WSpO: <b>${d}</b>: quien ya jugó ese día está bloqueado.`,moveAmtlich:'Movido de oficio (Spielleiter)',moveAmtlichSub:d=>`Solo así la nueva fecha cuenta como Spieltag. Si no, el Spieltag sigue siendo el ${d} (WSpO § 11 Abs. 4).`,movedFromInfo:(d,t)=>`<b>Movido</b> desde el ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} jugadores respondieron para la nueva fecha.`,shareBtn:'Compartir',shareTitle:'Compartir alineación',shareSub:'Podés editar el texto antes de mandarlo (ej. punto de encuentro). El mensaje sale siempre en alemán.',shareWa:'WhatsApp',shareNative:'Compartir…',shareCopy:'Copiar',shareCopied:'✓ Copiado',shareClose:'Cerrar',moveBtn:'Mover',moveTitle:'Mover partido',moveSub:'Se crea una fecha nueva. La anterior queda visible como „verlegt“.',moveDate:'Nueva fecha',moveTime:'Hora',movePlace:'Lugar',moveNote:'Comentario (opcional)',moveNotePh:'p. ej. cancha ocupada, acordado con el rival',moveKeepLineup:'Mantener alineación',moveKeepLineupSub:'La alineación actual se copia a la nueva fecha.',moveKeepAvail:'Mantener disponibilidades',moveKeepAvailSub:'Desactivado: se vuelve a consultar a los jugadores para la nueva fecha (recomendado, porque cambia el día).',moveNuliga:'Partido de local: el cambio también hay que cargarlo en <strong>nuLiga</strong>.',moveCancel:'Cancelar',moveGo:'Mover',moveErrMissing:'Indicá fecha y hora.',moveErrSame:'Fecha, hora y lugar no cambiaron.',moveErrSave:'Error al guardar',
+  es:{nMixed:'Alineación (3 Herren + 3 Damen)',nDoppel:'Alineación (4 jugadores · 4 dobles)',ferienLabel:'Mixed y Doppel',mixedMen:'Herren',mixedWomen:'Damen',mixedGender:(pos,want)=>`La pos. ${pos} es un lugar de ${want}`,noSperrenFerien:'Mixed y Doppel: sin bloqueos (faltan las reglas de la Ferienrunde).',fmAllCats:'Todas las categorías',fmAll:'Todas',fmNoneCats:'Ninguna',fmNoneTeams:'Ninguno',sortNumber:'Por número de equipo',sortAK:'Por categoría (AK)',sortDate:'Por fecha',sortTeam:'Por equipo',noMatchesShort:'No hay partidos',notInLineup:'No alineados',allTeamsShort:'Todos los equipos',ovLegend:['Aufstellung','Ersatz','Disponible','Si es necesario','No','★ Stammmannschaft'],ovYes:'Sí',ovNotfall:'Si nec.',allCategories:'Todas las categorías',noBlockedShort:'Sin bloqueos activos.',colYear:'Año',ovTitle:'Resumen',statsTitle:'Estadísticas',lkAnalysis:'📊 Análisis de LK',lkAnalysisNote:'<strong>Análisis de LK:</strong> LK promedio por posición, calculada con las alineaciones que realmente jugaron.',teamCol:'Equipo',stMatchesCol:'Partidos',autoLineup:'⚡ Alineación automática',spieltagInfo:d=>`Spieltag según la WSpO: <b>${d}</b>: quien ya jugó ese día está bloqueado.`,moveAmtlich:'Movido de oficio (Spielleiter)',moveAmtlichSub:d=>`Solo así la nueva fecha cuenta como Spieltag. Si no, el Spieltag sigue siendo el ${d} (WSpO § 11 Abs. 4).`,movedFromInfo:(d,t)=>`<b>Movido</b> desde el ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} jugadores respondieron para la nueva fecha.`,shareBtn:'Compartir',shareTitle:'Compartir alineación',shareSub:'Podés editar el texto antes de mandarlo (ej. punto de encuentro). El mensaje sale siempre en alemán.',shareWa:'WhatsApp',shareNative:'Compartir…',shareCopy:'Copiar',shareCopied:'✓ Copiado',shareClose:'Cerrar',moveBtn:'Mover',moveTitle:'Mover partido',moveSub:'Se crea una fecha nueva. La anterior queda visible como „verlegt“.',moveDate:'Nueva fecha',moveTime:'Hora',movePlace:'Lugar',moveNote:'Comentario (opcional)',moveNotePh:'p. ej. cancha ocupada, acordado con el rival',moveKeepLineup:'Mantener alineación',moveKeepLineupSub:'La alineación actual se copia a la nueva fecha.',moveKeepAvail:'Mantener disponibilidades',moveKeepAvailSub:'Desactivado: se vuelve a consultar a los jugadores para la nueva fecha (recomendado, porque cambia el día).',moveNuliga:'Partido de local: el cambio también hay que cargarlo en <strong>nuLiga</strong>.',moveCancel:'Cancelar',moveGo:'Mover',moveErrMissing:'Indicá fecha y hora.',moveErrSame:'Fecha, hora y lugar no cambiaron.',moveErrSave:'Error al guardar',
       countedShort:'Contado',movedBadge:'POSTERGADO',newBadge:'NUEVO',movedNewDate:'Nueva fecha',movedOn:(d,u)=>`movido el ${d}${u?` por ${u}`:''}`,
       playedOnSpieltag:(n,d,t)=>`⛔ ${n} ya jugó el Spieltag ${d} para ${t} (WSpO § 10 Abs. 3).`,isBlocked:(n,t)=>`⛔ ${n} está bloqueado para ${t}`,
       nBlocks:n=>n===1?'1 bloqueo en la alineación':`${n} bloqueos en la alineación`,nHints:n=>n===1?'1 aviso':`${n} avisos`,
@@ -149,7 +149,7 @@ const CT={
       wrongPw:'Contraseña incorrecta',wrongLogin:'Usuario o contraseña incorrectos',
       tooManyWait:s=>`Demasiados intentos. Esperá ${s} s.`,tooManyLocked:m=>`Demasiados intentos. Bloqueado por ${m} minuto${m>1?'s':''}.`,
       capOnly:'Conectado · solo puede editar su propio equipo'},
-  en:{fmAllCats:'All age groups',fmAll:'All',fmNoneCats:'None',fmNoneTeams:'None',sortNumber:'By team number',sortAK:'By age group (AK)',sortDate:'By date',sortTeam:'By team',noMatchesShort:'No matches',notInLineup:'Not in lineup',allTeamsShort:'All teams',ovLegend:['Lineup','Ersatz','Available','If needed','No','★ Stammmannschaft'],ovYes:'Yes',ovNotfall:'If nec.',allCategories:'All categories',noBlockedShort:'No active blocks.',colYear:'Year',ovTitle:'Overview',statsTitle:'Statistics',lkAnalysis:'📊 LK analysis',lkAnalysisNote:'<strong>LK analysis:</strong> average LK per position, from the lineups that actually played.',teamCol:'Team',stMatchesCol:'Matches',autoLineup:'⚡ Auto lineup',spieltagInfo:d=>`Match day per WSpO: <b>${d}</b> – anyone who already played that day is blocked.`,moveAmtlich:'Moved officially (Spielleiter)',moveAmtlichSub:d=>`Only then the new date counts as match day. Otherwise it stays ${d} (WSpO § 11 (4)).`,movedFromInfo:(d,t)=>`<b>Rescheduled</b> from ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} players have answered for the new date.`,shareBtn:'Share',shareTitle:'Share lineup',shareSub:'Edit the text before sending (e.g. meeting point). The message is always in German.',shareWa:'WhatsApp',shareNative:'Share…',shareCopy:'Copy',shareCopied:'✓ Copied',shareClose:'Close',moveBtn:'Reschedule',moveTitle:'Reschedule match',moveSub:'A new date is created. The old one stays visible as “verlegt”.',moveDate:'New date',moveTime:'Time',movePlace:'Venue',moveNote:'Note (optional)',moveNotePh:'e.g. court booked, agreed with opponent',moveKeepLineup:'Keep lineup',moveKeepLineupSub:'The current lineup is copied to the new date.',moveKeepAvail:'Keep availability',moveKeepAvailSub:'Off: players are asked again for the new date (recommended, since the day changes).',moveNuliga:'Home match: the change must also be entered in <strong>nuLiga</strong>.',moveCancel:'Cancel',moveGo:'Reschedule',moveErrMissing:'Please enter date and time.',moveErrSame:'Date, time and venue are unchanged.',moveErrSave:'Error while saving',
+  en:{nMixed:'Lineup (3 Herren + 3 Damen)',nDoppel:'Lineup (4 players · 4 doubles)',ferienLabel:'Mixed & doubles',mixedMen:'Herren',mixedWomen:'Damen',mixedGender:(pos,want)=>`Pos. ${pos} is a ${want} slot`,noSperrenFerien:'Mixed & doubles: no blocks (the Ferienrunde rules are not in yet).',fmAllCats:'All age groups',fmAll:'All',fmNoneCats:'None',fmNoneTeams:'None',sortNumber:'By team number',sortAK:'By age group (AK)',sortDate:'By date',sortTeam:'By team',noMatchesShort:'No matches',notInLineup:'Not in lineup',allTeamsShort:'All teams',ovLegend:['Lineup','Ersatz','Available','If needed','No','★ Stammmannschaft'],ovYes:'Yes',ovNotfall:'If nec.',allCategories:'All categories',noBlockedShort:'No active blocks.',colYear:'Year',ovTitle:'Overview',statsTitle:'Statistics',lkAnalysis:'📊 LK analysis',lkAnalysisNote:'<strong>LK analysis:</strong> average LK per position, from the lineups that actually played.',teamCol:'Team',stMatchesCol:'Matches',autoLineup:'⚡ Auto lineup',spieltagInfo:d=>`Match day per WSpO: <b>${d}</b> – anyone who already played that day is blocked.`,moveAmtlich:'Moved officially (Spielleiter)',moveAmtlichSub:d=>`Only then the new date counts as match day. Otherwise it stays ${d} (WSpO § 11 (4)).`,movedFromInfo:(d,t)=>`<b>Rescheduled</b> from ${d} · ${t}`,movedAnswers:(a,n)=>`${a}/${n} players have answered for the new date.`,shareBtn:'Share',shareTitle:'Share lineup',shareSub:'Edit the text before sending (e.g. meeting point). The message is always in German.',shareWa:'WhatsApp',shareNative:'Share…',shareCopy:'Copy',shareCopied:'✓ Copied',shareClose:'Close',moveBtn:'Reschedule',moveTitle:'Reschedule match',moveSub:'A new date is created. The old one stays visible as “verlegt”.',moveDate:'New date',moveTime:'Time',movePlace:'Venue',moveNote:'Note (optional)',moveNotePh:'e.g. court booked, agreed with opponent',moveKeepLineup:'Keep lineup',moveKeepLineupSub:'The current lineup is copied to the new date.',moveKeepAvail:'Keep availability',moveKeepAvailSub:'Off: players are asked again for the new date (recommended, since the day changes).',moveNuliga:'Home match: the change must also be entered in <strong>nuLiga</strong>.',moveCancel:'Cancel',moveGo:'Reschedule',moveErrMissing:'Please enter date and time.',moveErrSame:'Date, time and venue are unchanged.',moveErrSave:'Error while saving',
       countedShort:'Counted',movedBadge:'RESCHEDULED',newBadge:'NEW',movedNewDate:'New date',movedOn:(d,u)=>`moved on ${d}${u?` by ${u}`:''}`,
       playedOnSpieltag:(n,d,t)=>`⛔ ${n} already played on match day ${d} for ${t} (WSpO § 10 (3)).`,isBlocked:(n,t)=>`⛔ ${n} is blocked for ${t}`,
       nBlocks:n=>n===1?'1 block in the lineup':`${n} blocks in the lineup`,nHints:n=>n===1?'1 note':`${n} notes`,
@@ -208,12 +208,16 @@ function teamNumber(team){
   if(r)return roman[r[1]]||1;
   return 1;
 }
-function teamSize(t){return t&&(t.is_4er||t.season==='Winter')?4:6}
-// Category order: Herren (0) → Damen (1) → Jugend U.. (2); Jugend: U18 → U10, m → w → gemischt
-function catGroup(cat){cat=cat||'';if(/^U\d+/.test(cat))return 2;return /^Damen/i.test(cat)?1:0;}
+// Ferienrunde (Mixed- & Doppelrunde, season id F2027): categories "Mixed", "Herren Doppel", "Herren 35 Doppel", "Damen Doppel", …
+function isMixedCat(cat){return /^Mixed\b/i.test(cat||'');}
+function isFerienCat(cat){return isMixedCat(cat)||/\bDoppel$/i.test(cat||'');}
+// players per team: Mixed 6 (3 Herren + 3 Damen), Doppel 4 (4 doubles in 2 rounds), Winter/4er 4, else 6; plus one Ersatz
+function teamSize(t){if(!t)return 6;if(isFerienCat(t.category))return isMixedCat(t.category)?6:4;return t.is_4er||t.season==='Winter'?4:6;}
+// Category order: Herren (0) → Damen (1) → Jugend U.. (2) → Mixed (3); Jugend: U18 → U10, m → w → gemischt
+function catGroup(cat){cat=cat||'';if(isMixedCat(cat))return 3;if(/^U\d+/.test(cat))return 2;return /^Damen/i.test(cat)?1:0;}
 function catAge(cat){cat=cat||'';const j=cat.match(/^U(\d+)\s*(m|w)?/);if(j)return(100-parseInt(j[1]))+(j[2]==='m'?0:j[2]==='w'?0.1:0.2);return parseInt(cat.replace(/^(Herren|Damen)\s*/,''))||0;}
 function catCmp(a,b){return catGroup(a)-catGroup(b)||catAge(a)-catAge(b);}
-function catGender(cat){if(!cat)return'M';const j=cat.match(/^U\d+\s*(m|w)?$/);if(j)return j[1]==='w'?'F':j[1]==='m'?'M':'X';return cat.toLowerCase().startsWith('damen')?'F':'M';}
+function catGender(cat){if(!cat)return'M';if(isMixedCat(cat))return'X';const j=cat.match(/^U\d+\s*(m|w)?$/);if(j)return j[1]==='w'?'F':j[1]==='m'?'M':'X';return cat.toLowerCase().startsWith('damen')?'F':'M';}
 function teamSortKey(t){
   const g=catGroup(t.category);
   const age=catAge(t.category);
@@ -247,6 +251,8 @@ function getStammkaderTeam(playerId, catGroup){
   return catTeams[catTeams.length-1];
 }
 function getPlayerBlockStatus(playerId, catGroup){
+  // Ferienrunde (Mixed / Doppel): no Sperren until its rules are known — only the same-day hints in the lineup
+  if(isFerienCat(catGroup))return{stammkaderTeam:null,stammkaderTeamNum:null,stammkaderBlocked:[],stammmannschaftBlocked:[],stammmannschaftWarned:[],stammmannschaftSource:'',blocked:[],warned:[]};
   const counts=state.matchCounts[playerId]||{};
   const catTeams=(state.allTeams||state.teams).filter(t=>t.category===catGroup).sort((a,b)=>teamNumber(a)-teamNumber(b));
 
@@ -306,8 +312,10 @@ function playedOnSpieltag(pid,match){
   return state.matches.find(om=>om.id!==match.id&&spieltagOf(om)===st&&om.date<match.date&&playedInMatch(om).includes(pid))||null;
 }
 function isPlayerBlockedForLineup(playerId,teamId,matchId){
+  const team=teamById(teamId);
+  if(team&&isFerienCat(team.category))return false; // Ferienrunde: no Sperren (see getPlayerBlockStatus)
   if(matchId&&playedOnSpieltag(playerId,state.matches.find(x=>x.id===matchId)))return true;
-  const team=teamById(teamId);if(!team)return false;
+  if(!team)return false;
   const status=getPlayerBlockStatus(playerId,team.category);
   return status.blocked.some(b=>b.id===teamId);
 }
@@ -392,6 +400,10 @@ function mvWarningsHtml(match){
     const om=mvOtherLineup(pid,match,false);
     if(om)hints.push(ct('alsoPlays')(esc(p.name),esc(teamById(om.teamId)?.name||'?')));
   }
+  if(isMixedCat(team?.category))lineup.slice(0,size).forEach((pid,i)=>{
+    const p=pid?playerById(pid):null;
+    if(p&&mvGender(p)!==mvSlotGender(i))hints.push(ct('mixedGender')(i+1,ct(mvSlotGender(i)==='M'?'mixedMen':'mixedWomen')));
+  });
   const filled=lineup.slice(0,size).filter(Boolean).length;
   const li=arr=>arr.map(w=>`<li>${w.replace(/^⛔\s*/,'')}</li>`).join('');
   let html='';
@@ -404,13 +416,29 @@ function mvWarningsHtml(match){
   return html;
 }
 // lineup slots + Ersatz. o = {ro, lockMsg, set:'setSlot', drag:'onSlot'} → handlers set(i,value), <drag>DragStart/DragOver/DragLeave/Drop/DragEnd
+// the title above a lineup: "Aufstellung (6 Einzel)"; Mixed and Doppel say what they are
+function lineupTitle(team){return isMixedCat(team?.category)?ct('nMixed'):isFerienCat(team?.category)?ct('nDoppel'):ct('nSingles')(teamSize(team));}
+// what kind of round a team plays: "Sommer" / "Winter", or "Mixed & Doppel" for the Ferienrunde
+function teamKindLabel(team){return isFerienCat(team?.category)?ct('ferienLabel'):seasonKindLabel(team?.season);}
+// Mixed: places 1–3 are for Herren, 4–6 for Damen
+function mvSlotGender(i){return i<3?'M':'F';}
+function mvGender(p){return p?.gender==='F'?'F':'M';}
+// a lineup in the team's order: Mixed keeps 3 Herren, then 3 Damen (each block in the given order); others just fill up
+function mvOrderedSlots(team,ids){
+  const size=teamSize(team);
+  if(!isMixedCat(team?.category))return ids.slice(0,size);
+  const ps=ids.map(playerById).filter(Boolean),h=ps.filter(p=>mvGender(p)==='M').slice(0,3),d=ps.filter(p=>mvGender(p)==='F').slice(0,3);
+  return[0,1,2].map(i=>h[i]?.id||null).concat([0,1,2].map(i=>d[i]?.id||null));
+}
 function mvSlotsHtml(match,o){
   const team=teamById(match.teamId),size=teamSize(team),lineup=state.lineups[match.id]||[],avail=state.availability[match.id]||{};
   const sorted=mvTeamPlayers(match);
   const gl={yes:ct('dropYes'),conditional:ct('dropConditional'),notfall:ct('dropNotfall'),no:ct('dropNo'),'':ct('dropNone')};
-  const opts=sel=>{
+  const mixed=isMixedCat(team?.category);
+  const opts=(sel,g)=>{ // g: 'M' / 'F' = only that gender (Mixed); the chosen player always stays in the list
     let h='<option value="">—</option>',last;
     for(const tp of sorted){
+      if(g&&tp.id!==sel&&mvGender(tp)!==g)continue;
       const bl=isPlayerBlockedForLineup(tp.id,match.teamId,match.id),grp=avail[tp.id]||'';
       if(grp!==last){last=grp;h+=`<option disabled class="opt-group">${gl[grp]}</option>`;}
       h+=`<option value="${tp.id}" ${sel===tp.id?'selected':''}>${bl?'⛔ ':''}${esc(tp.name)} (${esc(tp.lkStr)}) ${avail[tp.id]==='yes'?'✓':avail[tp.id]==='no'?'✗':'?'} ${esc(tp.year||'')}</option>`;
@@ -420,15 +448,16 @@ function mvSlotsHtml(match,o){
   const dis=o.ro?'disabled':'',d=o.drag;
   let html=o.ro?`<div class="mx-locked">🔒 ${o.lockMsg}</div>`:'';
   for(let i=0;i<size;i++){
+    if(mixed&&(i===0||i===3))html+=`<div class="mx-label">${ct(i===0?'mixedMen':'mixedWomen')}</div>`;
     const pid=lineup[i]||'',p=pid?playerById(pid):null;
-    const prev=i>0&&lineup[i-1]?playerById(lineup[i-1]):null;
+    const prev=i>0&&!(mixed&&i===3)&&lineup[i-1]?playerById(lineup[i-1]):null;
     const rankOk=!p||!prev||playerRankInTeam(p.id,match.teamId)>=playerRankInTeam(prev.id,match.teamId);
     const cls=p?(isPlayerBlockedForLineup(pid,match.teamId,match.id)?'blocked-slot':rankOk?'ok':'warning'):'';
     html+=`<div class="lineup-slot ${cls}" ${o.ro?'':'draggable="true"'} data-slot-index="${i}"
       ondragstart="${d}DragStart(event,${i})" ondragover="${d}DragOver(event)" ondragleave="${d}DragLeave(event)" ondrop="${d}Drop(event,${i})" ondragend="${d}DragEnd(event)">
       <span class="drag-handle" title="${ct('dragHint')}">⠿</span>
       <div class="lineup-pos">${i+1}</div>
-      <select ${dis} onchange="${o.set}(${i},this.value)">${opts(pid)}</select>
+      <select ${dis} onchange="${o.set}(${i},this.value)">${opts(pid,mixed?mvSlotGender(i):null)}</select>
     </div>`;
   }
   const ePid=lineup[size]||'',eP=ePid?playerById(ePid):null;
@@ -489,6 +518,7 @@ function mvAvailHtml(match,o={}){
 }
 // "Who played?" under a complete lineup → count the match. o = {canEdit, confirm:'fnName', undo:'fnName'}
 function mvCountHtml(match,o){
+  if(isFerienCat(teamById(match.teamId)?.category))return''; // Ferienrunde: no Sperren, nothing to count
   const size=teamSize(teamById(match.teamId)),lineup=state.lineups[match.id]||[],filled=lineup.slice(0,size).filter(Boolean).length;
   if(match.counted){
     const who=(match.countedPlayers||[]).map(pid=>playerById(pid)?.name).filter(Boolean);
@@ -1077,6 +1107,8 @@ function blockingCategoryHtml(cat,catTeams){
 }
 // fills #block-cat-filter and #blocking-content (same ids in admin and kapitaen)
 function renderBlockingView(teams){
+  const ferien=teams.some(t=>isFerienCat(t.category));
+  teams=teams.filter(t=>!isFerienCat(t.category)); // Ferienrunde: no Sperren (yet)
   const cats=[...new Set(teams.map(t=>t.category))].sort();
   const catSel=document.getElementById('block-cat-filter');
   const curCat=catSel?.value||(cats.includes('Herren')?'Herren':'');
@@ -1087,5 +1119,6 @@ function renderBlockingView(teams){
     const catTeams=teams.filter(t=>t.category===cat).sort((a,b)=>teamNumber(a)-teamNumber(b));
     if(catTeams.length)body+=blockingCategoryHtml(cat,catTeams);
   }
-  document.getElementById('blocking-content').innerHTML=blockingRuleBoxes()+(body||`<div class="empty">${ct('noBlockedShort')}</div>`);
+  document.getElementById('blocking-content').innerHTML=(teams.length||!ferien?blockingRuleBoxes():'')+(body||(ferien?'':`<div class="empty">${ct('noBlockedShort')}</div>`))
+    +(ferien?`<div class="empty">${ct('noSperrenFerien')}</div>`:'');
 }

@@ -72,7 +72,7 @@ input:focus,select:focus{border-color:var(--court)}
 /* Drag & drop lineup slots */
 /* ── VERLEGT ── */
 </style>
-<script src="common.js?v=7"></script>
+<script src="common.js?v=8"></script>
 </head>
 <body>
 
@@ -675,7 +675,7 @@ function renderAvailPanel(){
   const team=teamById(match.teamId);
   document.getElementById('panel-match-title').textContent=`${team?.name||'?'} vs ${match.opponent}`;
   document.getElementById('panel-match-meta').textContent=`${fmtDate(match.date)} · ${match.time} · ${homeAwayLabel(match.home)}`;
-  document.getElementById('lineup-label').textContent=ct('nSingles')(teamSize(team));
+  document.getElementById('lineup-label').textContent=lineupTitle(team);
   // Verlegen: only admins/super users or the team's own login
   const mb=document.getElementById('move-btn');
   if(mb){mb.style.display=canEditTeam(match.teamId)&&!match.counted?'':'none';mb.textContent='⇄ '+tr('moveBtn');}

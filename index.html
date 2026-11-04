@@ -98,7 +98,7 @@ input::placeholder{color:var(--muted)}
 .back-btn:hover{border-color:var(--court);color:var(--court)}
 
 </style>
-<script src="common.js?v=7"></script>
+<script src="common.js?v=8"></script>
 </head>
 <body>
 <div id="sp-login" style="position:fixed;inset:0;background:#0d2015;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:'DM Sans',sans-serif;">
@@ -169,7 +169,13 @@ input::placeholder{color:var(--muted)}
 // ── ACTIVE SEASON ── switched in admin.html (header). Stored in Supabase → app_settings.
 // Format: 'S2026' = Sommer 2026, 'W2026' = Winter 2026/27. The value below is only a fallback.
 let ACTIVE_SEASON='W2026';
-const _seasonReady=(async()=>{const v=await _readSetting('active_season');if(typeof v==='string'&&/^[SW]\d{4}$/.test(v))ACTIVE_SEASON=v;})();
+// a Ferienrunde (Mixed & Doppel, e.g. F2027) can be open next to it: players see and answer both (admin → season switch)
+let FERIEN_SEASON=null;
+const _seasonReady=(async()=>{
+  const[v,f]=await Promise.all([_readSetting('active_season'),_readSetting('ferien_season')]);
+  if(typeof v==='string'&&/^[SW]\d{4}$/.test(v))ACTIVE_SEASON=v;
+  if(typeof f==='string'&&/^F\d{4}$/.test(f))FERIEN_SEASON=f;
+})();
 
 async function sbGet(t,p=''){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{headers:await clubHDR({'Prefer':''})});if(!r.ok)throw new Error(await r.text());return r.json();}
 async function sbUpsert(t,d){const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:await clubHDR({'Prefer':'resolution=merge-duplicates'}),body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());}
@@ -271,9 +277,10 @@ async function loadAll(){
   await _seasonReady;
   try{
     // Active season only (R1) and only the columns that are used (R2): teams + players first, then what belongs to them
+    const seasons=[ACTIVE_SEASON,FERIEN_SEASON].filter(Boolean),sq=seasons.length>1?`in.(${seasons.join(',')})`:`eq.${ACTIVE_SEASON}`;
     const[teams,players]=await Promise.all([
-      sbGet('teams',`season_id=eq.${ACTIVE_SEASON}&order=category,team_number`),
-      sbGetAll('players',`season_id=eq.${ACTIVE_SEASON}&order=lk,id`)
+      sbGet('teams',`season_id=${sq}&order=category,team_number`),
+      sbGetAll('players',`season_id=${sq}&order=lk,id`)
     ]);
     const _tids=teams.map(t=>t.id);
     const[matches,countRows,ptAll]=await Promise.all([
@@ -284,18 +291,26 @@ async function loadAll(){
     const _mids=matches.map(m=>m.id);
     const avRows=await sbGetIn('availability','match_id',_mids,'select=match_id,player_id,status&order=match_id,player_id');
     // Map teams same as admin — camelCase teamNumber so teamNumber() works correctly
-    state.teams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender}));
+    state.teams=teams.map(t=>({id:t.id,name:t.name,liga:t.liga,season:t.season,seasonId:t.season_id,is_4er:t.is_4er||false,category:t.category||'Herren',teamNumber:t.team_number||1,gender:t.gender}));
     const _activeTeamIds=new Set(state.teams.map(t=>t.id));
-    state.players=players.map(p=>({...p,lkStr:p.lk_str,rawName:p.raw_name,year:p.year}));
+    // The same person has one player row per season (Sommer + Ferienrunde) → one entry here, by ID-Nr. (else name + year).
+    // Everything below uses the main row's id; saveAvail() writes the Ferienrunde row's id for Ferienrunde matches.
+    const key=p=>p.idnr?'id:'+p.idnr:'n:'+String(p.name||'').trim().toLowerCase()+'|'+(p.year||'');
+    const mainRows=players.filter(p=>p.season_id!==FERIEN_SEASON),ferRows=FERIEN_SEASON?players.filter(p=>p.season_id===FERIEN_SEASON):[];
+    const byKey=new Map(mainRows.map(p=>[key(p),p.id]));
+    state.alias={};state.ferienId={};
+    for(const p of ferRows){const k=byKey.get(key(p));if(k){state.alias[p.id]=k;state.ferienId[k]=p.id;}}
+    const canon=id=>state.alias[id]||id;
+    state.players=[...mainRows,...ferRows.filter(p=>!state.alias[p.id])].map(p=>({...p,lkStr:p.lk_str,rawName:p.raw_name,year:p.year}));
     const _seasonMatches=matches.filter(m=>_activeTeamIds.has(m.team_id)).map(m=>({...m,teamId:m.team_id}));
     // Verlegt (rescheduled by the captain): original is shown crossed out, answers go to the new match
     state.matches=_seasonMatches.filter(m=>m.status!=='verlegt');
     state.movedMatches=_seasonMatches.filter(m=>m.status==='verlegt');
     state.availability={};
-    for(const r of avRows){if(!AVAIL_STATES.includes(r.status))continue;if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][r.player_id]=r.status;}
+    for(const r of avRows){if(!AVAIL_STATES.includes(r.status))continue;if(!state.availability[r.match_id])state.availability[r.match_id]={};state.availability[r.match_id][canon(r.player_id)]=r.status;}
     state.matchCounts={};
-    for(const r of countRows){if(!state.matchCounts[r.player_id])state.matchCounts[r.player_id]={};state.matchCounts[r.player_id][r.team_id]=r.matches_played;}
-    let ptRows=ptAll;
+    for(const r of countRows){const pid=canon(r.player_id);if(!state.matchCounts[pid])state.matchCounts[pid]={};state.matchCounts[pid][r.team_id]=r.matches_played;}
+    let ptRows=ptAll.map(r=>({...r,player_id:canon(r.player_id)}));
     ptRows=ptRows.filter(r=>_activeTeamIds.has(r.team_id)); // other seasons stay archived
     state.playerTeams=ptRows;
     state.rankByTeam={};
@@ -384,8 +399,10 @@ async function quickAvail(matchId,status,event){
     const thisMatch=state.matches.find(m=>m.id===matchId);
     if(thisMatch){
       // Check for other yes/conditional on same day
+      const season=teamById(thisMatch.team_id)?.seasonId; // Sommer and Ferienrunde are separate competitions
       const sameDay=state.matches.filter(m=>
         m.id!==matchId &&
+        teamById(m.team_id)?.seasonId===season &&
         spieltagOf(m)===spieltagOf(thisMatch) &&
         (state.availability[m.id]?.[pid]==='yes'||state.availability[m.id]?.[pid]==='conditional')
       );
@@ -434,11 +451,16 @@ async function applyPriority(mainMatchId, allMatchIds, pid){
   renderMatchList();
 }
 
+// the player row of the match's season: a Ferienrunde match is answered with the Ferienrunde row (same person)
+function dbPlayerId(pid,matchId){
+  const m=state.matches.find(x=>x.id===matchId),t=m&&teamById(m.team_id);
+  return t&&t.seasonId===FERIEN_SEASON&&state.ferienId?.[pid]?state.ferienId[pid]:pid;
+}
 async function saveAvail(matchId, pid, status){
   if(!state.availability[matchId])state.availability[matchId]={};
   state.availability[matchId][pid]=status;
   try{
-    await sbUpsert('availability',[{match_id:matchId,player_id:pid,status}]);
+    await sbUpsert('availability',[{match_id:matchId,player_id:dbPlayerId(pid,matchId),status}]);
   }catch(e){console.error(e);}
 }
 
