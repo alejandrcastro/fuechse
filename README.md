@@ -138,7 +138,7 @@ When a player confirms for two matches on the same day, a priority modal appears
 Players answer whether they want to play in the next competition.
 
 - **Active survey** (season ID, competition `sommer` | `ferienrunde` | `winter`, AK year, deadline) is set in **admin.html → Umfrage**.
-- Name search uses the roster of the active season; people not on the list enter name, Jahrgang, Herren/Damen and LK manually.
+- Name search uses the roster of the active season; people not on the list enter name, full date of birth, nationality (ISO alpha-3, Germany preset), Herren/Damen and LK manually (`sql/survey_new_people.sql` adds the two columns).
 - Categories offered = Herren/Damen + the Altersklassen the person is eligible for (AK X = turns X in `SURVEY.year`), configured in `AK`. Ferienrunde shows Mixed + Doppel categories.
 - Answering again with the same name overwrites the previous answer (unique on `season_id, competition, name_key`).
 - Results: **admin.html → Umfrage** tab (summary per category, full list, delete, CSV export).

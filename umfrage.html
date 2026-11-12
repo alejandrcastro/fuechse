@@ -28,8 +28,9 @@ main{padding:20px 16px;max-width:480px;margin:0 auto}
 .q{font-size:13px;font-weight:600;margin-bottom:10px}
 .q .opt-l{color:var(--muted);font-weight:400}
 .hint{font-size:11px;color:var(--muted);margin-top:-6px;margin-bottom:10px}
-input,textarea{background:#1b2d24;border:1px solid var(--line);border-radius:8px;color:var(--white);padding:10px 14px;font-family:inherit;font-size:14px;outline:none;width:100%;transition:border-color .2s}
-input:focus,textarea:focus{border-color:var(--court)}
+input,textarea,select{background:#1b2d24;border:1px solid var(--line);border-radius:8px;color:var(--white);padding:10px 14px;font-family:inherit;font-size:14px;outline:none;width:100%;transition:border-color .2s}
+input:focus,textarea:focus,select:focus{border-color:var(--court)}
+input[type=date]{color-scheme:dark}
 input::placeholder,textarea::placeholder{color:var(--muted)}
 .ac-wrap{position:relative}
 .ac-list{position:absolute;top:100%;left:0;right:0;background:#243330;border:1px solid #3a5a48;border-radius:10px;z-index:50;max-height:240px;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,.35);margin-top:4px}
@@ -121,9 +122,10 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
     <div id="mode-new" class="hidden">
       <input id="new-name" autocomplete="off" oninput="onNameChange()">
       <div class="row">
-        <div><div class="lbl" id="t-year"></div><input id="new-year" type="number" inputmode="numeric" min="1920" max="2025" oninput="renderChips()"></div>
+        <div><div class="lbl" id="t-birth"></div><input id="new-birth" type="date" min="1920-01-01" oninput="renderChips()" onchange="renderChips()"></div>
         <div><div class="lbl">LK</div><input id="new-lk" inputmode="decimal"></div>
       </div>
+      <div class="row"><div><div class="lbl" id="t-nat"></div><select id="new-nat"></select></div></div>
       <span class="link" id="t-backtolist" onclick="setMode('found')"></span>
     </div>
     <div id="gender-wrap" class="hidden" style="margin-top:10px">
@@ -219,14 +221,14 @@ const T={
     year:'Jahrgang',lkPh:'z.B. 18 · leer = weiß nicht',men:'Herren',women:'Damen',
     participate:'Möchtest du mitspielen?',yes:'✓ Ja',no:'✗ Nein',
     cats:'In welchen Kategorien?',catsHint:'Tippe in der Reihenfolge deiner Priorität — zuerst dein Wunschteam. Nur passende Altersklassen werden angezeigt.',catsReset:'Reihenfolge zurücksetzen',
-    catsNeed:'Gib Jahrgang und Herren/Damen an, dann erscheinen die Kategorien.',from:'ab Jg.',
+    catsNeed:'Gib Geburtsdatum und Herren/Damen an, dann erscheinen die Kategorien.',birth:'Geburtsdatum',nat:'Nationalität',from:'ab Jg.',
     commit:'Wie oft kannst du spielen?',cAll:'(Fast) jeden Spieltag',cHalf:'Etwa die Hälfte',cErsatz:'Nur als Ersatz',
     captain:'Würdest du eine Mannschaft als Mannschaftsführer:in übernehmen?',
     comment:'Anmerkungen',optional:'(optional)',commentPh:'z.B. im Juni 3 Wochen im Urlaub',
     submit:'Antwort absenden',saving:'Speichern...',
     deadline:'Antworten bis {d} · später noch änderbar',
     existing:'Du hast schon geantwortet ({d}). Wenn du jetzt absendest, wird deine Antwort überschrieben.',
-    errName:'Bitte gib deinen Namen an.',errGender:'Bitte wähle Herren oder Damen.',errYear:'Bitte gib deinen Jahrgang an.',
+    errName:'Bitte gib deinen Namen an.',errGender:'Bitte wähle Herren oder Damen.',errYear:'Bitte gib dein Geburtsdatum an.',
     errPart:'Bitte wähle Ja oder Nein.',errCats:'Bitte wähle mindestens eine Kategorie.',errCommit:'Bitte gib an, wie oft du spielen kannst.',
     errSave:'Speichern fehlgeschlagen. Bitte nochmal versuchen.',
     thanks:'Danke!',thanksSub:'Deine Antwort ist gespeichert.',edit:'Antwort ändern',
@@ -239,14 +241,14 @@ const T={
     year:'Año de nacimiento',lkPh:'ej. 18 · vacío = no sé',men:'Herren',women:'Damen',
     participate:'¿Querés jugar?',yes:'✓ Sí',no:'✗ No',
     cats:'¿En qué categorías?',catsHint:'Tocalas en orden de prioridad — primero tu equipo preferido. Solo aparecen las categorías de edad que te corresponden.',catsReset:'Reiniciar orden',
-    catsNeed:'Indicá año de nacimiento y Herren/Damen para ver las categorías.',from:'desde',
+    catsNeed:'Indicá fecha de nacimiento y Herren/Damen para ver las categorías.',birth:'Fecha de nacimiento',nat:'Nacionalidad',from:'desde',
     commit:'¿Cuántas fechas podés jugar?',cAll:'(Casi) todas',cHalf:'Más o menos la mitad',cErsatz:'Solo como suplente',
     captain:'¿Te animarías a ser capitán/capitana de un equipo?',
     comment:'Comentarios',optional:'(opcional)',commentPh:'ej. en junio 3 semanas de vacaciones',
     submit:'Enviar respuesta',saving:'Guardando...',
     deadline:'Respuestas hasta el {d} · después se puede cambiar',
     existing:'Ya respondiste ({d}). Si enviás ahora, se reemplaza tu respuesta.',
-    errName:'Poné tu nombre.',errGender:'Elegí Herren o Damen.',errYear:'Poné tu año de nacimiento.',
+    errName:'Poné tu nombre.',errGender:'Elegí Herren o Damen.',errYear:'Poné tu fecha de nacimiento.',
     errPart:'Elegí Sí o No.',errCats:'Elegí al menos una categoría.',errCommit:'Indicá cuántas fechas podés jugar.',
     errSave:'No se pudo guardar. Probá de nuevo.',
     thanks:'¡Gracias!',thanksSub:'Tu respuesta quedó guardada.',edit:'Cambiar respuesta',
@@ -259,14 +261,14 @@ const T={
     year:'Year of birth',lkPh:'e.g. 18 · empty = don\'t know',men:'Men',women:'Women',
     participate:'Do you want to play?',yes:'✓ Yes',no:'✗ No',
     cats:'Which categories?',catsHint:'Tap in order of priority — your preferred team first. Only age groups you are eligible for are shown.',catsReset:'Reset order',
-    catsNeed:'Enter year of birth and Men/Women to see the categories.',from:'born ≤',
+    catsNeed:'Enter date of birth and Men/Women to see the categories.',birth:'Date of birth',nat:'Nationality',from:'born ≤',
     commit:'How often can you play?',cAll:'(Almost) every match day',cHalf:'About half',cErsatz:'Only as a substitute',
     captain:'Would you take on a team as captain?',
     comment:'Comments',optional:'(optional)',commentPh:'e.g. 3 weeks on holiday in June',
     submit:'Send answer',saving:'Saving...',
     deadline:'Answers by {d} · can be changed later',
     existing:'You already answered ({d}). Sending now will overwrite your answer.',
-    errName:'Please enter your name.',errGender:'Please choose Men or Women.',errYear:'Please enter your year of birth.',
+    errName:'Please enter your name.',errGender:'Please choose Men or Women.',errYear:'Please enter your date of birth.',
     errPart:'Please choose Yes or No.',errCats:'Please choose at least one category.',errCommit:'Please say how often you can play.',
     errSave:'Saving failed. Please try again.',
     thanks:'Thanks!',thanksSub:'Your answer has been saved.',edit:'Change answer',
@@ -298,7 +300,7 @@ function applyT(){
   document.getElementById('new-name').placeholder=tr('namePh');
   document.getElementById('new-lk').placeholder=tr('lkPh');
   document.getElementById('comment').placeholder=tr('commentPh');
-  setText('t-notinlist',tr('notInList'));setText('t-backtolist',tr('backToList'));setText('t-year',tr('year'));
+  setText('t-notinlist',tr('notInList'));setText('t-backtolist',tr('backToList'));setText('t-birth',tr('birth'));setText('t-nat',tr('nat'));fillNationality();
   setText('t-men',tr('men'));setText('t-women',tr('women'));
   setText('t-participate',tr('participate'));setText('t-yes1',tr('yes'));setText('t-no1',tr('no'));
   setText('t-yes2',tr('yes'));setText('t-no2',tr('no'));
@@ -306,6 +308,7 @@ function applyT(){
   setText('t-commit',tr('commit'));setText('t-c-all',tr('cAll'));setText('t-c-half',tr('cHalf'));setText('t-c-ersatz',tr('cErsatz'));
   setText('t-captain',tr('captain'));setText('t-comment',tr('comment'));setText('t-optional',tr('optional'));
   setText('submit',tr('submit'));setText('t-deadline',SURVEY.deadline?tr('deadline').replace('{d}',SURVEY.deadline):'');
+  document.getElementById('new-birth').max=new Date().toLocaleDateString('sv-SE');
   setText('t-thanks',tr('thanks'));setText('t-thankssub',tr('thanksSub'));setText('t-edit',tr('edit'));
   if(players.length===0&&!document.getElementById('find-status').dataset.err)setText('find-status',tr('loading'));
   renderChips();updateExistingNotice();
@@ -374,8 +377,19 @@ function syncGender(){
   document.querySelectorAll('#gender button').forEach(b=>b.classList.toggle('on',b.dataset.v===form.gender));
 }
 
+// ── New people (not in the list): full date of birth + nationality (ISO 3166-1 alpha-3, Germany by default) ──
+const ISO3='ABWAW,AFGAF,AGOAO,AIAAI,ALAAX,ALBAL,ANDAD,AREAE,ARGAR,ARMAM,ASMAS,ATAAQ,ATFTF,ATGAG,AUSAU,AUTAT,AZEAZ,BDIBI,BELBE,BENBJ,BESBQ,BFABF,BGDBD,BGRBG,BHRBH,BHSBS,BIHBA,BLMBL,BLRBY,BLZBZ,BMUBM,BOLBO,BRABR,BRBBB,BRNBN,BTNBT,BVTBV,BWABW,CAFCF,CANCA,CCKCC,CHECH,CHLCL,CHNCN,CIVCI,CMRCM,CODCD,COGCG,COKCK,COLCO,COMKM,CPVCV,CRICR,CUBCU,CUWCW,CXRCX,CYMKY,CYPCY,CZECZ,DEUDE,DJIDJ,DMADM,DNKDK,DOMDO,DZADZ,ECUEC,EGYEG,ERIER,ESHEH,ESPES,ESTEE,ETHET,FINFI,FJIFJ,FLKFK,FRAFR,FROFO,FSMFM,GABGA,GBRGB,GEOGE,GGYGG,GHAGH,GIBGI,GINGN,GLPGP,GMBGM,GNBGW,GNQGQ,GRCGR,GRDGD,GRLGL,GTMGT,GUFGF,GUMGU,GUYGY,HKGHK,HMDHM,HNDHN,HRVHR,HTIHT,HUNHU,IDNID,IMNIM,INDIN,IOTIO,IRLIE,IRNIR,IRQIQ,ISLIS,ISRIL,ITAIT,JAMJM,JEYJE,JORJO,JPNJP,KAZKZ,KENKE,KGZKG,KHMKH,KIRKI,KNAKN,KORKR,KWTKW,LAOLA,LBNLB,LBRLR,LBYLY,LCALC,LIELI,LKALK,LSOLS,LTULT,LUXLU,LVALV,MACMO,MAFMF,MARMA,MCOMC,MDAMD,MDGMG,MDVMV,MEXMX,MHLMH,MKDMK,MLIML,MLTMT,MMRMM,MNEME,MNGMN,MNPMP,MOZMZ,MRTMR,MSRMS,MTQMQ,MUSMU,MWIMW,MYSMY,MYTYT,NAMNA,NCLNC,NERNE,NFKNF,NGANG,NICNI,NIUNU,NLDNL,NORNO,NPLNP,NRUNR,NZLNZ,OMNOM,PAKPK,PANPA,PCNPN,PERPE,PHLPH,PLWPW,PNGPG,POLPL,PRIPR,PRKKP,PRTPT,PRYPY,PSEPS,PYFPF,QATQA,REURE,ROURO,RUSRU,RWARW,SAUSA,SDNSD,SENSN,SGPSG,SGSGS,SHNSH,SJMSJ,SLBSB,SLESL,SLVSV,SMRSM,SOMSO,SPMPM,SRBRS,SSDSS,STPST,SURSR,SVKSK,SVNSI,SWESE,SWZSZ,SXMSX,SYCSC,SYRSY,TCATC,TCDTD,TGOTG,THATH,TJKTJ,TKLTK,TKMTM,TLSTL,TONTO,TTOTT,TUNTN,TURTR,TUVTV,TWNTW,TZATZ,UGAUG,UKRUA,UMIUM,URYUY,USAUS,UZBUZ,VATVA,VCTVC,VENVE,VGBVG,VIRVI,VNMVN,VUTVU,WLFWF,WSMWS,YEMYE,ZAFZA,ZMBZM,ZWEZW'.split(',').map(x=>[x.slice(0,3),x.slice(3)]); // [alpha-3, alpha-2]
+function fillNationality(){
+  const sel=document.getElementById('new-nat');if(!sel)return;
+  const cur=sel.value||'DEU';
+  let names=null;try{names=new Intl.DisplayNames([lang],{type:'region'});}catch(e){}
+  const label=([a3,a2])=>{let n='';try{n=names?names.of(a2):'';}catch(e){}return n&&n!==a2?`${n} (${a3})`:a3;};
+  const opts=ISO3.map(c=>[c[0],label(c)]).sort((a,b)=>a[1].localeCompare(b[1],lang));
+  sel.innerHTML=opts.map(([v,l])=>`<option value="${v}"${v===cur?' selected':''}>${esc(l)}</option>`).join('');
+}
+function birthDate(){const v=document.getElementById('new-birth').value;return /^\d{4}-\d{2}-\d{2}$/.test(v)?v:null;}
 function currentName(){return mode==='found'?(selected?.name||''):document.getElementById('new-name').value.trim();}
-function currentYear(){return mode==='found'?parseInt(selected?.year)||null:parseInt(document.getElementById('new-year').value)||null;}
+function currentYear(){return mode==='found'?parseInt(selected?.year)||null:(birthDate()?parseInt(birthDate()):null);}
 
 // ── Categories: base + Altersklassen the player is eligible for ──
 function availableCats(){
@@ -444,7 +458,8 @@ function prefillFromExisting(){
   if(!ex||ex.id===lastPrefilled)return;
   lastPrefilled=ex.id;
   if(mode==='new'){
-    if(ex.birth_year)document.getElementById('new-year').value=ex.birth_year;
+    if(ex.birth_date)document.getElementById('new-birth').value=ex.birth_date;
+    if(ex.nationality)document.getElementById('new-nat').value=ex.nationality;
     if(ex.lk)document.getElementById('new-lk').value=ex.lk;
   }
   if(ex.gender&&!form.gender)form.gender=ex.gender;
@@ -483,6 +498,7 @@ async function submit(){
     captain:form.participates?form.captain:null,
     comment:document.getElementById('comment').value.trim()||null,
   };
+  if(mode==='new'){row.birth_date=birthDate();row.nationality=document.getElementById('new-nat').value||'DEU';} // only for people not in the list
   const btn=document.getElementById('submit');btn.disabled=true;showMsg(tr('saving'));
   try{
     await sbUpsert('survey_responses',[row],'season_id,competition,name_key');

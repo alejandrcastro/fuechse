@@ -2346,7 +2346,7 @@ const UM_T={
     none:'Noch keine Antworten.',loading:'Lade...',err:'Fehler beim Laden (Tabelle survey_responses angelegt?).',
     answers:'Antworten',yes:'Ja',no:'Nein',captains:'MF-Kandidaten',
     byCat:'Zusagen pro Kategorie',cat:'Kategorie',total:'Ja',first:'1. Wahl',all:'Jeder Spieltag',half:'Hälfte',ersatz:'Ersatz',
-    list:'Alle Antworten',name:'Name',lk:'LK',year:'Jg.',part:'Spielt',cats:'Kategorien',freq:'Häufigkeit',mf:'MF',comment:'Anmerkung',date:'Datum',
+    list:'Alle Antworten',name:'Name',lk:'LK',year:'Jg.',nat:'Nat.',part:'Spielt',cats:'Kategorien',freq:'Häufigkeit',mf:'MF',comment:'Anmerkung',date:'Datum',
     newP:'neu',del:'Antwort von {n} löschen?',
     freqL:{all:'jeder Spieltag',half:'Hälfte',ersatz:'Ersatz'}},
   es:{title:'Encuesta',sub:'Respuestas de umfrage.html · una encuesta por temporada y competencia',reload:'↻ Recargar',csv:'↓ CSV',
@@ -2355,7 +2355,7 @@ const UM_T={
     none:'Todavía no hay respuestas.',loading:'Cargando...',err:'Error al cargar (¿está creada la tabla survey_responses?).',
     answers:'Respuestas',yes:'Sí',no:'No',captains:'Candidatos a MF',
     byCat:'Confirmados por categoría',cat:'Categoría',total:'Sí',first:'1ª opción',all:'Todas las fechas',half:'Mitad',ersatz:'Suplente',
-    list:'Todas las respuestas',name:'Nombre',lk:'LK',year:'Año',part:'Juega',cats:'Categorías',freq:'Frecuencia',mf:'MF',comment:'Comentario',date:'Fecha',
+    list:'Todas las respuestas',name:'Nombre',lk:'LK',year:'Año',nat:'Nac.',part:'Juega',cats:'Categorías',freq:'Frecuencia',mf:'MF',comment:'Comentario',date:'Fecha',
     newP:'nuevo',del:'¿Borrar la respuesta de {n}?',
     freqL:{all:'todas',half:'mitad',ersatz:'suplente'}},
   en:{title:'Survey',sub:'Answers from umfrage.html · one survey per season and competition',reload:'↻ Reload',csv:'↓ CSV',
@@ -2364,7 +2364,7 @@ const UM_T={
     none:'No answers yet.',loading:'Loading...',err:'Loading failed (is the survey_responses table created?).',
     answers:'Answers',yes:'Yes',no:'No',captains:'Captain candidates',
     byCat:'Commitments per category',cat:'Category',total:'Yes',first:'1st choice',all:'Every match day',half:'Half',ersatz:'Substitute',
-    list:'All answers',name:'Name',lk:'LK',year:'Born',part:'Plays',cats:'Categories',freq:'Frequency',mf:'Capt.',comment:'Comment',date:'Date',
+    list:'All answers',name:'Name',lk:'LK',year:'Born',nat:'Nat.',part:'Plays',cats:'Categories',freq:'Frequency',mf:'Capt.',comment:'Comment',date:'Date',
     newP:'new',del:'Delete the answer from {n}?',
     freqL:{all:'every match day',half:'half',ersatz:'substitute'}},
 };
@@ -2423,7 +2423,7 @@ function _umDate(d){return d?new Date(d).toLocaleDateString(lang==='en'?'en-GB':
 function _umAnswerRow(r){
   return `<tr>
         <td class="b nowrap">${esc(r.name)}${r.player_id?'':` <span class="um-new">${umT('newP')}</span>`}</td>
-        <td>${esc(r.lk||'—')}</td><td>${esc(r.birth_year||'')}</td>
+        <td>${esc(r.lk||'—')}</td><td class="nowrap">${r.birth_date?esc(_umDate(r.birth_date)):esc(r.birth_year||'')}</td><td>${esc(r.nationality||'')}</td>
         <td class="um-part${r.participates?'':' is-no'}">${r.participates?'✓ '+umT('yes'):'✗ '+umT('no')}</td>
         <td>${(r.categories||[]).map((c,i)=>`<span class="nowrap"><b class="c-court">${i+1}.</b> ${esc(c)}</span>`).join(' &nbsp;')}</td>
         <td>${r.commitment?esc(umT('freqL')[r.commitment]):''}</td>
@@ -2436,7 +2436,7 @@ function _umAnswerRow(r){
 // all answers: who plays first, then by name
 function _umAnswersTable(rows){
   const sorted=[...rows].sort((a,b)=>(b.participates-a.participates)||a.name.localeCompare(b.name,'de'));
-  return `<table class="avail-table">${_umHeadRow(['name','lk','year','part','cats','freq','mf','comment','date',''])}<tbody>
+  return `<table class="avail-table">${_umHeadRow(['name','lk','year','nat','part','cats','freq','mf','comment','date',''])}<tbody>
       ${sorted.map(_umAnswerRow).join('')}
       </tbody></table>`;
 }
@@ -2474,9 +2474,9 @@ function exportUmfrageCSV(){
   if(!_umRows)return;
   const cur=document.getElementById('um-survey').value;
   const rows=_umRows.filter(r=>umKey(r)===cur);
-  const head=['Name','LK','Jahrgang','Geschlecht','Spielt','Kategorien (Priorität)','Häufigkeit','Mannschaftsführer','Anmerkung','Im Kader','Datum'];
+  const head=['Name','LK','Jahrgang','Geburtsdatum','Nationalität','Geschlecht','Spielt','Kategorien (Priorität)','Häufigkeit','Mannschaftsführer','Anmerkung','Im Kader','Datum'];
   const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
-  const lines=[head.map(q).join(';'),...rows.map(r=>[r.name,r.lk,r.birth_year,r.gender,r.participates?'Ja':'Nein',(r.categories||[]).map((c,i)=>`${i+1}. ${c}`).join(', '),r.commitment?UM_T.de.freqL[r.commitment]:'',r.participates?(r.captain?'Ja':'Nein'):'',r.comment,r.player_id?'Ja':'Nein',(r.updated_at||'').slice(0,10)].map(q).join(';'))];
+  const lines=[head.map(q).join(';'),...rows.map(r=>[r.name,r.lk,r.birth_year,r.birth_date||'',r.nationality||'',r.gender,r.participates?'Ja':'Nein',(r.categories||[]).map((c,i)=>`${i+1}. ${c}`).join(', '),r.commitment?UM_T.de.freqL[r.commitment]:'',r.participates?(r.captain?'Ja':'Nein'):'',r.comment,r.player_id?'Ja':'Nein',(r.updated_at||'').slice(0,10)].map(q).join(';'))];
   const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Umfrage_${cur.replace('|','_')}.csv`;a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
