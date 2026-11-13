@@ -30,7 +30,9 @@ main{padding:20px 16px;max-width:480px;margin:0 auto}
 .hint{font-size:11px;color:var(--muted);margin-top:-6px;margin-bottom:10px}
 input,textarea,select{background:#1b2d24;border:1px solid var(--line);border-radius:8px;color:var(--white);padding:10px 14px;font-family:inherit;font-size:14px;outline:none;width:100%;transition:border-color .2s}
 input:focus,textarea:focus,select:focus{border-color:var(--court)}
-input[type=date]{color-scheme:dark}
+/* iOS Safari: the date field keeps its own width, height and centred text unless told otherwise */
+input[type=date]{color-scheme:dark;-webkit-appearance:none;appearance:none;display:block;min-width:0;height:40px;text-align:left}
+input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
 input::placeholder,textarea::placeholder{color:var(--muted)}
 .ac-wrap{position:relative}
 .ac-list{position:absolute;top:100%;left:0;right:0;background:#243330;border:1px solid #3a5a48;border-radius:10px;z-index:50;max-height:240px;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,.35);margin-top:4px}
@@ -54,7 +56,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex-shrink:0}
 .opt.on .dot{border-color:var(--court);background:radial-gradient(var(--court) 45%,transparent 50%)}
 .link{font-size:12px;color:var(--court);margin-top:10px;cursor:pointer;text-decoration:underline;display:inline-block}
-.row{display:flex;gap:10px;margin-top:10px}.row>div{flex:1}
+.row{display:flex;gap:10px;margin-top:10px}.row>div{flex:1;min-width:0}
 .lbl{font-size:11px;color:var(--muted);margin-bottom:4px}
 .btn{display:block;width:100%;padding:14px;border-radius:10px;border:none;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;background:var(--green);color:#fff;margin-top:6px;transition:all .2s}
 .btn:hover{background:var(--court);color:var(--dark)}
