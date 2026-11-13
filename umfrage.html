@@ -31,6 +31,7 @@ main{padding:20px 16px;max-width:480px;margin:0 auto}
 input,textarea,select{background:#1b2d24;border:1px solid var(--line);border-radius:8px;color:var(--white);padding:10px 14px;font-family:inherit;font-size:14px;outline:none;width:100%;transition:border-color .2s}
 input:focus,textarea:focus,select:focus{border-color:var(--court)}
 /* iOS Safari: the date field keeps its own width, height and centred text unless told otherwise */
+select{height:40px}
 input[type=date]{color-scheme:dark;-webkit-appearance:none;appearance:none;display:block;min-width:0;height:40px;text-align:left}
 input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
 input::placeholder,textarea::placeholder{color:var(--muted)}
@@ -128,7 +129,7 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
       </div>
       <div class="row">
         <div><div class="lbl" id="t-birth"></div><input id="new-birth" type="date" min="1920-01-01" oninput="renderChips()" onchange="renderChips()"></div>
-        <div><div class="lbl">LK</div><input id="new-lk" inputmode="decimal"></div>
+        <div><div class="lbl">LK</div><select id="new-lk"></select></div>
       </div>
       <div class="row"><div><div class="lbl" id="t-nat"></div><select id="new-nat"></select></div></div>
       <span class="link" id="t-backtolist" onclick="setMode('found')"></span>
@@ -223,7 +224,7 @@ const T={
     sub:'Damit wir planen können, wie viele Mannschaften wir melden. Dauert 1 Minute.',
     who:'Wer bist du?',searchPh:'Namen eingeben...',loading:'Lade Spieler...',loadErr:'Verbindungsfehler. Bitte Seite neu laden.',
     notInList:'Ich bin nicht in der Liste →',backToList:'← Doch in der Liste suchen',lastName:'Nachname',firstName:'Vorname',
-    year:'Jahrgang',lkPh:'z.B. 18 · leer = weiß nicht',men:'Herren',women:'Damen',
+    year:'Jahrgang',lkUnknown:'weiß nicht',men:'Herren',women:'Damen',
     participate:'Möchtest du mitspielen?',yes:'✓ Ja',no:'✗ Nein',
     cats:'In welchen Kategorien?',catsHint:'Tippe in der Reihenfolge deiner Priorität — zuerst dein Wunschteam. Nur passende Altersklassen werden angezeigt.',catsReset:'Reihenfolge zurücksetzen',
     catsNeed:'Gib Geburtsdatum und Herren/Damen an, dann erscheinen die Kategorien.',birth:'Geburtsdatum',nat:'Nationalität',from:'ab Jg.',
@@ -243,7 +244,7 @@ const T={
     sub:'Para planificar cuántos equipos anotamos. Lleva 1 minuto.',
     who:'¿Quién sos?',searchPh:'Escribí tu nombre...',loading:'Cargando jugadores...',loadErr:'Error de conexión. Recargá la página.',
     notInList:'No estoy en la lista →',backToList:'← Buscar en la lista',lastName:'Apellido',firstName:'Nombre',
-    year:'Año de nacimiento',lkPh:'ej. 18 · vacío = no sé',men:'Herren',women:'Damen',
+    year:'Año de nacimiento',lkUnknown:'no sé',men:'Herren',women:'Damen',
     participate:'¿Querés jugar?',yes:'✓ Sí',no:'✗ No',
     cats:'¿En qué categorías?',catsHint:'Tocalas en orden de prioridad — primero tu equipo preferido. Solo aparecen las categorías de edad que te corresponden.',catsReset:'Reiniciar orden',
     catsNeed:'Indicá fecha de nacimiento y Herren/Damen para ver las categorías.',birth:'Fecha de nacimiento',nat:'Nacionalidad',from:'desde',
@@ -263,7 +264,7 @@ const T={
     sub:'So we can plan how many teams to register. Takes 1 minute.',
     who:'Who are you?',searchPh:'Type your name...',loading:'Loading players...',loadErr:'Connection error. Please reload.',
     notInList:'I\'m not on the list →',backToList:'← Search the list instead',lastName:'Last name',firstName:'First name',
-    year:'Year of birth',lkPh:'e.g. 18 · empty = don\'t know',men:'Men',women:'Women',
+    year:'Year of birth',lkUnknown:'don\'t know',men:'Men',women:'Women',
     participate:'Do you want to play?',yes:'✓ Yes',no:'✗ No',
     cats:'Which categories?',catsHint:'Tap in order of priority — your preferred team first. Only age groups you are eligible for are shown.',catsReset:'Reset order',
     catsNeed:'Enter date of birth and Men/Women to see the categories.',birth:'Date of birth',nat:'Nationality',from:'born ≤',
@@ -302,7 +303,7 @@ function applyT(){
   setText('t-label',tr('label')+' · '+compName());
   setText('t-title',tr('title'));setText('t-sub',tr('sub'));setText('t-who',tr('who'));
   document.getElementById('ac-input').placeholder=tr('searchPh');
-  document.getElementById('new-lk').placeholder=tr('lkPh');
+  fillLk();
   document.getElementById('comment').placeholder=tr('commentPh');
   setText('t-notinlist',tr('notInList'));setText('t-backtolist',tr('backToList'));setText('t-last',tr('lastName'));setText('t-first',tr('firstName'));setText('t-birth',tr('birth'));setText('t-nat',tr('nat'));fillNationality();
   setText('t-men',tr('men'));setText('t-women',tr('women'));
@@ -391,6 +392,12 @@ function fillNationality(){
   const opts=ISO3.map(c=>[c[0],label(c)]).sort((a,b)=>a[1].localeCompare(b[1],lang));
   sel.innerHTML=opts.map(([v,l])=>`<option value="${v}"${v===cur?' selected':''}>${esc(l)}</option>`).join('');
 }
+// LK 25 (lowest) down to 1, empty = don't know
+function fillLk(){
+  const sel=document.getElementById('new-lk'),cur=sel.value;
+  sel.innerHTML=`<option value="">${esc(tr('lkUnknown'))}</option>`
+    +Array.from({length:25},(_,i)=>String(25-i)).map(n=>`<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
+}
 function birthDate(){const v=document.getElementById('new-birth').value;return /^\d{4}-\d{2}-\d{2}$/.test(v)?v:null;}
 // people not in the list: stored as "Nachname, Vorname" like the TVBB list, so the surname is clear
 function newPersonName(){
@@ -470,7 +477,7 @@ function prefillFromExisting(){
   if(mode==='new'){
     if(ex.birth_date)document.getElementById('new-birth').value=ex.birth_date;
     if(ex.nationality)document.getElementById('new-nat').value=ex.nationality;
-    if(ex.lk)document.getElementById('new-lk').value=ex.lk;
+    const lk=parseInt(String(ex.lk||'').replace(/^\D+/,''));if(lk>=1&&lk<=25)document.getElementById('new-lk').value=String(lk);
   }
   if(ex.gender&&!form.gender)form.gender=ex.gender;
   syncGender();
